@@ -46,7 +46,10 @@ function RegisterForm() {
       email,
       password,
       options: {
-        data: { full_name: name },
+        data: {
+          full_name: name,
+          role: isClient ? 'client' : 'trainer',
+        },
         emailRedirectTo: redirectTo,
       },
     })
