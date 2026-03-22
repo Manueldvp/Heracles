@@ -21,12 +21,43 @@ export default async function ClientHomePage() {
   const { data: clientData } = await supabase
     .from('clients').select('*').eq('user_id', user.id).single()
 
+  // 1. Redirect automático al onboarding si no ha completado el formulario
+  if (clientData && !clientData.onboarding_completed && clientData.invite_token) {
+    redirect(`/onboarding/${clientData.invite_token}`)
+  }
+
+  // 2. Sin perfil configurado
   if (!clientData) {
     return (
       <div className="text-center py-16 flex flex-col items-center gap-3">
         <Flame size={40} className="text-zinc-600" />
         <p className="text-zinc-400">Tu perfil aún no está configurado.</p>
         <p className="text-zinc-500 text-sm">Contacta a tu entrenador.</p>
+      </div>
+    )
+  }
+
+  // 3. Onboarding pendiente pero sin token (caso edge — cerró el browser a mitad)
+  if (!clientData.onboarding_completed) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-5 px-4">
+        <div className="w-16 h-16 rounded-2xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
+          <ClipboardList size={28} className="text-orange-400" />
+        </div>
+        <div className="text-center max-w-sm">
+          <h2 className="text-white font-bold text-xl mb-2">Completa tu perfil</h2>
+          <p className="text-zinc-400 text-sm leading-relaxed">
+            Antes de acceder a tu dashboard necesitas completar el cuestionario inicial para que tu entrenador pueda personalizar tu programa.
+          </p>
+        </div>
+        {clientData.invite_token && (
+          <Link href={`/onboarding/${clientData.invite_token}`}>
+            <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-2 h-11 px-6">
+              <ClipboardList size={16} />
+              Completar cuestionario
+            </Button>
+          </Link>
+        )}
       </div>
     )
   }
@@ -67,7 +98,6 @@ export default async function ClientHomePage() {
 
       <div className="flex flex-col gap-6 pb-28">
 
-        {/* Header */}
         <ClientHeader
           firstName={firstName}
           greeting={greeting}
@@ -78,15 +108,15 @@ export default async function ClientHomePage() {
           trainerName={trainerProfile?.full_name?.split(' ')[0]}
           trainerAvatar={trainerProfile?.avatar_url}
         />
+
         <CheckinReminder clientId={clientData.id} />
-        {/* ── Entrenamiento de hoy ── */}
+
         <TodayWorkout
           routine={routine}
           routineId={routine?.id ?? ''}
-          clientId={clientData.id}  // ← agregar esto
+          clientId={clientData.id}
         />
 
-        {/* ── Comida actual / próxima ── */}
         {plan ? (
           <TodayMeal plan={plan} planId={plan.id} />
         ) : (
@@ -105,7 +135,6 @@ export default async function ClientHomePage() {
           </Link>
         )}
 
-        {/* ── Stats ── */}
         <div className="grid grid-cols-2 gap-3">
           <Card className="bg-zinc-900 border-zinc-800">
             <CardContent className="p-4">
@@ -113,7 +142,7 @@ export default async function ClientHomePage() {
                 <div>
                   <p className="text-zinc-500 text-xs mb-1">Peso actual</p>
                   <p className="text-white font-bold text-2xl leading-none">
-                    {clientData.weight}
+                    {clientData.weight ?? '—'}
                     <span className="text-zinc-500 text-sm font-normal ml-1">kg</span>
                   </p>
                   {weightChange !== null && (
@@ -182,7 +211,6 @@ export default async function ClientHomePage() {
           </Card>
         </div>
 
-        {/* ── Check-ins ── */}
         <Card className="bg-zinc-900 border-zinc-800">
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-4">
@@ -209,10 +237,10 @@ export default async function ClientHomePage() {
                   </div>
                   <div className="grid grid-cols-4 gap-2 text-center">
                     {[
-                      { icon: Zap,      label: 'Energía',  value: `${lastCheckin.energy_level}/5`,                      color: 'text-orange-400', bg: 'bg-orange-500/10' },
-                      { icon: Moon,     label: 'Sueño',    value: `${lastCheckin.sleep_quality}/5`,                     color: 'text-blue-400',   bg: 'bg-blue-500/10'   },
-                      { icon: Dumbbell, label: 'Entrenos', value: lastCheckin.completed_workouts,                        color: 'text-green-400',  bg: 'bg-green-500/10'  },
-                      { icon: Scale,    label: 'Peso',     value: lastCheckin.weight ? `${lastCheckin.weight}kg` : '—', color: 'text-purple-400', bg: 'bg-purple-500/10' },
+                      { icon: Zap,      label: 'Energía',  value: `${lastCheckin.energy_level}/5`,                       color: 'text-orange-400', bg: 'bg-orange-500/10' },
+                      { icon: Moon,     label: 'Sueño',    value: `${lastCheckin.sleep_quality}/5`,                      color: 'text-blue-400',   bg: 'bg-blue-500/10'   },
+                      { icon: Dumbbell, label: 'Entrenos', value: lastCheckin.completed_workouts,                         color: 'text-green-400',  bg: 'bg-green-500/10'  },
+                      { icon: Scale,    label: 'Peso',     value: lastCheckin.weight ? `${lastCheckin.weight}kg` : '—',  color: 'text-purple-400', bg: 'bg-purple-500/10' },
                     ].map(({ icon: Icon, label, value, color, bg }, i) => (
                       <div key={i} className={`${bg} rounded-xl py-2.5`}>
                         <Icon size={12} className={`${color} mx-auto mb-1`} />
