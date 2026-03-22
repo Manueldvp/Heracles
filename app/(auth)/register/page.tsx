@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Eye, EyeOff, Zap, Check } from 'lucide-react'
+import { Eye, EyeOff, Zap, Check, Mail } from 'lucide-react'
 
 const benefits = [
   { icon: '⚡', title: 'IA integrada', desc: 'Genera rutinas y planes nutricionales en segundos' },
@@ -19,7 +19,7 @@ const benefits = [
 function RegisterForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get('token') // presente si es cliente con invitación
+  const token = searchParams.get('token')
   const isClient = !!token
 
   const supabase = createClient()
@@ -29,6 +29,7 @@ function RegisterForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [registered, setRegistered] = useState(false)
 
   const handleRegister = async () => {
     if (!name || !email || !password) { setError('Completa todos los campos'); return }
@@ -36,28 +37,64 @@ function RegisterForm() {
     setLoading(true)
     setError('')
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://treinex.com'
+    const redirectTo = isClient
+      ? `${appUrl}/onboarding/${token}`
+      : `${appUrl}/dashboard`
+
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name },
+        emailRedirectTo: redirectTo,
       },
     })
 
     if (signUpError) { setError(signUpError.message); setLoading(false); return }
 
-    // Si viene con token → es cliente, ir al onboarding
-    // Si no → es entrenador, ir al dashboard
-    if (isClient) {
-      router.push(`/onboarding/${token}`)
-    } else {
-      router.push('/dashboard')
-    }
+    // Mostrar pantalla de confirmación
+    setRegistered(true)
+    setLoading(false)
   }
 
   const passwordStrength = password.length === 0 ? 0 : password.length < 6 ? 1 : password.length < 10 ? 2 : 3
   const strengthColors = ['', 'bg-red-500', 'bg-yellow-500', 'bg-green-500']
   const strengthLabels = ['', 'Débil', 'Regular', 'Fuerte']
+
+  // ── Pantalla de confirmación ────────────────────────────────────────────────
+  if (registered) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center px-4">
+        <div className="max-w-sm w-full text-center flex flex-col items-center gap-5">
+          <div className="w-20 h-20 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center">
+            <Mail size={32} className="text-orange-400" />
+          </div>
+          <div>
+            <h2 className="text-white font-bold text-2xl mb-2">Revisa tu email</h2>
+            <p className="text-zinc-400 text-sm leading-relaxed">
+              Te enviamos un link de confirmación a <span className="text-white font-medium">{email}</span>.
+              {isClient
+                ? ' Al confirmar serás redirigido al cuestionario inicial.'
+                : ' Al confirmar podrás acceder a tu dashboard.'
+              }
+            </p>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 w-full">
+            <p className="text-zinc-500 text-xs">
+              ¿No llegó el email? Revisa tu carpeta de spam o{' '}
+              <button onClick={() => setRegistered(false)} className="text-orange-400 hover:text-orange-300 transition">
+                intenta de nuevo
+              </button>
+            </p>
+          </div>
+          <Link href="/login" className="text-zinc-600 text-xs hover:text-zinc-400 transition">
+            Volver al inicio de sesión
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -102,8 +139,6 @@ function RegisterForm() {
       `}</style>
 
       <div className="font-body min-h-screen bg-black flex overflow-hidden">
-
-        {/* LEFT — Form Panel */}
         <div className="flex-1 flex items-center justify-center px-6 py-12 lg:px-16">
           <div className="w-full max-w-sm">
             <div className="flex items-center gap-2 mb-10 lg:hidden">
@@ -128,49 +163,33 @@ function RegisterForm() {
             <div className="flex flex-col gap-5">
               <div className="slide-up-2">
                 <Label className="text-zinc-400 text-xs uppercase tracking-widest mb-2 block">Nombre completo</Label>
-                <Input
-                  type="text"
-                  value={name}
-                  onChange={e => setName(e.target.value)}
-                  placeholder="Tu nombre"
-                  className="input-glow bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-700 h-12 focus-visible:ring-0 focus-visible:border-orange-500 transition-colors"
-                />
+                <Input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Tu nombre"
+                  className="input-glow bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-700 h-12 focus-visible:ring-0 focus-visible:border-orange-500 transition-colors" />
               </div>
 
               <div className="slide-up-3">
                 <Label className="text-zinc-400 text-xs uppercase tracking-widest mb-2 block">Email</Label>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                  className="input-glow bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-700 h-12 focus-visible:ring-0 focus-visible:border-orange-500 transition-colors"
-                />
+                <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@email.com"
+                  className="input-glow bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-700 h-12 focus-visible:ring-0 focus-visible:border-orange-500 transition-colors" />
               </div>
 
               <div className="slide-up-4">
                 <Label className="text-zinc-400 text-xs uppercase tracking-widest mb-2 block">Contraseña</Label>
                 <div className="relative">
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
+                  <Input type={showPassword ? 'text' : 'password'} value={password}
                     onChange={e => setPassword(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleRegister()}
                     placeholder="Mínimo 6 caracteres"
-                    className="input-glow bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-700 h-12 pr-10 focus-visible:ring-0 focus-visible:border-orange-500 transition-colors"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition"
-                  >
+                    className="input-glow bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-700 h-12 pr-10 focus-visible:ring-0 focus-visible:border-orange-500 transition-colors" />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-300 transition">
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
                 {password.length > 0 && (
                   <div className="mt-2 flex items-center gap-2">
                     <div className="flex gap-1 flex-1">
-                      {[1, 2, 3].map(i => (
+                      {[1,2,3].map(i => (
                         <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= passwordStrength ? strengthColors[passwordStrength] : 'bg-zinc-800'}`} />
                       ))}
                     </div>
@@ -182,17 +201,12 @@ function RegisterForm() {
               </div>
 
               {error && (
-                <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
-                  {error}
-                </p>
+                <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">{error}</p>
               )}
 
               <div className="slide-up-5">
-                <Button
-                  onClick={handleRegister}
-                  disabled={loading}
-                  className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold tracking-wide transition-all disabled:opacity-50 hover:shadow-[0_0_24px_rgba(249,115,22,0.4)]"
-                >
+                <Button onClick={handleRegister} disabled={loading}
+                  className="w-full h-12 bg-orange-500 hover:bg-orange-600 text-white font-semibold tracking-wide transition-all disabled:opacity-50 hover:shadow-[0_0_24px_rgba(249,115,22,0.4)]">
                   {loading ? (
                     <span className="flex items-center gap-2">
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -204,29 +218,23 @@ function RegisterForm() {
 
               <div className="slide-up-6 text-center">
                 <span className="text-zinc-600 text-xs">¿Ya tienes cuenta? </span>
-                <Link
-                  href={isClient ? `/login?token=${token}` : '/login'}
-                  className="text-xs text-orange-500 hover:text-orange-400 transition"
-                >
+                <Link href={isClient ? `/login?token=${token}` : '/login'}
+                  className="text-xs text-orange-500 hover:text-orange-400 transition">
                   Inicia sesión →
                 </Link>
               </div>
             </div>
 
-            <p className="text-zinc-800 text-xs text-center mt-12">
-              © 2026 Heracles · Todos los derechos reservados
-            </p>
+            <p className="text-zinc-800 text-xs text-center mt-12">© 2026 Heracles · Todos los derechos reservados</p>
           </div>
         </div>
 
-        {/* RIGHT — Benefits Panel (solo para entrenadores) */}
         {!isClient && (
           <div className="hidden lg:flex relative diagonal-cut-right bg-zinc-950 grid-bg w-[48%] shrink-0 flex-col items-center justify-center px-16 py-12 overflow-hidden">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full"
               style={{ background: 'radial-gradient(circle, rgba(234,88,12,0.15) 0%, transparent 70%)' }} />
             <div className="absolute top-8 right-8 w-16 h-16 border-t-2 border-r-2 border-orange-500/40" />
             <div className="absolute bottom-8 right-8 w-16 h-16 border-b-2 border-r-2 border-orange-500/20" />
-
             <div className="relative z-10 max-w-xs">
               <div className="flex items-center gap-3 mb-12">
                 <div className="relative pulse-ring w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
@@ -234,23 +242,14 @@ function RegisterForm() {
                 </div>
                 <span className="font-display text-4xl text-white tracking-wider">HERACLES</span>
               </div>
-
               <h2 className="font-display text-3xl text-white leading-tight tracking-wide mb-3">
-                TODO LO QUE<br />
-                <span className="text-orange-500">NECESITAS</span><br />
-                PARA CRECER
+                TODO LO QUE<br /><span className="text-orange-500">NECESITAS</span><br />PARA CRECER
               </h2>
-              <p className="text-zinc-500 text-sm mb-6">
-                La plataforma completa para entrenadores personales modernos.
-              </p>
-
+              <p className="text-zinc-500 text-sm mb-6">La plataforma completa para entrenadores personales modernos.</p>
               <div className="flex flex-col gap-4">
                 {benefits.map((b, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-4 group"
-                    style={{ animation: `benefit-in 0.5s ease-out ${0.2 + i * 0.1}s both` }}
-                  >
+                  <div key={i} className="flex items-center gap-4 group"
+                    style={{ animation: `benefit-in 0.5s ease-out ${0.2 + i * 0.1}s both` }}>
                     <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-lg shrink-0 group-hover:border-orange-500/50 transition-colors">
                       {b.icon}
                     </div>
@@ -262,19 +261,15 @@ function RegisterForm() {
                   </div>
                 ))}
               </div>
-
               <div className="mt-10 pt-8 border-t border-zinc-800/50 flex items-center gap-4">
                 <div className="flex -space-x-2">
-                  {['EA', 'MR', 'KL', 'JP'].map((initials, i) => (
+                  {['EA','MR','KL','JP'].map((initials, i) => (
                     <div key={i} className="w-7 h-7 rounded-full bg-zinc-800 border-2 border-zinc-950 flex items-center justify-center">
                       <span className="text-zinc-400 text-xs font-medium">{initials[0]}</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-zinc-600 text-xs">
-                  +2,400 entrenadores<br />
-                  <span className="text-zinc-500">ya confían en Heracles</span>
-                </p>
+                <p className="text-zinc-600 text-xs">+2,400 entrenadores<br /><span className="text-zinc-500">ya confían en Heracles</span></p>
               </div>
             </div>
           </div>

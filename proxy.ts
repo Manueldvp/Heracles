@@ -21,29 +21,61 @@ export async function proxy(request: NextRequest) {
   })
 
   const { data: { user } } = await supabase.auth.getUser()
+  const pathname = request.nextUrl.pathname
 
-  // Sin sesión
+  // Rutas públicas — nunca redirigir
+  if (
+    pathname.startsWith('/invite') ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/register')
+  ) {
+    return supabaseResponse
+  }
+
+  // Sin sesión — redirigir al login
   if (!user) {
     if (
-      request.nextUrl.pathname.startsWith('/dashboard') ||
-      request.nextUrl.pathname.startsWith('/client')
+      pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/client')
     ) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return supabaseResponse
   }
 
-  // Con sesión en login → redirigir según rol
-  if (request.nextUrl.pathname === '/login') {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+  // Con sesión — obtener perfil
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
 
-    if (profile?.role === 'client') {
+  const role = profile?.role
+
+  // Usuario sin rol — puede ser cliente recién registrado
+  // Lo dejamos pasar para que el onboarding lo maneje
+  if (!role) {
+    if (pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+    return supabaseResponse
+  }
+
+  // Con sesión en login → redirigir según rol
+  if (pathname === '/login') {
+    if (role === 'client') {
       return NextResponse.redirect(new URL('/client', request.url))
     }
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+
+  // Cliente intentando acceder al dashboard del entrenador
+  if (role === 'client' && pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/client', request.url))
+  }
+
+  // Entrenador intentando acceder al dashboard del cliente
+  if (role === 'trainer' && pathname.startsWith('/client')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
@@ -51,5 +83,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/client/:path*', '/login'],
+  matcher: ['/dashboard/:path*', '/client/:path*', '/login', '/onboarding/:path*', '/invite/:path*'],
 }
