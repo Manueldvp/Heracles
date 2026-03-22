@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'noreply@treinex.com',
       to,
       subject: `${trainerName} te invita a entrenar en Heracles`,
       html: `
