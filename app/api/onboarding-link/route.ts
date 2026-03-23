@@ -58,9 +58,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ redirect: '/client' }, { status: 409 })
     }
 
+    let form = null
+    if (client.form_id) {
+      const { data: formData } = await supabaseAdmin
+        .from('forms')
+        .select('id, title, description, fields')
+        .eq('id', client.form_id)
+        .single()
+
+      form = formData ?? null
+    }
+
     return NextResponse.json({
       clientId: client.id,
       formId: client.form_id,
+      form,
       onboardingCompleted: client.onboarding_completed,
     })
 
@@ -79,7 +91,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    const { clientId, updates } = await req.json()
+    const { clientId, updates, formId, responses } = await req.json()
 
     if (!clientId) {
       return NextResponse.json({ error: 'Falta clientId' }, { status: 400 })
@@ -105,6 +117,16 @@ export async function PATCH(req: Request) {
       for (const key of allowed) {
         if (updates[key] !== undefined) safeUpdates[key] = updates[key]
       }
+    }
+
+    if (formId && responses && typeof responses === 'object') {
+      await supabaseAdmin
+        .from('form_responses')
+        .insert({
+          form_id: formId,
+          client_id: clientId,
+          responses,
+        })
     }
 
     await supabaseAdmin

@@ -130,7 +130,7 @@ export default function OnboardingPage() {
         setInvalid(true); setLoading(false); return
       }
 
-      const { clientId: cid, formId, onboardingCompleted } = await res.json()
+      const { clientId: cid, formId, form, onboardingCompleted } = await res.json()
 
       if (onboardingCompleted) { router.push('/client'); return }
 
@@ -138,10 +138,6 @@ export default function OnboardingPage() {
 
       // 3. Sin formulario → completar directo
       if (!formId) { setNoForm(true); setLoading(false); return }
-
-      // 4. Cargar formulario
-      const { data: form } = await supabase
-        .from('forms').select('*').eq('id', formId).single()
 
       if (!form) { setNoForm(true); setLoading(false); return }
 
@@ -184,13 +180,6 @@ export default function OnboardingPage() {
     if (!validate() || !clientId || !formDef) return
     setSubmitting(true)
 
-    // Guardar respuestas del formulario
-    await supabase.from('form_responses').insert({
-      form_id: formDef.id,
-      client_id: clientId,
-      responses,
-    })
-
     // Extraer campos clave del formulario para actualizar el perfil
     const updates: any = {}
     formDef.fields.forEach(f => {
@@ -208,7 +197,12 @@ export default function OnboardingPage() {
     await fetch('/api/onboarding-link', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId, updates }),
+      body: JSON.stringify({
+        clientId,
+        updates,
+        formId: formDef.id,
+        responses,
+      }),
     })
 
     setDone(true)
