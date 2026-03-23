@@ -16,7 +16,7 @@ export async function POST(req: Request) {
     const { to, inviteUrl, hasForm } = await req.json()
 
     if (!to || !inviteUrl) {
-      return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+      return NextResponse.json({ error: 'Faltan parÃ¡metros' }, { status: 400 })
     }
 
     const { data: profile } = await supabase
@@ -56,24 +56,24 @@ export async function POST(req: Request) {
 
               ${hasForm ? `
               <p style="color:#71717a;font-size:13px;line-height:1.6;margin:0 0 24px;">
-                Después de registrarte, completarás un breve cuestionario para que tu entrenador pueda diseñar tu programa.
+                DespuÃ©s de registrarte, completarÃ¡s un breve cuestionario para que tu entrenador pueda diseÃ±ar tu programa.
               </p>
               ` : '<div style="margin-bottom:24px;"></div>'}
 
               <a href="${inviteUrl}"
                 style="display:block;background:#f97316;color:#ffffff;text-decoration:none;text-align:center;padding:15px 24px;border-radius:12px;font-weight:700;font-size:16px;letter-spacing:0.02em;">
-                Aceptar invitación ?
+                Aceptar invitaciÃ³n ?
               </a>
 
               <p style="color:#3f3f46;font-size:12px;text-align:center;margin:16px 0 0;">
-                Si el botón no funciona, copia este link:<br>
+                Si el botÃ³n no funciona, copia este link:<br>
                 <span style="color:#52525b;word-break:break-all;">${inviteUrl}</span>
               </p>
             </div>
 
             <div style="text-align:center;margin-top:24px;">
               <p style="color:#3f3f46;font-size:12px;margin:0;">
-                Este link es personal · Expira en 7 días
+                Este link es personal Â· Expira en 7 dÃ­as
               </p>
             </div>
           </div>

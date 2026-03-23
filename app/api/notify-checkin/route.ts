@@ -17,11 +17,11 @@ export async function POST(req: NextRequest) {
     const { clientId, checkinType } = await req.json()
 
     if (!clientId || !checkinType) {
-      return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+      return NextResponse.json({ error: 'Faltan parÃ¡metros' }, { status: 400 })
     }
 
     if (checkinType !== 'daily' && checkinType !== 'weekly') {
-      return NextResponse.json({ error: 'Tipo de check-in inválido' }, { status: 400 })
+      return NextResponse.json({ error: 'Tipo de check-in invÃ¡lido' }, { status: 400 })
     }
 
     const { data: client } = await supabaseAdmin
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       trainer_id: client.trainer_id,
       client_id: client.id,
       type: 'checkin',
-      message: `${clientName} completó su check-in ${checkinType === 'daily' ? 'diario' : 'semanal'}`,
+      message: `${clientName} completÃ³ su check-in ${checkinType === 'daily' ? 'diario' : 'semanal'}`,
       target_role: 'trainer',
     })
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       await resend.emails.send({
         from: 'Heracles <onboarding@resend.dev>',
         to: trainerEmail,
-        subject: `?? ${clientName} completó su check-in`,
+        subject: `?? ${clientName} completÃ³ su check-in`,
         html: `
           <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background: #09090b; color: #fff; padding: 32px; border-radius: 16px;">
             <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
               style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
               Ver check-in ?
             </a>
-            <p style="color: #3f3f46; font-size: 12px; margin-top: 32px;">© 2026 Heracles</p>
+            <p style="color: #3f3f46; font-size: 12px; margin-top: 32px;">Â© 2026 Heracles</p>
           </div>
         `
       })
@@ -79,6 +79,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('notify-checkin error:', error)
-    return NextResponse.json({ error: 'Error enviando notificación' }, { status: 500 })
+    return NextResponse.json({ error: 'Error enviando notificaciÃ³n' }, { status: 500 })
   }
 }

@@ -24,7 +24,7 @@ export async function POST(req: Request) {
       .single()
 
     if (error || !client) {
-      return NextResponse.json({ error: 'Token inv·lido' }, { status: 404 })
+      return NextResponse.json({ error: 'Token inv√°lido' }, { status: 404 })
     }
 
     if (client.invite_token_expires_at && new Date(client.invite_token_expires_at) < new Date()) {
@@ -32,11 +32,11 @@ export async function POST(req: Request) {
     }
 
     if (client.user_id && client.user_id !== user.id) {
-      return NextResponse.json({ error: 'Esta invitaciÛn ya est· asociada a otra cuenta' }, { status: 409 })
+      return NextResponse.json({ error: 'Esta invitaci√≥n ya est√° asociada a otra cuenta' }, { status: 409 })
     }
 
     if (client.email && user.email && client.email.toLowerCase() !== user.email.toLowerCase()) {
-      return NextResponse.json({ error: 'Debes iniciar sesiÛn con el correo invitado' }, { status: 403 })
+      return NextResponse.json({ error: 'Debes iniciar sesi√≥n con el correo invitado' }, { status: 403 })
     }
 
     if (!client.user_id) {

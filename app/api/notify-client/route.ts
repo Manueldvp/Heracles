@@ -18,11 +18,11 @@ export async function POST(req: NextRequest) {
     const { clientId, type, message } = await req.json()
 
     if (!clientId || !type || !message) {
-      return NextResponse.json({ error: 'Faltan parámetros' }, { status: 400 })
+      return NextResponse.json({ error: 'Faltan parÃ¡metros' }, { status: 400 })
     }
 
     if (!ALLOWED_TYPES.has(type)) {
-      return NextResponse.json({ error: 'Tipo inválido' }, { status: 400 })
+      return NextResponse.json({ error: 'Tipo invÃ¡lido' }, { status: 400 })
     }
 
     const [{ data: trainerProfile }, { data: client }] = await Promise.all([
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
                 style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
                 Ver ahora ?
               </a>
-              <p style="color: #3f3f46; font-size: 12px; margin-top: 32px;">© 2026 ${appName}</p>
+              <p style="color: #3f3f46; font-size: 12px; margin-top: 32px;">Â© 2026 ${appName}</p>
             </div>
           `
         })
@@ -90,6 +90,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('notify-client error:', error)
-    return NextResponse.json({ error: 'Error enviando notificación' }, { status: 500 })
+    return NextResponse.json({ error: 'Error enviando notificaciÃ³n' }, { status: 500 })
   }
 }
