@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
@@ -50,7 +50,7 @@ function HerculesIllustration() {
   )
 }
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const supabase = createClient()
@@ -292,3 +292,15 @@ export default function LoginPage() {
 }
 
 
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-zinc-500">Cargando...</p>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
+  )
+}
