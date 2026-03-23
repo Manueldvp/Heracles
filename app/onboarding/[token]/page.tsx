@@ -191,8 +191,8 @@ export default function OnboardingPage() {
       responses,
     })
 
-    // Actualizar perfil con campos clave + marcar onboarding completo
-    const updates: any = { onboarding_completed: true, status: 'active' }
+    // Extraer campos clave del formulario para actualizar el perfil
+    const updates: any = {}
     formDef.fields.forEach(f => {
       const val = responses[f.id]
       if (!val) return
@@ -204,7 +204,12 @@ export default function OnboardingPage() {
       if (lbl.includes('objetivo')) updates.goal = val
     })
 
-    await supabase.from('clients').update(updates).eq('id', clientId)
+    // Usar API admin para actualizar (bypasea RLS)
+    await fetch('/api/onboarding-link', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, updates }),
+    })
 
     setDone(true)
     setSubmitting(false)
