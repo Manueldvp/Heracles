@@ -23,7 +23,6 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // Rutas públicas — nunca redirigir
   if (
     pathname.startsWith('/invite') ||
     pathname.startsWith('/onboarding') ||
@@ -32,36 +31,46 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse
   }
 
-  // Sin sesión — redirigir al login
   if (!user) {
-    if (
-      pathname.startsWith('/dashboard') ||
-      pathname.startsWith('/client')
-    ) {
+    if (pathname.startsWith('/dashboard') || pathname.startsWith('/client')) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return supabaseResponse
   }
 
-  // Con sesión — obtener perfil
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   const role = profile?.role
 
-  // Usuario sin rol — puede ser cliente recién registrado
-  // Lo dejamos pasar para que el onboarding lo maneje
   if (!role) {
-    if (pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/login', request.url))
+    // Fallback para cuentas antiguas sin role en profiles.
+    const { data: clientRow } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const isClientUser = !!clientRow
+
+    if (pathname === '/login') {
+      return NextResponse.redirect(new URL(isClientUser ? '/client' : '/dashboard', request.url))
     }
+
+    if (isClientUser && pathname.startsWith('/dashboard')) {
+      return NextResponse.redirect(new URL('/client', request.url))
+    }
+
+    if (!isClientUser && pathname.startsWith('/client')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+
     return supabaseResponse
   }
 
-  // Con sesión en login → redirigir según rol
   if (pathname === '/login') {
     if (role === 'client') {
       return NextResponse.redirect(new URL('/client', request.url))
@@ -69,12 +78,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // Cliente intentando acceder al dashboard del entrenador
   if (role === 'client' && pathname.startsWith('/dashboard')) {
     return NextResponse.redirect(new URL('/client', request.url))
   }
 
-  // Entrenador intentando acceder al dashboard del cliente
   if (role === 'trainer' && pathname.startsWith('/client')) {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }

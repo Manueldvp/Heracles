@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
@@ -52,7 +52,9 @@ function HerculesIllustration() {
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
+  const token = searchParams.get('token')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -66,6 +68,41 @@ export default function LoginPage() {
     setError('')
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setError('Email o contraseña incorrectos'); setLoading(false); return }
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setError('No se pudo obtener la sesión')
+      setLoading(false)
+      return
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profile?.role === 'trainer') {
+      router.push('/dashboard')
+      return
+    }
+
+    if (profile?.role === 'client') {
+      router.push(token ? `/onboarding/${token}` : '/client')
+      return
+    }
+
+    // Fallback para cuentas antiguas sin role en profiles.
+    const { data: clientRow } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (clientRow) {
+      router.push(token ? `/onboarding/${token}` : '/client')
+      return
+    }
+
     router.push('/dashboard')
   }
 
@@ -168,7 +205,7 @@ export default function LoginPage() {
 
             <div className="slide-up-1 mb-8">
               <h1 className="font-display text-4xl text-white tracking-wide mb-1">BIENVENIDO</h1>
-              <p className="text-zinc-500 text-sm">Ingresa a tu panel de entrenador</p>
+              <p className="text-zinc-500 text-sm">Ingresa a tu cuenta</p>
             </div>
 
             <div className="flex flex-col gap-5">
@@ -238,7 +275,7 @@ export default function LoginPage() {
                 >
                   ¿Olvidaste tu contraseña?
                 </button>
-                <Link href="/register" className="text-xs text-zinc-500 hover:text-orange-400 transition">
+                <Link href={token ? `/register?token=${token}` : '/register'} className="text-xs text-zinc-500 hover:text-orange-400 transition">
                   Crear cuenta →
                 </Link>
               </div>
@@ -253,3 +290,5 @@ export default function LoginPage() {
     </>
   )
 }
+
+

@@ -18,7 +18,6 @@ export default function ResetPasswordPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Intentar setear sesión desde el hash de la URL
     const handleHash = async () => {
       const hash = window.location.hash
       const params = new URLSearchParams(hash.substring(1))
@@ -35,28 +34,45 @@ export default function ResetPasswordPage() {
         return
       }
 
-      // Si no hay hash verificar si ya hay sesión activa con recovery
       const { data: { session } } = await supabase.auth.getSession()
       if (session) setReady(true)
     }
 
     handleHash()
 
-    // También escuchar el evento de Supabase
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setReady(true)
     })
 
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase.auth])
+
+  const resolveRedirect = async (userId: string) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (profile?.role === 'client') return '/client'
+    if (profile?.role === 'trainer') return '/dashboard'
+
+    const { data: clientRow } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    return clientRow ? '/client' : '/dashboard'
+  }
 
   const handleReset = async () => {
     if (password !== confirm) {
-      setError('Las contraseñas no coinciden')
+      setError('Las contrase�as no coinciden')
       return
     }
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
+      setError('La contrase�a debe tener al menos 6 caracteres')
       return
     }
 
@@ -72,13 +88,14 @@ export default function ResetPasswordPage() {
     }
 
     const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user!.id)
-      .single()
+    if (!user) {
+      setError('No se pudo obtener la sesi�n')
+      setLoading(false)
+      return
+    }
 
-    router.push(profile?.role === 'client' ? '/client' : '/dashboard')
+    const target = await resolveRedirect(user.id)
+    router.push(target)
   }
 
   return (
@@ -86,8 +103,8 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md p-4">
         <Card className="bg-zinc-900 border-zinc-800">
           <CardHeader>
-            <CardTitle className="text-white text-xl">Nueva contraseña</CardTitle>
-            <p className="text-zinc-400 text-sm">Ingresa tu nueva contraseña</p>
+            <CardTitle className="text-white text-xl">Nueva contrase�a</CardTitle>
+            <p className="text-zinc-400 text-sm">Ingresa tu nueva contrase�a</p>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {!ready ? (
@@ -103,22 +120,22 @@ export default function ResetPasswordPage() {
             ) : (
               <>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-zinc-400">Nueva contraseña</Label>
+                  <Label className="text-zinc-400">Nueva contrase�a</Label>
                   <Input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="M�nimo 6 caracteres"
                     className="bg-zinc-800 border-zinc-700 text-white"
                   />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-zinc-400">Confirmar contraseña</Label>
+                  <Label className="text-zinc-400">Confirmar contrase�a</Label>
                   <Input
                     type="password"
                     value={confirm}
                     onChange={(e) => setConfirm(e.target.value)}
-                    placeholder="Repite tu contraseña"
+                    placeholder="Repite tu contrase�a"
                     className="bg-zinc-800 border-zinc-700 text-white"
                   />
                 </div>
@@ -130,7 +147,7 @@ export default function ResetPasswordPage() {
                   disabled={loading}
                   className="bg-orange-500 hover:bg-orange-600 text-white w-full"
                 >
-                  {loading ? 'Guardando...' : 'Guardar contraseña'}
+                  {loading ? 'Guardando...' : 'Guardar contrase�a'}
                 </Button>
               </>
             )}

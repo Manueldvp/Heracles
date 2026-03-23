@@ -9,24 +9,20 @@ export default async function ClientLayout({ children }: { children: React.React
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile }, { data: clientData }] = await Promise.all([
+    supabase.from('profiles').select('role').eq('id', user.id).maybeSingle(),
+    supabase.from('clients').select('full_name, trainer_id, avatar_url').eq('user_id', user.id).maybeSingle(),
+  ])
 
-  if (profile?.role !== 'client') redirect('/dashboard')
+  if (profile?.role === 'trainer') redirect('/dashboard')
 
-  const { data: clientData } = await supabase
-    .from('clients')
-    .select('full_name, trainer_id, avatar_url')
-    .eq('user_id', user.id)
-    .single()
+  // Fallback para cuentas antiguas sin role en profiles.
+  if (!clientData) redirect('/login')
 
   const { data: trainerProfile } = await supabase
     .from('profiles')
     .select('ai_trainer_name')
-    .eq('id', clientData?.trainer_id)
+    .eq('id', clientData.trainer_id)
     .single()
 
   const appName = trainerProfile?.ai_trainer_name || 'Heracles'
@@ -48,8 +44,8 @@ export default async function ClientLayout({ children }: { children: React.React
         </Link>
         <ClientDrawerWrapper
           email={user.email ?? ''}
-          clientName={clientData?.full_name ?? ''}
-          avatarUrl={clientData?.avatar_url ?? ''}
+          clientName={clientData.full_name ?? ''}
+          avatarUrl={clientData.avatar_url ?? ''}
           appName={appName}
         />
       </header>
