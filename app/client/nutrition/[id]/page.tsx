@@ -69,6 +69,7 @@ export default async function ClientNutritionDetailPage({
   if (!plan) notFound()
 
   const content = plan.content as NutritionContent
+  const supplements = content.supplements ?? []
 
   // Compatibilidad entre plan IA y manual
   const proteinG = content.macros?.protein_g ?? content.protein_g ?? 0
@@ -209,14 +210,14 @@ export default async function ClientNutritionDetailPage({
       </div>
 
       {/* Suplementos */}
-      {content.supplements?.length > 0 && (
+      {supplements.length > 0 && (
         <Card className="bg-zinc-900 border-zinc-800 mb-4">
           <CardHeader>
             <CardTitle className="text-white text-base">Suplementación</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {content.supplements.map((sup: string, i: number) => (
+              {supplements.map((sup: string, i: number) => (
                 <Badge key={i} className="bg-zinc-800 text-zinc-300 border-zinc-700">
                   {sup}
                 </Badge>
