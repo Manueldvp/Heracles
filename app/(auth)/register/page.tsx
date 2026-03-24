@@ -221,7 +221,7 @@ function RegisterForm() {
               </div>
             </div>
 
-            <p className="text-zinc-800 text-xs text-center mt-12">© 2026 Heracles · Todos los derechos reservados</p>
+            <p className="text-zinc-800 text-xs text-center mt-12">© 2026 Treinex · Todos los derechos reservados</p>
           </div>
         </div>
 
@@ -265,7 +265,7 @@ function RegisterForm() {
                     </div>
                   ))}
                 </div>
-                <p className="text-zinc-600 text-xs">+2,400 entrenadores<br /><span className="text-zinc-500">ya confían en Heracles</span></p>
+                <p className="text-zinc-600 text-xs">+2,400 entrenadores<br /><span className="text-zinc-500">ya confían en Treinex</span></p>
               </div>
             </div>
           </div>

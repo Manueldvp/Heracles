@@ -1,62 +1,82 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Upload, X, Droplets, Flame, Brain, Zap, Moon, Dumbbell, Heart } from 'lucide-react'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 
-const PAIN_ZONES = ['Cuello', 'Hombro izq', 'Hombro der', 'Espalda alta', 'Espalda baja', 'Codo izq', 'Codo der', 'Cadera', 'Rodilla izq', 'Rodilla der', 'Tobillo izq', 'Tobillo der']
+const PAIN_ZONES = ['Cuello', 'Hombros', 'Espalda alta', 'Espalda baja', 'Cadera', 'Rodillas', 'Tobillos']
+const SCALE = [1, 2, 3, 4, 5]
 
-const MOOD_OPTIONS = [
-  { value: 1, emoji: '😞', label: 'Mal' },
-  { value: 2, emoji: '😕', label: 'Regular' },
-  { value: 3, emoji: '😐', label: 'Neutro' },
-  { value: 4, emoji: '😊', label: 'Bien' },
-  { value: 5, emoji: '😄', label: 'Excelente' },
-]
+type CheckinType = 'daily' | 'weekly'
 
-function RatingBar({ value, onChange, color = 'orange' }: { value: number; onChange: (v: number) => void; color?: string }) {
-  const colors: Record<string, string> = {
-    orange: 'bg-orange-500',
-    blue: 'bg-blue-500',
-    purple: 'bg-purple-500',
-    green: 'bg-green-500',
-    red: 'bg-red-500',
-  }
+type FormState = {
+  mood: number
+  energy_level: number
+  sleep_quality: number
+  completed_workouts: number
+  adherence: number
+  water_liters: string
+  calories_consumed: string
+  notes: string
+  pain_zones: string[]
+  stress_level: number
+  nutrition_adherence: number
+  weight: string
+}
+
+function ScaleSelector({
+  label,
+  helper,
+  value,
+  onChange,
+}: {
+  label: string
+  helper?: string
+  value: number
+  onChange: (value: number) => void
+}) {
   return (
-    <div className="flex gap-2 items-center">
-      {[1, 2, 3, 4, 5].map(n => (
-        <button key={n} onClick={() => onChange(n)}
-          className={`flex-1 h-10 rounded-xl font-bold text-sm transition-all ${
-            value >= n ? `${colors[color]} text-white shadow-lg scale-105` : 'bg-zinc-800 text-zinc-600 hover:bg-zinc-700'
-          }`}>
-          {n}
-        </button>
-      ))}
+    <div className="space-y-3">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium text-white">{label}</p>
+          {helper && <p className="text-xs text-zinc-500 mt-1">{helper}</p>}
+        </div>
+        <span className="text-sm font-semibold text-white">{value}/5</span>
+      </div>
+      <div className="grid grid-cols-5 gap-2">
+        {SCALE.map(option => (
+          <button
+            key={option}
+            type="button"
+            onClick={() => onChange(option)}
+            className={`rounded-xl border px-3 py-3 text-sm transition ${
+              value === option
+                ? 'border-orange-500 bg-orange-500 text-white'
+                : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+            }`}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
 
-function MoodSelector({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function StepPill({ active, done, label }: { active: boolean; done: boolean; label: string }) {
   return (
-    <div className="flex gap-3 justify-between">
-      {MOOD_OPTIONS.map(m => (
-        <button key={m.value} onClick={() => onChange(m.value)}
-          className={`flex-1 flex flex-col items-center gap-1 py-3 rounded-xl transition-all ${
-            value === m.value
-              ? 'bg-orange-500/20 border border-orange-500/50 scale-105'
-              : 'bg-zinc-800 border border-transparent hover:bg-zinc-700'
-          }`}>
-          <span className="text-2xl">{m.emoji}</span>
-          <span className={`text-xs ${value === m.value ? 'text-orange-400' : 'text-zinc-500'}`}>{m.label}</span>
-        </button>
-      ))}
+    <div className={`rounded-full border px-3 py-1.5 text-xs transition ${
+      active ? 'border-orange-500 bg-orange-500 text-white' :
+      done ? 'border-zinc-700 bg-zinc-900 text-zinc-200' :
+      'border-zinc-800 bg-zinc-950 text-zinc-500'
+    }`}>
+      {label}
     </div>
   )
 }
@@ -70,343 +90,435 @@ function CheckinForm() {
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
+  const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const [step, setStep] = useState(0)
 
-  // Leer type de la URL (?type=daily o ?type=weekly)
   const typeParam = searchParams.get('type')
-  const [checkinType, setCheckinType] = useState<'daily' | 'weekly'>(
-    typeParam === 'weekly' ? 'weekly' : 'daily'
-  )
+  const [checkinType, setCheckinType] = useState<CheckinType>(typeParam === 'weekly' ? 'weekly' : 'daily')
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<FormState>({
+    mood: 3,
     energy_level: 3,
     sleep_quality: 3,
-    mood: 3,
-    pain_zones: [] as string[],
+    completed_workouts: 0,
+    adherence: 3,
     water_liters: '',
     calories_consumed: '',
     notes: '',
-    weight: '',
-    completed_workouts: 0,
+    pain_zones: [],
     stress_level: 3,
     nutrition_adherence: 3,
+    weight: '',
   })
 
+  const steps = useMemo(() => (
+    checkinType === 'daily'
+      ? ['Estado general', 'Cumplimiento', 'Notas']
+      : ['Estado general', 'Semana', 'Foto', 'Notas']
+  ), [checkinType])
+
   const togglePainZone = (zone: string) => {
-    setForm(f => ({
-      ...f,
-      pain_zones: f.pain_zones.includes(zone)
-        ? f.pain_zones.filter(z => z !== zone)
-        : [...f.pain_zones, zone]
+    setForm(current => ({
+      ...current,
+      pain_zones: current.pain_zones.includes(zone)
+        ? current.pain_zones.filter(item => item !== zone)
+        : [...current.pain_zones, zone],
     }))
   }
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
     if (!file) return
+
     setUploadingPhoto(true)
+    setError('')
     setPhotoPreview(URL.createObjectURL(file))
+
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
-      formData.append('folder', 'heracles/checkins')
-      const res = await fetch(
+      const body = new FormData()
+      body.append('file', file)
+      body.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
+      body.append('folder', 'treinex/checkins')
+
+      const response = await fetch(
         `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        { method: 'POST', body: formData }
+        { method: 'POST', body }
       )
-      const data = await res.json()
+      const data = await response.json()
       setPhotoUrl(data.secure_url)
     } catch {
-      setError('Error subiendo la foto, intenta de nuevo')
+      setError('No se pudo subir la imagen. Intenta de nuevo.')
       setPhotoPreview(null)
+      setPhotoUrl(null)
     }
+
     setUploadingPhoto(false)
   }
 
+  const validateCurrentStep = () => {
+    if (step === 0) {
+      return form.mood > 0 && form.energy_level > 0 && form.sleep_quality > 0
+    }
+    if (step === 1) {
+      if (checkinType === 'daily') {
+        return form.adherence > 0
+      }
+      return form.nutrition_adherence > 0 && form.stress_level > 0
+    }
+    return true
+  }
+
+  const goNext = () => {
+    if (!validateCurrentStep()) {
+      setError('Completa este paso antes de continuar.')
+      return
+    }
+    setError('')
+    setStep(current => Math.min(current + 1, steps.length - 1))
+  }
+
+  const goBack = () => {
+    setError('')
+    setStep(current => Math.max(current - 1, 0))
+  }
+
   const handleSubmit = async () => {
+    if (!validateCurrentStep()) {
+      setError('Completa la información requerida antes de enviar.')
+      return
+    }
+
     setLoading(true)
     setError('')
+
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) {
+      setError('Debes iniciar sesión nuevamente.')
+      setLoading(false)
+      return
+    }
+
     const { data: client } = await supabase
       .from('clients')
       .select('id, trainer_id, full_name')
       .eq('user_id', user.id)
       .single()
-    if (!client) { setError('No se encontró tu perfil'); setLoading(false); return }
+
+    if (!client) {
+      setError('No se encontró tu perfil.')
+      setLoading(false)
+      return
+    }
 
     const { error: insertError } = await supabase.from('checkins').insert({
       client_id: client.id,
       type: checkinType,
+      mood: form.mood,
       energy_level: form.energy_level,
       sleep_quality: form.sleep_quality,
-      mood: form.mood,
-      pain_zones: form.pain_zones,
-      water_liters: form.water_liters ? parseFloat(form.water_liters) : null,
-      calories_consumed: form.calories_consumed ? parseInt(form.calories_consumed) : null,
       completed_workouts: form.completed_workouts,
-      weight: form.weight ? parseFloat(form.weight) : null,
-      notes: form.notes,
+      water_liters: form.water_liters ? parseFloat(form.water_liters) : null,
+      calories_consumed: form.calories_consumed ? parseInt(form.calories_consumed, 10) : null,
+      notes: form.notes.trim() || null,
+      pain_zones: form.pain_zones,
       stress_level: checkinType === 'weekly' ? form.stress_level : null,
-      nutrition_adherence: checkinType === 'weekly' ? form.nutrition_adherence : null,
+      nutrition_adherence: checkinType === 'weekly' ? form.nutrition_adherence : form.adherence,
+      weight: checkinType === 'weekly' && form.weight ? parseFloat(form.weight) : null,
       photo_url: checkinType === 'weekly' ? photoUrl : null,
     })
-    if (insertError) { setError(insertError.message); setLoading(false); return }
+
+    if (insertError) {
+      setError(insertError.message)
+      setLoading(false)
+      return
+    }
 
     await fetch('/api/notify-checkin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId: client.id,
-        clientName: client.full_name,
-        trainerId: client.trainer_id,
-        checkinType,
-      }),
+      body: JSON.stringify({ clientId: client.id, checkinType }),
     })
 
     router.push('/client')
   }
 
-  return (
-    <div className="max-w-lg mx-auto pb-10">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">Check-in</h2>
-        <p className="text-zinc-400 text-sm mt-1">Registra cómo te sientes hoy</p>
-      </div>
-
-      <Tabs value={checkinType} onValueChange={v => setCheckinType(v as 'daily' | 'weekly')} className="mb-6">
-        <TabsList className="grid grid-cols-2 bg-zinc-900 border border-zinc-800 w-full">
-          <TabsTrigger value="daily" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-zinc-400">
-            📅 Diario
-          </TabsTrigger>
-          <TabsTrigger value="weekly" className="data-[state=active]:bg-orange-500 data-[state=active]:text-white text-zinc-400">
-            📊 Semanal
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <div className="flex flex-col gap-4">
-        {/* Mood */}
+  const renderDailyStep = () => {
+    if (step === 0) {
+      return (
         <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Brain size={16} className="text-purple-400" />
-              <Label className="text-white font-semibold">Estado de ánimo</Label>
-            </div>
-            <MoodSelector value={form.mood} onChange={v => setForm({ ...form, mood: v })} />
+          <CardHeader>
+            <CardTitle className="text-white text-base">Cómo te sentiste hoy</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ScaleSelector label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
+            <ScaleSelector label="Nivel de energía" helper="1 = muy bajo, 5 = muy alto" value={form.energy_level} onChange={value => setForm(current => ({ ...current, energy_level: value }))} />
+            <ScaleSelector label="Calidad del sueño" helper="1 = mala, 5 = excelente" value={form.sleep_quality} onChange={value => setForm(current => ({ ...current, sleep_quality: value }))} />
           </CardContent>
         </Card>
+      )
+    }
 
-        {/* Energy & Sleep */}
+    if (step === 1) {
+      return (
         <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="pt-5 pb-5 flex flex-col gap-5">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Zap size={16} className="text-orange-400" />
-                <Label className="text-white font-semibold">Energía</Label>
-                <span className="text-zinc-600 text-xs ml-auto">1 = Sin energía · 5 = Lleno</span>
+          <CardHeader>
+            <CardTitle className="text-white text-base">Cumplimiento del día</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ScaleSelector label="Adherencia al plan" helper="Qué tan bien cumpliste con lo planificado hoy" value={form.adherence} onChange={value => setForm(current => ({ ...current, adherence: value }))} />
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Entrenos</Label>
+                <Input type="number" min={0} max={7} value={form.completed_workouts} onChange={event => setForm(current => ({ ...current, completed_workouts: Math.max(0, parseInt(event.target.value || '0', 10)) }))} className="bg-zinc-950 border-zinc-800 text-white" />
               </div>
-              <RatingBar value={form.energy_level} onChange={v => setForm({ ...form, energy_level: v })} color="orange" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Moon size={16} className="text-blue-400" />
-                <Label className="text-white font-semibold">Sueño</Label>
-                <span className="text-zinc-600 text-xs ml-auto">1 = Muy malo · 5 = Perfecto</span>
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Agua</Label>
+                <Input type="number" step="0.5" value={form.water_liters} onChange={event => setForm(current => ({ ...current, water_liters: event.target.value }))} placeholder="2.5" className="bg-zinc-950 border-zinc-800 text-white" />
               </div>
-              <RatingBar value={form.sleep_quality} onChange={v => setForm({ ...form, sleep_quality: v })} color="blue" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Workouts & Water & Calories */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="pt-5 pb-5 flex flex-col gap-5">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Dumbbell size={16} className="text-green-400" />
-                <Label className="text-white font-semibold">Entrenamientos completados</Label>
-              </div>
-              <div className="flex gap-2">
-                {[0,1,2,3,4,5,6,7].map(n => (
-                  <button key={n} onClick={() => setForm({ ...form, completed_workouts: n })}
-                    className={`flex-1 h-10 rounded-xl font-bold text-sm transition-all ${
-                      form.completed_workouts === n
-                        ? 'bg-green-500 text-white shadow-lg scale-105'
-                        : 'bg-zinc-800 text-zinc-600 hover:bg-zinc-700'
-                    }`}>
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Droplets size={14} className="text-blue-400" />
-                  <Label className="text-zinc-400 text-xs">Agua (litros)</Label>
-                </div>
-                <Input type="number" step="0.5" placeholder="2.5" value={form.water_liters}
-                  onChange={e => setForm({ ...form, water_liters: e.target.value })}
-                  className="bg-zinc-800 border-zinc-700 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Flame size={14} className="text-orange-400" />
-                  <Label className="text-zinc-400 text-xs">Calorías consumidas</Label>
-                </div>
-                <Input type="number" placeholder="2000" value={form.calories_consumed}
-                  onChange={e => setForm({ ...form, calories_consumed: e.target.value })}
-                  className="bg-zinc-800 border-zinc-700 text-white" />
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Calorías</Label>
+                <Input type="number" value={form.calories_consumed} onChange={event => setForm(current => ({ ...current, calories_consumed: event.target.value }))} placeholder="2100" className="bg-zinc-950 border-zinc-800 text-white" />
               </div>
             </div>
           </CardContent>
         </Card>
+      )
+    }
 
-        {/* Pain zones */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Heart size={16} className="text-red-400" />
-              <Label className="text-white font-semibold">Dolor o molestias</Label>
-              <span className="text-zinc-600 text-xs ml-auto">Opcional</span>
-            </div>
+    return (
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-white text-base">Notas opcionales</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Molestias o dolor</Label>
             <div className="flex flex-wrap gap-2">
               {PAIN_ZONES.map(zone => (
-                <button key={zone} onClick={() => togglePainZone(zone)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                <button
+                  key={zone}
+                  type="button"
+                  onClick={() => togglePainZone(zone)}
+                  className={`rounded-full border px-3 py-2 text-xs transition ${
                     form.pain_zones.includes(zone)
-                      ? 'bg-red-500/20 border border-red-500/50 text-red-400'
-                      : 'bg-zinc-800 border border-zinc-700 text-zinc-500 hover:border-zinc-600'
-                  }`}>
+                      ? 'border-orange-500 bg-orange-500 text-white'
+                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                  }`}
+                >
                   {zone}
                 </button>
               ))}
             </div>
-            {form.pain_zones.length > 0 && (
-              <div className="flex gap-2 mt-3 flex-wrap">
-                {form.pain_zones.map(z => (
-                  <Badge key={z} className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">
-                    {z}
-                    <button onClick={() => togglePainZone(z)} className="ml-1"><X size={10} /></button>
-                  </Badge>
-                ))}
+          </div>
+          <div className="space-y-2">
+            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Notas</Label>
+            <textarea
+              value={form.notes}
+              onChange={event => setForm(current => ({ ...current, notes: event.target.value }))}
+              rows={4}
+              placeholder="Cuéntale a tu entrenador cómo estuvo el día o si necesitas ajustar algo."
+              className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-700"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const renderWeeklyStep = () => {
+    if (step === 0) {
+      return (
+        <Card className="bg-zinc-900 border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-white text-base">Resumen de la semana</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ScaleSelector label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
+            <ScaleSelector label="Energía general" value={form.energy_level} onChange={value => setForm(current => ({ ...current, energy_level: value }))} />
+            <ScaleSelector label="Sueño promedio" value={form.sleep_quality} onChange={value => setForm(current => ({ ...current, sleep_quality: value }))} />
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (step === 1) {
+      return (
+        <Card className="bg-zinc-900 border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-white text-base">Cumplimiento semanal</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <ScaleSelector label="Adherencia nutricional" value={form.nutrition_adherence} onChange={value => setForm(current => ({ ...current, nutrition_adherence: value }))} />
+            <ScaleSelector label="Nivel de estrés" value={form.stress_level} onChange={value => setForm(current => ({ ...current, stress_level: value }))} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Peso actual</Label>
+                <Input type="number" step="0.1" value={form.weight} onChange={event => setForm(current => ({ ...current, weight: event.target.value }))} placeholder="75.5" className="bg-zinc-950 border-zinc-800 text-white" />
               </div>
+              <div className="space-y-2">
+                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Entrenos</Label>
+                <Input type="number" min={0} max={14} value={form.completed_workouts} onChange={event => setForm(current => ({ ...current, completed_workouts: Math.max(0, parseInt(event.target.value || '0', 10)) }))} className="bg-zinc-950 border-zinc-800 text-white" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    if (step === 2) {
+      return (
+        <Card className="bg-zinc-900 border-zinc-800">
+          <CardHeader>
+            <CardTitle className="text-white text-base">Foto de progreso</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {photoPreview ? (
+              <div className="space-y-3">
+                <button type="button" onClick={() => setShowPhotoModal(true)} className="block w-full overflow-hidden rounded-2xl border border-zinc-800">
+                  <img src={photoPreview} alt="Vista previa" className="h-[320px] w-full object-cover" />
+                </button>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-zinc-400">{uploadingPhoto ? 'Subiendo imagen...' : 'Imagen lista para enviar'}</p>
+                  <Button type="button" variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => { setPhotoPreview(null); setPhotoUrl(null) }}>
+                    Quitar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-950 px-6 text-center">
+                <p className="text-base font-medium text-white">Sube tu foto semanal</p>
+                <p className="mt-2 max-w-sm text-sm text-zinc-500">Puedes ampliar la imagen antes de enviarla para revisar encuadre y calidad.</p>
+                <span className="mt-4 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">Seleccionar archivo</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+              </label>
             )}
           </CardContent>
         </Card>
+      )
+    }
 
-        {/* Weekly extras */}
-        {checkinType === 'weekly' && (
-          <>
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardContent className="pt-5 pb-5 flex flex-col gap-5">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-base">🧠</span>
-                    <Label className="text-white font-semibold">Nivel de estrés</Label>
-                    <span className="text-zinc-600 text-xs ml-auto">1 = Sin estrés · 5 = Muy estresado</span>
-                  </div>
-                  <RatingBar value={form.stress_level} onChange={v => setForm({ ...form, stress_level: v })} color="red" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-base">🥗</span>
-                    <Label className="text-white font-semibold">Adherencia al plan nutricional</Label>
-                    <span className="text-zinc-600 text-xs ml-auto">1 = Nada · 5 = Al 100%</span>
-                  </div>
-                  <RatingBar value={form.nutrition_adherence} onChange={v => setForm({ ...form, nutrition_adherence: v })} color="green" />
-                </div>
-                <div>
-                  <Label className="text-zinc-400 text-xs mb-2 block">Peso actual (kg)</Label>
-                  <Input type="number" step="0.1" placeholder="75.5" value={form.weight}
-                    onChange={e => setForm({ ...form, weight: e.target.value })}
-                    className="bg-zinc-800 border-zinc-700 text-white max-w-[140px]" />
-                </div>
-              </CardContent>
-            </Card>
+    return (
+      <Card className="bg-zinc-900 border-zinc-800">
+        <CardHeader>
+          <CardTitle className="text-white text-base">Cierre semanal</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Molestias o dolor</Label>
+            <div className="flex flex-wrap gap-2">
+              {PAIN_ZONES.map(zone => (
+                <button
+                  key={zone}
+                  type="button"
+                  onClick={() => togglePainZone(zone)}
+                  className={`rounded-full border px-3 py-2 text-xs transition ${
+                    form.pain_zones.includes(zone)
+                      ? 'border-orange-500 bg-orange-500 text-white'
+                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                  }`}
+                >
+                  {zone}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Notas</Label>
+            <textarea
+              value={form.notes}
+              onChange={event => setForm(current => ({ ...current, notes: event.target.value }))}
+              rows={4}
+              placeholder="Qué funcionó bien, qué te costó más y qué quieres revisar con tu entrenador."
+              className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-700"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardContent className="pt-5 pb-5">
-                <div className="flex items-center gap-2 mb-4">
-                  <Upload size={16} className="text-orange-400" />
-                  <Label className="text-white font-semibold">Foto de progreso</Label>
-                  <span className="text-zinc-600 text-xs ml-auto">Opcional</span>
-                </div>
-                {photoPreview ? (
-                  <div className="relative w-full aspect-square max-w-[200px] mx-auto">
-                    <img src={photoPreview} alt="Preview" className="w-full h-full object-cover rounded-xl" />
-                    <button onClick={() => { setPhotoPreview(null); setPhotoUrl(null) }}
-                      className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full flex items-center justify-center text-white hover:bg-black/80">
-                      <X size={14} />
-                    </button>
-                    {uploadingPhoto && (
-                      <div className="absolute inset-0 bg-black/50 rounded-xl flex items-center justify-center">
-                        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      </div>
-                    )}
-                    {!uploadingPhoto && photoUrl && (
-                      <div className="absolute bottom-2 right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                        <span className="text-white text-xs">✓</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-dashed border-zinc-700 rounded-xl cursor-pointer hover:border-orange-500/50 transition-colors">
-                    <Upload size={24} className="text-zinc-600 mb-2" />
-                    <p className="text-zinc-500 text-sm">Toca para subir foto</p>
-                    <p className="text-zinc-700 text-xs mt-1">JPG, PNG · máx 10MB</p>
-                    <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
-                  </label>
-                )}
-              </CardContent>
-            </Card>
-          </>
-        )}
+  return (
+    <div className="mx-auto max-w-2xl pb-10">
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold text-white">Check-in</h2>
+        <p className="mt-1 text-sm text-zinc-400">Un flujo más simple para registrar cómo vienes y darle contexto real a tu entrenador.</p>
+      </div>
 
-        {/* Notes */}
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardContent className="pt-5 pb-5">
-            <Label className="text-zinc-400 text-xs uppercase tracking-widest mb-3 block">
-              Notas para tu entrenador
-            </Label>
-            <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-              placeholder="¿Algo que quieras contarle a tu entrenador? Lesiones, dudas, logros..."
-              rows={3}
-              className="w-full px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:border-orange-500 resize-none text-sm placeholder:text-zinc-600" />
-          </CardContent>
-        </Card>
+      <div className="mb-6 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => { setCheckinType('daily'); setStep(0) }}
+          className={`rounded-full border px-4 py-2 text-sm transition ${
+            checkinType === 'daily'
+              ? 'border-orange-500 bg-orange-500 text-white'
+              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+          }`}
+        >
+          Diario
+        </button>
+        <button
+          type="button"
+          onClick={() => { setCheckinType('weekly'); setStep(0) }}
+          className={`rounded-full border px-4 py-2 text-sm transition ${
+            checkinType === 'weekly'
+              ? 'border-orange-500 bg-orange-500 text-white'
+              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+          }`}
+        >
+          Semanal
+        </button>
+      </div>
 
-        {error && (
-          <p className="text-red-400 text-sm bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-3">{error}</p>
-        )}
-
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => router.back()} className="border-zinc-700 text-zinc-400 flex-1">
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading || uploadingPhoto}
-            className="bg-orange-500 hover:bg-orange-600 text-white flex-1">
-            {loading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Enviando...
-              </span>
-            ) : '✓ Enviar check-in'}
-          </Button>
+      <div className="mb-6 space-y-3">
+        <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
+          <div
+            className="h-full rounded-full bg-orange-500 transition-all"
+            style={{ width: `${((step + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {steps.map((label, index) => (
+            <StepPill key={label} active={index === step} done={index < step} label={label} />
+          ))}
         </div>
       </div>
+
+      {checkinType === 'daily' ? renderDailyStep() : renderWeeklyStep()}
+
+      {error && (
+        <p className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>
+      )}
+
+      <div className="mt-6 flex gap-3">
+        <Button variant="outline" onClick={step === 0 ? () => router.back() : goBack} className="flex-1 border-zinc-700 text-zinc-300">
+          {step === 0 ? 'Cancelar' : 'Volver'}
+        </Button>
+        {step === steps.length - 1 ? (
+          <Button onClick={handleSubmit} disabled={loading || uploadingPhoto} className="flex-1 bg-orange-500 text-white hover:bg-orange-600">
+            {loading ? 'Enviando...' : 'Enviar check-in'}
+          </Button>
+        ) : (
+          <Button onClick={goNext} className="flex-1 bg-orange-500 text-white hover:bg-orange-600">
+            Continuar
+          </Button>
+        )}
+      </div>
+
+      <Dialog open={showPhotoModal} onOpenChange={setShowPhotoModal}>
+        <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-800 p-2">
+          <DialogTitle className="sr-only">Vista completa de la foto</DialogTitle>
+          {photoPreview && (
+            <img src={photoPreview} alt="Vista completa" className="max-h-[80vh] w-full object-contain rounded-xl" />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
 export default function ClientCheckinPage() {
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center py-20">
-        <div className="w-6 h-6 border-2 border-zinc-700 border-t-orange-500 rounded-full animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<div className="py-20 text-center text-zinc-500">Cargando check-in...</div>}>
       <CheckinForm />
     </Suspense>
   )

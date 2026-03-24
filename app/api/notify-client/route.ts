@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(client.user_id)
       const clientEmail = authUser?.user?.email
 
-      const appName = trainerProfile.ai_trainer_name || 'Heracles'
+      const appName = trainerProfile.ai_trainer_name || 'Treinex'
       const trainerName = trainerProfile.full_name?.split(' ')[0] ?? 'Tu entrenador'
       const clientName = client.full_name ?? 'Cliente'
 

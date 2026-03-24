@@ -4,14 +4,22 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ClientExerciseProgress from './components/ClientExerciseProgress'
 import ClientNotes from './components/ClientNotes'
+import CheckinHistory from './progress/CheckinHistory'
 import { Button } from '@/components/ui/button'
 import {
-  TrendingUp, Dumbbell, Salad, ClipboardList, Pencil,
-  ChevronRight, Zap, BarChart2, Moon, Activity, Scale, Plus,
-  AlertTriangle, CheckCircle2, Clock
+  TrendingUp, Dumbbell, Salad, Pencil,
+  ChevronRight, BarChart2, Plus, AlertTriangle, Clock
 } from 'lucide-react'
 import Link from 'next/link'
 import DeleteClientButton from './components/DeleteClientButton'
+
+type RoutineSummary = {
+  title?: string
+}
+
+type NutritionSummary = {
+  calories_target?: number
+}
 
 const goalLabel: Record<string, string> = {
   muscle_gain: 'Ganancia muscular',
@@ -53,26 +61,28 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     { data: routines },
     { data: nutritionPlans },
     { data: checkins },
+    { data: exerciseLogs },
   ] = await Promise.all([
     supabase.from('routines').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(5),
     supabase.from('nutrition_plans').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(3),
     supabase.from('checkins').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(6),
+    supabase.from('exercise_logs').select('exercise_name, max_weight').eq('client_id', client.id).order('max_weight', { ascending: false }).limit(1),
   ])
 
   const lastCheckin = checkins?.[0]
-  const activeRoutine = routines?.find(r => r.is_active)
-  const activeNutrition = nutritionPlans?.find(p => p.is_active)
 
   const weightCheckins = checkins?.filter(c => c.weight) ?? []
   const weightChange = weightCheckins.length >= 2
     ? +(weightCheckins[0].weight - weightCheckins[weightCheckins.length - 1].weight).toFixed(1)
     : null
 
+  const now = new Date()
   const daysSinceCheckin = lastCheckin
-    ? Math.floor((Date.now() - new Date(lastCheckin.created_at).getTime()) / 86400000)
+    ? Math.floor((now.getTime() - new Date(lastCheckin.created_at).getTime()) / 86400000)
     : null
 
   const hasPainAlert = lastCheckin?.pain_zones?.length > 0
+  const bestLift = exerciseLogs?.[0]
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -173,6 +183,18 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         <ClientExerciseProgress clientId={client.id} />
       </div>
 
+      {bestLift && bestLift.max_weight > 0 && (
+        <Card className="bg-blue-500/5 border-blue-500/20 mb-4">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs uppercase tracking-[0.18em] text-blue-300">Max strength</p>
+            <p className="mt-2 text-lg font-semibold text-white">
+              {bestLift.max_weight}kg on {bestLift.exercise_name}
+            </p>
+            <p className="mt-1 text-sm text-zinc-500">Récord más alto registrado hasta ahora.</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Progreso de peso */}
       {weightChange !== null && (
         <Card className={`border mb-4 ${weightChange <= 0 ? 'bg-green-500/5 border-green-500/20' : 'bg-orange-500/5 border-orange-500/20'}`}>
@@ -231,7 +253,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-xs font-medium truncate group-hover:text-orange-400 transition">
-                          {(routine.content as any)?.title ?? routine.title}
+                          {((routine.content as RoutineSummary | null)?.title) ?? routine.title}
                         </p>
                         <p className="text-zinc-600 text-xs">
                           {new Date(routine.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
@@ -270,7 +292,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
             ) : (
               <div className="flex flex-col gap-1">
                 {nutritionPlans.map((plan) => {
-                  const kcal = (plan.content as any)?.calories_target
+                  const kcal = (plan.content as NutritionSummary | null)?.calories_target
                   return (
                     <Link key={plan.id} href={`/dashboard/clients/${client.id}/nutrition/${plan.id}`}>
                       <div className={`flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-zinc-800 transition group ${plan.is_active ? 'bg-green-500/5 border border-green-500/20' : ''}`}>
@@ -305,108 +327,20 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Check-ins */}
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-          <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-            <Activity size={14} className="text-purple-400" /> Check-ins
-          </CardTitle>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-sm font-semibold text-white">Check-ins</h3>
+            <p className="text-xs text-zinc-500">Seguimiento diario y semanal del cliente.</p>
+          </div>
           <Link href={`/dashboard/clients/${client.id}/checkins/new`}>
-            <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white h-7 text-xs gap-1">
+            <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white h-8 text-xs gap-1">
               <Plus size={12} /> Nuevo
             </Button>
           </Link>
-        </CardHeader>
-        <CardContent className="px-3 pb-4">
-          {!checkins || checkins.length === 0 ? (
-            <div className="text-center py-6">
-              <ClipboardList size={24} className="text-zinc-700 mx-auto mb-2" />
-              <p className="text-zinc-600 text-sm">Sin check-ins registrados</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="bg-zinc-800 rounded-2xl p-4 border border-zinc-700/50">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">Último check-in</Badge>
-                    {lastCheckin?.type && (
-                      <Badge className="bg-zinc-700 text-zinc-400 border-zinc-600 text-xs capitalize">{lastCheckin.type}</Badge>
-                    )}
-                  </div>
-                  <p className="text-zinc-500 text-xs">
-                    {new Date(lastCheckin!.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-4 gap-2 text-center mb-3">
-                  {[
-                    { icon: Zap,      label: 'Energía',  value: `${lastCheckin?.energy_level}/5`,   color: 'text-orange-400', bg: 'bg-zinc-900/60' },
-                    { icon: Moon,     label: 'Sueño',    value: `${lastCheckin?.sleep_quality}/5`,  color: 'text-blue-400',   bg: 'bg-zinc-900/60' },
-                    { icon: Dumbbell, label: 'Entrenos', value: lastCheckin?.completed_workouts,    color: 'text-green-400',  bg: 'bg-zinc-900/60' },
-                    { icon: Scale,    label: 'Peso',     value: lastCheckin?.weight ? `${lastCheckin.weight}kg` : '—', color: 'text-purple-400', bg: 'bg-zinc-900/60' },
-                  ].map(({ icon: Icon, label, value, color, bg }, i) => (
-                    <div key={i} className={`${bg} rounded-xl p-2`}>
-                      <Icon size={12} className={`${color} mx-auto mb-1`} />
-                      <p className="text-zinc-500 text-xs">{label}</p>
-                      <p className={`${color} font-bold`}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {(lastCheckin?.mood || lastCheckin?.water_liters || lastCheckin?.stress_level || lastCheckin?.nutrition_adherence) && (
-                  <div className="flex gap-3 flex-wrap mb-3">
-                    {lastCheckin.mood && <span className="text-zinc-400 text-xs">Estado: {lastCheckin.mood}/5</span>}
-                    {lastCheckin.water_liters && <span className="text-zinc-400 text-xs">Agua: {lastCheckin.water_liters}L</span>}
-                    {lastCheckin.stress_level && <span className="text-zinc-400 text-xs">Estrés: {lastCheckin.stress_level}/5</span>}
-                    {lastCheckin.nutrition_adherence && <span className="text-zinc-400 text-xs">Adherencia: {lastCheckin.nutrition_adherence}/5</span>}
-                  </div>
-                )}
-
-                {lastCheckin?.pain_zones?.length > 0 && (
-                  <div className="flex items-center gap-2 mb-2">
-                    <AlertTriangle size={12} className="text-red-400" />
-                    <div className="flex gap-1 flex-wrap">
-                      {lastCheckin.pain_zones.map((z: string) => (
-                        <Badge key={z} className="bg-red-500/20 text-red-400 border-red-500/30 text-xs px-1.5">{z}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {lastCheckin?.notes && (
-                  <p className="text-zinc-500 text-xs border-t border-zinc-700 pt-2 mt-1">"{lastCheckin.notes}"</p>
-                )}
-
-                {lastCheckin?.photo_url && (
-                  <div className="mt-3">
-                    <img src={lastCheckin.photo_url} alt="Foto check-in" className="w-full max-h-48 object-cover rounded-xl" />
-                  </div>
-                )}
-              </div>
-
-              {checkins.length > 1 && (
-                <div className="flex flex-col gap-1 mt-1">
-                  {checkins.slice(1).map((checkin) => (
-                    <div key={checkin.id} className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-800 transition">
-                      <div className="w-7 h-7 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
-                        <CheckCircle2 size={13} className="text-zinc-500" />
-                      </div>
-                      <p className="text-zinc-500 text-xs flex-1">
-                        {new Date(checkin.created_at).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'short' })}
-                      </p>
-                      <div className="flex gap-3 shrink-0">
-                        <span className="text-zinc-500 text-xs flex items-center gap-1"><Zap size={9} className="text-orange-400" />{checkin.energy_level}</span>
-                        <span className="text-zinc-500 text-xs flex items-center gap-1"><Moon size={9} className="text-blue-400" />{checkin.sleep_quality}</span>
-                        <span className="text-zinc-500 text-xs flex items-center gap-1"><Dumbbell size={9} className="text-green-400" />{checkin.completed_workouts}</span>
-                      </div>
-                      {checkin.pain_zones?.length > 0 && <AlertTriangle size={12} className="text-red-400 shrink-0" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+        <CheckinHistory checkins={checkins ?? []} />
+      </div>
     </div>
   )
 }

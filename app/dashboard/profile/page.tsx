@@ -42,7 +42,7 @@ export default function ProfilePage() {
     bio: '',
     specialty: '',
     certifications: [] as string[],
-    ai_trainer_name: 'Heracles',
+    ai_trainer_name: 'Treinex',
     ai_system_prompt: DEFAULT_PROMPT,
     avatar_url: '',
     documents: [] as Document[],
@@ -63,7 +63,7 @@ export default function ProfilePage() {
           bio: profile.bio || '',
           specialty: profile.specialty || '',
           certifications: profile.certifications || [],
-          ai_trainer_name: profile.ai_trainer_name || 'Heracles',
+          ai_trainer_name: profile.ai_trainer_name || 'Treinex',
           ai_system_prompt: profile.ai_system_prompt || DEFAULT_PROMPT,
           avatar_url: profile.avatar_url || '',
           documents: profile.documents || [],
@@ -345,7 +345,7 @@ export default function ProfilePage() {
             <Input
               value={form.ai_trainer_name}
               onChange={e => setForm({ ...form, ai_trainer_name: e.target.value })}
-              placeholder="Ej: Heracles, Atlas, FitBot..."
+              placeholder="Ej: Treinex, Atlas, FitBot..."
               className="bg-zinc-800 border-zinc-700 text-white focus-visible:border-orange-500"
             />
             <p className="text-zinc-600 text-xs mt-1.5">Nombre con el que el asistente se identifica con tus clientes</p>
@@ -373,7 +373,7 @@ export default function ProfilePage() {
               Ejemplo de metodología
             </p>
             <p className="text-zinc-500 text-xs leading-relaxed">
-              "Soy Manuel, entrenador con 5 años de experiencia. Priorizo movimientos compuestos sobre aislados. Para ganancia muscular uso periodización ondulante con 3-4 días de entrenamiento. Nunca recomiendo más de 20 series por grupo muscular por semana. Para nutrición prefiero un enfoque flexible sin eliminar grupos alimenticios..."
+              &quot;Soy Manuel, entrenador con 5 años de experiencia. Priorizo movimientos compuestos sobre aislados. Para ganancia muscular uso periodización ondulante con 3-4 días de entrenamiento. Nunca recomiendo más de 20 series por grupo muscular por semana. Para nutrición prefiero un enfoque flexible sin eliminar grupos alimenticios...&quot;
             </p>
           </div>
         </CardContent>

@@ -11,6 +11,7 @@ import {
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import ExerciseMedia from '@/components/exercise-media'
+import { inferMuscleGroup } from '@/lib/exercise-groups'
 
 interface Exercise {
   name: string
@@ -71,6 +72,13 @@ const MOTIVATIONAL = [
   '¡Otro día, otra victoria!',
   '¡Los campeones no se detienen!',
 ]
+
+function getNextPendingIndex(items: boolean[], startIndex: number) {
+  for (let index = startIndex; index < items.length; index += 1) {
+    if (!items[index]) return index
+  }
+  return -1
+}
 
 // ─── Confetti ──────────────────────────────────────────────────────────────────
 function Confetti() {
@@ -238,8 +246,14 @@ function SetLogger({ exercise, onComplete }: {
 }
 
 // ─── Rest Screen ───────────────────────────────────────────────────────────────
-function RestScreen({ nextExercise, timeLeft, total, onSkip }: {
-  nextExercise: Exercise | null; timeLeft: number; total: number; onSkip: () => void
+function RestScreen({ exercise, nextExercise, currentSet, totalSets, timeLeft, total, onSkip }: {
+  exercise: Exercise | null
+  nextExercise: Exercise | null
+  currentSet: number
+  totalSets: number
+  timeLeft: number
+  total: number
+  onSkip: () => void
 }) {
   const r = 54, circ = 2 * Math.PI * r
   const pct = total > 0 ? timeLeft / total : 0
@@ -260,11 +274,15 @@ function RestScreen({ nextExercise, timeLeft, total, onSkip }: {
       </div>
       <div className="text-center">
         <p className="text-purple-300 font-semibold text-base">Descansando</p>
-        {nextExercise && (
+        {exercise && currentSet <= totalSets ? (
           <p className="text-zinc-500 text-sm mt-0.5">
-            Siguiente: <span className="text-white capitalize">{nextExercise.name}</span>
+            Sigue con <span className="text-white capitalize">{exercise.name}</span> · serie {currentSet} de {totalSets}
           </p>
-        )}
+        ) : nextExercise ? (
+          <p className="text-zinc-500 text-sm mt-0.5">
+            Siguiente ejercicio: <span className="text-white capitalize">{nextExercise.name}</span>
+          </p>
+        ) : null}
       </div>
       <button onClick={onSkip}
         className="text-zinc-500 hover:text-zinc-300 text-xs transition border border-zinc-700 hover:border-zinc-500 rounded-xl px-4 py-2">
@@ -275,10 +293,10 @@ function RestScreen({ nextExercise, timeLeft, total, onSkip }: {
 }
 
 // ─── Exercise Card ─────────────────────────────────────────────────────────────
-function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogComplete, phase, timeLeft, totalTime, loggedSets, autoOpenLogger }: {
+function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogComplete, phase, timeLeft, totalTime, loggedSets, autoOpenLogger, currentSet }: {
   exercise: Exercise; index: number; isActive: boolean; isCompleted: boolean
   onStart: () => void; onLogComplete: (sets: SetLog[]) => void
-  phase: Phase; timeLeft: number; totalTime: number; loggedSets?: SetLog[]; autoOpenLogger?: boolean
+  phase: Phase; timeLeft: number; totalTime: number; loggedSets?: SetLog[]; autoOpenLogger?: boolean; currentSet: number
 }) {
   const [showLogger, setShowLogger] = useState(false)
   const loggerOpen = isActive && (showLogger || !!autoOpenLogger)
@@ -300,6 +318,9 @@ function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogCo
                   {exercise.name}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">Ejercicio {index + 1}</p>
+                {isActive && !isCompleted && (
+                  <p className="mt-1 text-xs text-zinc-400">Serie actual: {currentSet} / {exercise.sets}</p>
+                )}
               </div>
 
               {isActive && phase === 'working' ? (
@@ -359,7 +380,7 @@ function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogCo
       {isActive && phase === 'working' && (
         <div className="px-4 py-2.5 border-t border-blue-500/20 bg-blue-500/5 flex items-center gap-2">
           <Timer size={12} className="text-blue-400" />
-          <span className="text-blue-400 text-xs font-medium">Ejecutando series...</span>
+          <span className="text-blue-400 text-xs font-medium">Ejecutando serie {currentSet} de {exercise.sets}...</span>
           {exercise.notes && <span className="text-zinc-600 text-xs truncate ml-auto max-w-[130px]">{exercise.notes}</span>}
         </div>
       )}
@@ -401,8 +422,12 @@ function CompletionScreen({ exercises, allLogs, onReset, isToday, completedAt }:
   useEffect(() => { const t = setTimeout(() => setShowConfetti(false), 2200); return () => clearTimeout(t) }, [])
 
   const totalSets = exercises.reduce((acc, ex) => acc + ex.sets, 0)
-  const totalVolume = Object.values(allLogs).flat().reduce((acc, s) => acc + s.weight * s.reps, 0)
   const maxWeight = Math.max(0, ...Object.values(allLogs).flat().map(s => s.weight))
+  const setsByGroup = exercises.reduce<Record<string, number>>((acc, exercise) => {
+    const group = inferMuscleGroup(exercise.name)
+    acc[group] = (acc[group] ?? 0) + exercise.sets
+    return acc
+  }, {})
 
   return (
     <div className="relative py-2">
@@ -433,10 +458,20 @@ function CompletionScreen({ exercises, allLogs, onReset, isToday, completedAt }:
         </div>
         <div className="bg-zinc-800/60 rounded-xl p-3 flex flex-col items-center gap-1 border border-zinc-700/40">
           <Star size={15} className="text-yellow-400" />
-          <span className="text-white font-bold text-xl">
-            {totalVolume > 0 ? `${(totalVolume / 1000).toFixed(1)}t` : '—'}
-          </span>
-          <span className="text-zinc-500 text-xs text-center">Volumen</span>
+          <span className="text-white font-bold text-xl">{Object.keys(setsByGroup).length}</span>
+          <span className="text-zinc-500 text-xs text-center">Grupos</span>
+        </div>
+      </div>
+
+      <div className="mb-4 rounded-2xl border border-zinc-700/50 bg-zinc-900/70 p-4">
+        <p className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Sets por grupo muscular</p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {Object.entries(setsByGroup).map(([group, sets]) => (
+            <div key={group} className="flex items-center justify-between rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2">
+              <span className="text-sm text-zinc-300">{group}</span>
+              <span className="text-sm font-semibold text-white">{sets} sets</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -506,6 +541,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const [restForIndex, setRestForIndex] = useState(0)
   const [workTimeLeft, setWorkTimeLeft] = useState(0)
   const [workTotal, setWorkTotal] = useState(0)
+  const [currentSet, setCurrentSet] = useState(1)
   const [workoutStarted, setWorkoutStarted] = useState(false)
   const [allDone, setAllDone] = useState(false)
   const [completedAt, setCompletedAt] = useState<string | null>(null)
@@ -548,10 +584,11 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
 
   const clearTimer = () => { if (timerRef.current) clearInterval(timerRef.current) }
 
-  const startExercise = (index: number) => {
+  const startExercise = (index: number, setNumber = currentSet) => {
     const workSecs = estimateWorkSeconds(exercises[index])
     setWorkoutStarted(true)
     setPhase('working')
+    setCurrentSet(setNumber)
     setAutoOpenLoggerIndex(null)
     setWorkTimeLeft(workSecs)
     setWorkTotal(workSecs)
@@ -560,8 +597,12 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
       setWorkTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerRef.current!)
-          setPhase('idle')
-          setAutoOpenLoggerIndex(index)
+          if (setNumber >= exercises[index].sets) {
+            setPhase('idle')
+            setAutoOpenLoggerIndex(index)
+          } else {
+            startRestAfter(index)
+          }
           return 0
         }
         return prev - 1
@@ -586,8 +627,22 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
 
   const finishRest = (completedIndex: number) => {
     setResting(false)
-    const next = completedIndex + 1
-    if (next < exercises.length) setActiveIndex(next)
+    const nextSet = currentSet + 1
+    if (nextSet <= exercises[completedIndex].sets) {
+      setCurrentSet(nextSet)
+      startExercise(completedIndex, nextSet)
+      return
+    }
+
+    const next = getNextPendingIndex(completed, completedIndex + 1)
+    if (next >= 0) {
+      setActiveIndex(next)
+      setCurrentSet(1)
+      setPhase('idle')
+      return
+    }
+
+    void saveSession()
   }
 
   const completeExercise = async (index: number, sets: SetLog[]) => {
@@ -595,6 +650,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     setPhase('idle')
     setWorkoutStarted(true)
     setAutoOpenLoggerIndex(null)
+    setCurrentSet(1)
 
     const newCompleted = [...completed]
     newCompleted[index] = true
@@ -627,7 +683,8 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
       })
     }
 
-    const isLast = index + 1 >= exercises.length
+    const remaining = newCompleted.some(item => !item)
+    const isLast = !remaining
     if (isLast) {
       await saveSession()
     } else {
@@ -692,8 +749,11 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     setPhase('idle')
     setAutoOpenLoggerIndex(null)
     setResting(false)
+    setCurrentSet(1)
     setWorkTimeLeft(0)
+    setWorkTotal(0)
     setRestTimeLeft(0)
+    setRestTotal(0)
     setWorkoutStarted(false)
     setAllDone(false)
     setCompletedAt(null)
@@ -796,10 +856,13 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
                 onReset={resetWorkout} isToday={isToday} completedAt={completedAt} />
             ) : resting ? (
               <RestScreen
-                nextExercise={exercises[restForIndex + 1] ?? null}
-                timeLeft={restTimeLeft}
-                total={restTotal}
-                onSkip={() => { clearTimer(); finishRest(restForIndex) }}
+        nextExercise={exercises[restForIndex + 1] ?? null}
+        exercise={exercises[restForIndex] ?? null}
+        currentSet={currentSet + 1}
+        totalSets={exercises[restForIndex]?.sets ?? currentSet}
+        timeLeft={restTimeLeft}
+        total={restTotal}
+        onSkip={() => { clearTimer(); finishRest(restForIndex) }}
               />
             ) : (
               <div className="flex flex-col gap-2">
@@ -822,6 +885,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
                     timeLeft={workTimeLeft}
                     totalTime={workTotal}
                     autoOpenLogger={i === autoOpenLoggerIndex}
+                    currentSet={i === activeIndex ? currentSet : 1}
                     loggedSets={allLogs[i]}
                     onStart={() => startExercise(i)}
                     onLogComplete={(sets) => completeExercise(i, sets)}

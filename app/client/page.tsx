@@ -104,7 +104,7 @@ export default async function ClientHomePage() {
           goal={clientData.goal}
           level={clientData.level}
           clientName={clientData.full_name}
-          assistantName={trainerProfile?.ai_trainer_name || 'Heracles'}
+          assistantName={trainerProfile?.ai_trainer_name || 'Treinex'}
           trainerName={trainerProfile?.full_name?.split(' ')[0]}
           trainerAvatar={trainerProfile?.avatar_url}
         />
@@ -251,7 +251,7 @@ export default async function ClientHomePage() {
                   </div>
                   {lastCheckin.notes && (
                     <p className="text-zinc-600 text-xs mt-3 border-t border-zinc-700 pt-3 italic truncate">
-                      "{lastCheckin.notes}"
+                      &quot;{lastCheckin.notes}&quot;
                     </p>
                   )}
                 </div>

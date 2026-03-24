@@ -112,3 +112,53 @@ export function PendingClientRow({ client }: { client: Client }) {
     </Card>
   )
 }
+
+export function ExpiredClientRow({
+  client,
+  variant,
+}: {
+  client: Client
+  variant: 'invite' | 'plan'
+}) {
+  const isInvite = variant === 'invite'
+
+  return (
+    <Card className="bg-zinc-900/60 border-zinc-800/60">
+      <CardContent className="pt-4 pb-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-full bg-zinc-700/40 border border-zinc-700/40 flex items-center justify-center shrink-0 overflow-hidden">
+            {client.avatar_url ? (
+              <img src={client.avatar_url} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-zinc-500 font-bold text-sm">
+                {(client.full_name || client.email)?.charAt(0).toUpperCase() ?? '?'}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-1 min-w-0">
+            <p className="font-medium text-zinc-300 truncate">
+              {client.full_name || client.email}
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge className={`text-xs ${
+                isInvite
+                  ? 'bg-red-500/10 text-red-300 border-red-500/20'
+                  : 'bg-amber-500/10 text-amber-300 border-amber-500/20'
+              }`}>
+                {isInvite ? 'Invitación vencida' : 'Plan vencido'}
+              </Badge>
+              <span className="text-zinc-600 text-xs">
+                {isInvite && client.invite_token_expires_at
+                  ? `Venció ${new Date(client.invite_token_expires_at).toLocaleDateString('es', { day: 'numeric', month: 'short' })}`
+                  : 'Requiere nueva planificación'}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div onClick={e => e.stopPropagation()} className="shrink-0">
+          <DeleteClientButton clientId={client.id} clientName={client.full_name || client.email || 'cliente'} />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}

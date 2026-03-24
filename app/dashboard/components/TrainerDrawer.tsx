@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
-import { Home, Users, UserPlus, Settings, LogOut, Bell, CheckCheck, FileText } from 'lucide-react'
+import { Home, Users, Settings, LogOut, Bell, CheckCheck, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useRealtimeNotifications } from '@/lib/notifications/useRealtimeNotifications'
 
@@ -19,7 +19,6 @@ interface Props {
 const navItems = [
   { href: '/dashboard',              label: 'Inicio',         icon: Home,     exact: true  },
   { href: '/dashboard/clients',      label: 'Clientes',       icon: Users,    exact: false },
-  { href: '/dashboard/clients/new',  label: 'Nuevo cliente',  icon: UserPlus, exact: true  },
   { href: '/dashboard/forms',        label: 'Formularios',    icon: FileText, exact: false },
   { href: '/dashboard/profile',      label: 'Mi perfil',      icon: Settings, exact: true  },
 ]
@@ -201,7 +200,7 @@ export default function TrainerDrawer({ email, trainerName, trainerId, onLogout,
           {/* Footer */}
           {!showNotifs && (
             <div className="p-4 border-t border-zinc-800">
-              <p className="text-zinc-600 text-xs text-center mb-3">Heracles © 2026</p>
+              <p className="text-zinc-600 text-xs text-center mb-3">Treinex © 2026</p>
               <button
                 onClick={onLogout}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-red-400 hover:bg-red-400/10 transition w-full"

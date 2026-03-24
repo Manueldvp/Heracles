@@ -282,7 +282,7 @@ function LoginForm() {
             </div>
 
             <p className="text-zinc-800 text-xs text-center mt-12">
-              © 2026 Heracles · Todos los derechos reservados
+              © 2026 Treinex · Todos los derechos reservados
             </p>
           </div>
         </div>

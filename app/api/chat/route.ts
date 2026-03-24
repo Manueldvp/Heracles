@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
   const context = `
 Eres el asistente personal de ${client.full_name}, creado por su entrenador ${profile?.full_name || 'su entrenador'}.
-Tu nombre es ${profile?.ai_trainer_name || 'Heracles'}.
+Tu nombre es ${profile?.ai_trainer_name || 'Treinex'}.
 
 ${profile?.ai_system_prompt || ''}
 

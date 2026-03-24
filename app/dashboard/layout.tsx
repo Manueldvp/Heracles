@@ -31,7 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center group-hover:bg-orange-600 transition">
             <Zap size={14} className="text-white" fill="white" />
           </div>
-          <span className="font-display text-xl text-white tracking-widest">HERACLES</span>
+          <span className="font-display text-xl text-white tracking-widest">TREINEX</span>
         </Link>
 
         <TrainerDrawerWrapper

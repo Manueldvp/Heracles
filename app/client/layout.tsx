@@ -25,7 +25,7 @@ export default async function ClientLayout({ children }: { children: React.React
     .eq('id', clientData.trainer_id)
     .single()
 
-  const appName = trainerProfile?.ai_trainer_name || 'Heracles'
+  const appName = trainerProfile?.ai_trainer_name || 'Treinex'
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
