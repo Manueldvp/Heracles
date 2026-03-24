@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { APP_NAME, APP_TAGLINE } from '@/lib/branding'
+import { getTranslation } from '@/lib/i18n'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: APP_NAME,
-  description: APP_TAGLINE,
+  title: getTranslation('metadata.title'),
+  description: getTranslation('metadata.description'),
 };
 
 export default function RootLayout({

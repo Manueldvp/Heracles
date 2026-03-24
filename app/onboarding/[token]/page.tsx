@@ -257,7 +257,7 @@ export default function OnboardingPage() {
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-8">
           <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '0.1em' }}
-            className="text-white text-3xl font-bold mb-1">HERACLES</h1>
+            className="text-white text-3xl font-bold mb-1">TREINEX</h1>
           <p className="text-zinc-500 text-xs uppercase tracking-widest mb-4">Cuestionario inicial</p>
           <h2 className="text-white font-bold text-xl">{formDef.title}</h2>
           {formDef.description && <p className="text-zinc-400 text-sm mt-1.5">{formDef.description}</p>}

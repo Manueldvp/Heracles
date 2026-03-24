@@ -1,0 +1,16 @@
+{
+  "metadata": {
+    "title": "Treinex",
+    "description": "Client management, progress tracking and automation for coaches."
+  },
+  "common": {
+    "app_name": "Treinex",
+    "tagline": "Train with structure. Scale with clarity.",
+    "loading": "Loading...",
+    "login": "Login",
+    "register": "Create account",
+    "start_free": "Start free",
+    "back_to_login": "Back to login",
+    "copyright": "© 2026 Treinex · All rights reserved"
+  }
+}

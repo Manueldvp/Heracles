@@ -55,7 +55,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
         <div className="text-center">
           <h1 style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: '0.1em' }}
             className="text-white text-4xl font-bold">
-            HERACLES
+            TREINEX
           </h1>
           <p className="text-zinc-500 text-sm mt-1">Plataforma de entrenamiento personalizado</p>
         </div>

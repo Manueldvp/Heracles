@@ -1,0 +1,226 @@
+{
+  "metadata": {
+    "title": "Treinex",
+    "description": "Gestiona clientes, seguimiento y automatización desde una plataforma pensada para entrenadores."
+  },
+  "common": {
+    "app_name": "Treinex",
+    "tagline": "Entrena con estructura. Escala con claridad.",
+    "loading": "Cargando...",
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "start_free": "Comenzar gratis",
+    "back_to_login": "Volver al inicio de sesión",
+    "copyright": "© 2026 Treinex · Todos los derechos reservados"
+  },
+  "landing": {
+    "nav": {
+      "platform": "Plataforma",
+      "coaching": "Coaching",
+      "pricing": "Precios",
+      "about": "Nosotros"
+    },
+    "hero": {
+      "badge": "La plataforma profesional para entrenadores",
+      "title": "Escala tu servicio de entrenamiento.",
+      "title_emphasis": "Mejora resultados con una operación más clara.",
+      "description": "Treinex centraliza gestión de clientes, seguimiento y automatización para que puedas trabajar con más orden, más profesionalismo y mejor experiencia para cada cliente.",
+      "proof_points": [
+        "Invita clientes y ordénalos desde un solo lugar.",
+        "Entrega rutinas, nutrición y check-ins con una experiencia clara.",
+        "Haz seguimiento del progreso sin depender de mensajes dispersos."
+      ]
+    },
+    "snapshot": {
+      "eyebrow": "Vista de producto",
+      "title": "Control operativo para entrenadores",
+      "status": "Activo",
+      "primary_title": "Onboarding, seguimiento y planificación conectados",
+      "primary_copy": "Asigna formularios, estructura programas y mantén la información crítica del cliente accesible desde el primer día.",
+      "secondary": [
+        {
+          "title": "Notificaciones",
+          "value": "Sin desajustes",
+          "copy": "Lectura y badge sincronizados."
+        },
+        {
+          "title": "Entrenamiento",
+          "value": "Más claro",
+          "copy": "Series, descansos y registro bien guiados."
+        }
+      ]
+    },
+    "value": {
+      "eyebrow": "Propuesta de valor",
+      "title": "Gestiona clientes, seguimiento y automatización en un mismo sistema.",
+      "items": [
+        {
+          "title": "Gestión de clientes",
+          "copy": "Invitaciones, perfiles, historial y estado de cada cliente organizados en un flujo coherente."
+        },
+        {
+          "title": "Seguimiento de progreso",
+          "copy": "Rutinas, nutrición, check-ins y avances de fuerza reunidos para tomar mejores decisiones."
+        },
+        {
+          "title": "Automatización útil",
+          "copy": "Reduce tareas repetitivas y sostén una experiencia más profesional a medida que creces."
+        }
+      ]
+    },
+    "features": {
+      "eyebrow": "Capacidades",
+      "title": "Funciones pensadas para un servicio de entrenamiento más sólido.",
+      "items": [
+        {
+          "title": "Gestión de clientes",
+          "copy": "Invitación, onboarding, contexto del cliente y seguimiento reunidos en una sola vista."
+        },
+        {
+          "title": "Ejecución de entrenamientos",
+          "copy": "Temporizadores, series, descansos y registro de cargas con una experiencia más clara para el cliente."
+        },
+        {
+          "title": "Planificación nutricional",
+          "copy": "Comidas, macros y adherencia organizadas para que el plan se entienda y se cumpla mejor."
+        },
+        {
+          "title": "Check-ins y progreso",
+          "copy": "Datos semanales y visuales que ayudan a detectar avances, fricciones y oportunidades de ajuste."
+        }
+      ]
+    },
+    "carousel": {
+      "eyebrow": "Resultados y confianza",
+      "title": "Entrenadores que comunican mejor su servicio.",
+      "description": "Una experiencia digital más clara transmite más valor, mejora la adherencia y hace más fácil crecer sin perder calidad.",
+      "previous": "Anterior",
+      "next": "Siguiente",
+      "items": [
+        {
+          "name": "Camila Rojas",
+          "role": "Entrenadora online",
+          "description": "Centralizó seguimiento, rutina y nutrición para acompañar a más clientes sin perder contexto.",
+          "image": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1200&q=80"
+        },
+        {
+          "name": "Diego Morales",
+          "role": "Preparador físico",
+          "description": "Mejoró la claridad del seguimiento semanal y redujo fricción en la entrega del plan de trabajo.",
+          "image": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80"
+        },
+        {
+          "name": "Valentina Pérez",
+          "role": "Coach de recomposición corporal",
+          "description": "Usa una experiencia más profesional para reforzar confianza, adherencia y retención de sus clientes.",
+          "image": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=1200&q=80"
+        }
+      ]
+    },
+    "cta": {
+      "eyebrow": "Siguiente paso",
+      "title": "Empieza a gestionar tus clientes de forma profesional.",
+      "description": "Treinex te ayuda a ordenar tu operación, mejorar la experiencia del cliente y preparar tu servicio para escalar.",
+      "primary": "Comenzar gratis",
+      "secondary": "Iniciar sesión"
+    },
+    "footer": {
+      "product": "Producto",
+      "company": "Empresa",
+      "access": "Acceso",
+      "links": {
+        "features": "Funciones",
+        "security": "Seguridad",
+        "pricing": "Precios",
+        "about": "Nosotros",
+        "legal": "Legal",
+        "privacy": "Privacidad"
+      }
+    }
+  },
+  "auth": {
+    "shared": {
+      "email": "Email",
+      "password": "Contraseña",
+      "full_name": "Nombre completo",
+      "show": "Mostrar",
+      "hide": "Ocultar"
+    },
+    "login": {
+      "title": "Bienvenido",
+      "subtitle": "Accede a tu cuenta para gestionar clientes, seguimiento y planificación.",
+      "headline": "Todo tu servicio en una operación más clara.",
+      "description": "Treinex te da una estructura más profesional para trabajar con tus clientes sin perder velocidad ni contexto.",
+      "benefits": [
+        "Gestiona clientes e invitaciones desde un solo lugar.",
+        "Entrega rutinas y nutrición con una experiencia más ordenada.",
+        "Haz seguimiento de progreso y check-ins sin fricción."
+      ],
+      "metrics": [
+        { "label": "Clientes organizados", "value": "CRM fitness" },
+        { "label": "Seguimiento", "value": "En tiempo real" }
+      ],
+      "email_placeholder": "tu@email.com",
+      "password_placeholder": "••••••••",
+      "submit": "Ingresar",
+      "submitting": "Ingresando...",
+      "forgot_password": "¿Olvidaste tu contraseña?",
+      "create_account": "Crear cuenta",
+      "errors": {
+        "required": "Completa todos los campos.",
+        "invalid_credentials": "Email o contraseña incorrectos.",
+        "session": "No se pudo obtener la sesión.",
+        "enter_email_first": "Ingresa tu email primero."
+      },
+      "reset_sent": "Revisa tu email para restablecer tu contraseña."
+    },
+    "register": {
+      "title_trainer": "Crea tu cuenta",
+      "title_client": "Activa tu cuenta",
+      "subtitle_trainer": "Empieza a gestionar tu operación como entrenador desde una experiencia más profesional.",
+      "subtitle_client": "Regístrate para acceder a tu programa y completar tu proceso inicial.",
+      "headline": "Una plataforma pensada para entrenadores que quieren escalar con orden.",
+      "description": "Treinex combina gestión de clientes, seguimiento y automatización en un sistema preparado para crecer contigo.",
+      "benefits": [
+        {
+          "title": "Gestión centralizada",
+          "desc": "Clientes, rutinas, nutrición y seguimiento desde un solo lugar."
+        },
+        {
+          "title": "Seguimiento profesional",
+          "desc": "Check-ins, progreso y contexto del cliente mejor estructurados."
+        },
+        {
+          "title": "Operación escalable",
+          "desc": "Menos trabajo manual y una experiencia más consistente para cada cliente."
+        }
+      ],
+      "name_placeholder": "Tu nombre completo",
+      "email_placeholder": "tu@email.com",
+      "password_placeholder": "Mínimo 6 caracteres",
+      "submit_trainer": "Crear cuenta gratis",
+      "submit_client": "Crear cuenta",
+      "submitting": "Creando cuenta...",
+      "already_have_account": "¿Ya tienes cuenta?",
+      "login_link": "Inicia sesión",
+      "strength": {
+        "weak": "Débil",
+        "medium": "Regular",
+        "strong": "Fuerte"
+      },
+      "errors": {
+        "required": "Completa todos los campos.",
+        "password_length": "La contraseña debe tener al menos 6 caracteres.",
+        "generic": "No se pudo crear la cuenta."
+      },
+      "confirmation": {
+        "title": "Revisa tu email",
+        "description_client": "Te enviamos un enlace de confirmación a {email}. Al confirmar podrás completar tu proceso inicial.",
+        "description_trainer": "Te enviamos un enlace de confirmación a {email}. Al confirmar podrás acceder a tu panel.",
+        "resend_prefix": "¿No llegó el email? Revisa tu carpeta de spam o",
+        "retry": "intenta de nuevo"
+      },
+      "social_proof": "+2.400 entrenadores ya trabajan con Treinex"
+    }
+  }
+}
