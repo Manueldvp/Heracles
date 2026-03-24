@@ -1,5 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+type ExerciseApiItem = {
+  exerciseId?: string
+  id?: string
+  name?: string
+  imageUrl?: string
+  gifUrl?: string
+  image_url?: string
+  videoUrl?: string
+  video_url?: string
+  video?: string
+  source?: string
+}
+
+function mapExercise(item: ExerciseApiItem) {
+  return {
+    exerciseId: item.exerciseId ?? item.id ?? item.name,
+    name: item.name ?? 'Exercise',
+    imageUrl: item.imageUrl ?? item.gifUrl ?? item.image_url ?? '',
+    videoUrl: item.videoUrl ?? item.video_url ?? item.video ?? '',
+    mediaType: item.videoUrl || item.video_url || item.video ? 'video' : 'image',
+    source: item.source ?? 'rapidapi',
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const query = searchParams.get('q')
@@ -22,6 +46,6 @@ export async function GET(req: NextRequest) {
   }
 
   const data = await res.json()
-  console.log('ExerciseDB response:', JSON.stringify(data).substring(0, 200))
-  return NextResponse.json(data)
+  const items = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
+  return NextResponse.json({ data: items.map(mapExercise) })
 }

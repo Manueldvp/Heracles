@@ -7,11 +7,11 @@ import TrainerDrawer from './TrainerDrawer'
 interface Props {
   email: string
   trainerName: string
-  unreadCount?: number
+  trainerId: string
   avatarUrl?: string
 }
 
-export default function TrainerDrawerWrapper({ email, trainerName, unreadCount = 0, avatarUrl = '' }: Props) {
+export default function TrainerDrawerWrapper({ email, trainerName, trainerId, avatarUrl = '' }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -24,8 +24,8 @@ export default function TrainerDrawerWrapper({ email, trainerName, unreadCount =
     <TrainerDrawer
       email={email}
       trainerName={trainerName}
+      trainerId={trainerId}
       onLogout={handleLogout}
-      unreadCount={unreadCount}
       avatarUrl={avatarUrl}
     />
   )

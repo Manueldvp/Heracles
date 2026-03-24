@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
+import { APP_URL, EMAIL_FROM } from '@/lib/branding'
+import { buildCheckinEmail } from '@/lib/email/templates'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -52,27 +54,19 @@ export async function POST(req: NextRequest) {
     const trainerEmail = authUser?.user?.email
 
     if (trainerEmail) {
+      const trainerName = trainer?.full_name?.split(' ')[0] ?? 'Entrenador'
+      const checkinLabel = checkinType === 'daily' ? 'check-in diario' : 'check-in semanal'
+
       await resend.emails.send({
-        from: 'Heracles <onboarding@resend.dev>',
+        from: EMAIL_FROM,
         to: trainerEmail,
-        subject: `?? ${clientName} completó su check-in`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; background: #09090b; color: #fff; padding: 32px; border-radius: 16px;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
-              <div style="width: 40px; height: 40px; background: #f97316; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">?</div>
-              <span style="font-size: 24px; font-weight: bold; letter-spacing: 2px;">HERACLES</span>
-            </div>
-            <h2 style="color: #f97316; margin: 0 0 8px;">Nuevo check-in recibido</h2>
-            <p style="color: #a1a1aa; margin: 0 0 24px;">
-              Hola ${trainer?.full_name?.split(' ')[0] ?? 'Entrenador'}, tu cliente <strong style="color: #fff">${clientName}</strong> acaba de completar su check-in ${checkinType === 'daily' ? 'diario' : 'semanal'}.
-            </p>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'}/dashboard"
-              style="display: inline-block; background: #f97316; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-              Ver check-in ?
-            </a>
-            <p style="color: #3f3f46; font-size: 12px; margin-top: 32px;">© 2026 Heracles</p>
-          </div>
-        `
+        subject: `${clientName} completó su ${checkinLabel}`,
+        html: buildCheckinEmail({
+          clientName,
+          trainerName,
+          checkinLabel,
+          href: `${APP_URL}/dashboard`,
+        })
       })
     }
 

@@ -11,7 +11,7 @@ export default async function ClientLayout({ children }: { children: React.React
 
   const [{ data: profile }, { data: clientData }] = await Promise.all([
     supabase.from('profiles').select('role').eq('id', user.id).maybeSingle(),
-    supabase.from('clients').select('full_name, trainer_id, avatar_url').eq('user_id', user.id).maybeSingle(),
+    supabase.from('clients').select('id, full_name, trainer_id, avatar_url').eq('user_id', user.id).maybeSingle(),
   ])
 
   if (profile?.role === 'trainer') redirect('/dashboard')
@@ -45,6 +45,7 @@ export default async function ClientLayout({ children }: { children: React.React
         <ClientDrawerWrapper
           email={user.email ?? ''}
           clientName={clientData.full_name ?? ''}
+          clientId={clientData.id}
           avatarUrl={clientData.avatar_url ?? ''}
           appName={appName}
         />

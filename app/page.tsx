@@ -1,12 +1,14 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import LandingPage from '@/components/landing-page'
 
 export default function HomePage() {
   const router = useRouter()
   const supabase = createClient()
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const resolveRoleRedirect = async (userId: string) => {
@@ -58,16 +60,20 @@ export default function HomePage() {
         const target = await resolveRoleRedirect(user.id)
         router.push(target)
       } else {
-        router.push('/login')
+        setReady(true)
       }
     }
 
     handleRedirect()
   }, [router, supabase])
 
-  return (
-    <div className="min-h-screen bg-black flex items-center justify-center">
-      <p className="text-zinc-500">Cargando...</p>
-    </div>
-  )
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <p className="text-zinc-500">Cargando...</p>
+      </div>
+    )
+  }
+
+  return <LandingPage />
 }

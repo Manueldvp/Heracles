@@ -6,10 +6,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Dumbbell, ChevronRight, Play, Check, Timer,
-  RotateCcw, Zap, Hash, Clock, TimerReset, Trophy, Flame, Star, Plus, Minus, AlertCircle
+  RotateCcw, Zap, Hash, Clock, TimerReset, Trophy, Flame, Star, Plus, Minus, AlertCircle, Sparkles
 } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import ExerciseMedia from '@/components/exercise-media'
 
 interface Exercise {
   name: string
@@ -18,6 +19,9 @@ interface Exercise {
   rest: string
   notes?: string
   image_url?: string
+  video_url?: string
+  media_url?: string
+  media_type?: string
 }
 
 interface WorkoutDay {
@@ -33,7 +37,11 @@ interface SetLog {
 }
 
 interface Props {
-  routine: any
+  routine: {
+    content?: {
+      days?: WorkoutDay[]
+    }
+  } | null
   routineId: string
   clientId: string
 }
@@ -267,14 +275,13 @@ function RestScreen({ nextExercise, timeLeft, total, onSkip }: {
 }
 
 // ─── Exercise Card ─────────────────────────────────────────────────────────────
-function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogComplete, phase, timeLeft, totalTime, loggedSets }: {
+function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogComplete, phase, timeLeft, totalTime, loggedSets, autoOpenLogger }: {
   exercise: Exercise; index: number; isActive: boolean; isCompleted: boolean
   onStart: () => void; onLogComplete: (sets: SetLog[]) => void
-  phase: Phase; timeLeft: number; totalTime: number; loggedSets?: SetLog[]
+  phase: Phase; timeLeft: number; totalTime: number; loggedSets?: SetLog[]; autoOpenLogger?: boolean
 }) {
   const [showLogger, setShowLogger] = useState(false)
-
-  useEffect(() => { if (!isActive) setShowLogger(false) }, [isActive])
+  const loggerOpen = isActive && (showLogger || !!autoOpenLogger)
 
   return (
     <div className={`rounded-xl border transition-all duration-300 overflow-hidden ${
@@ -282,71 +289,71 @@ function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogCo
       : isActive ? 'bg-zinc-800 border-blue-500/40 shadow-lg shadow-blue-500/5'
       : 'bg-zinc-800/60 border-zinc-700/50'
     }`}>
-      <div className="flex items-center gap-3 px-4 py-3">
-        {exercise.image_url ? (
-          <img src={exercise.image_url} alt={exercise.name}
-            className={`w-12 h-12 rounded-xl object-cover shrink-0 ${isCompleted ? 'grayscale' : ''}`} />
-        ) : (
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-            isCompleted ? 'bg-green-500/10' : isActive ? 'bg-blue-500/10' : 'bg-zinc-700'
-          }`}>
-            {isCompleted
-              ? <Check size={18} className="text-green-400" />
-              : <Dumbbell size={16} className={isActive ? 'text-blue-400' : 'text-zinc-500'} />
-            }
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <p className={`font-semibold text-sm capitalize truncate ${isCompleted ? 'text-zinc-500 line-through' : 'text-white'}`}>
-            {exercise.name}
-          </p>
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-            <div className="flex items-center gap-1 bg-zinc-700/60 rounded-lg px-2 py-0.5">
-              <Hash size={9} className="text-orange-400" />
-              <span className="text-zinc-300 text-xs">{exercise.sets} series</span>
-            </div>
-            <div className="flex items-center gap-1 bg-zinc-700/60 rounded-lg px-2 py-0.5">
-              <Zap size={9} className="text-blue-400" />
-              <span className="text-zinc-300 text-xs">{exercise.reps} reps</span>
-            </div>
-            <div className="flex items-center gap-1 bg-zinc-700/60 rounded-lg px-2 py-0.5">
-              <TimerReset size={9} className="text-purple-400" />
-              <span className="text-zinc-300 text-xs">{exercise.rest}</span>
-            </div>
-          </div>
-          {isCompleted && loggedSets && loggedSets.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              {loggedSets.map((s, i) => (
-                <span key={i} className="text-xs text-zinc-500 bg-zinc-800/80 rounded-md px-1.5 py-0.5">
-                  {s.weight > 0 ? `${s.weight}kg×${s.reps}` : `×${s.reps}`}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="grid gap-0 border-b border-zinc-700/40 md:grid-cols-[180px_1fr]">
+        <ExerciseMedia exercise={exercise} compact className="rounded-none border-0 bg-transparent" />
 
-        {isActive && phase === 'working' ? (
-          <CircularTimer seconds={timeLeft} total={totalTime} color="#3b82f6" />
-        ) : isActive && phase === 'idle' && !showLogger ? (
-          <div className="flex flex-col gap-1.5 shrink-0">
-            <Button size="sm" onClick={onStart}
-              className="bg-blue-500 hover:bg-blue-600 text-white text-xs h-7 gap-1 px-2.5 active:scale-95">
-              <Play size={11} /> Iniciar
-            </Button>
-            <button onClick={() => setShowLogger(true)}
-              className="text-zinc-500 hover:text-green-400 transition text-xs flex items-center justify-center gap-1 h-7 px-2 rounded-lg hover:bg-green-500/10 border border-zinc-700 hover:border-green-500/30">
-              <Check size={11} /> Registrar
-            </button>
+        <div className="flex items-start gap-3 px-4 py-4">
+          <div className="flex-1 min-w-0">
+            <div className="mb-2 flex items-start justify-between gap-3">
+              <div>
+                <p className={`font-semibold text-base capitalize ${isCompleted ? 'text-zinc-500 line-through' : 'text-white'}`}>
+                  {exercise.name}
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">Ejercicio {index + 1}</p>
+              </div>
+
+              {isActive && phase === 'working' ? (
+                <CircularTimer seconds={timeLeft} total={totalTime} color="#3b82f6" />
+              ) : isCompleted ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/20 shrink-0">
+                  <Check size={16} className="text-green-400" />
+                </div>
+              ) : !isActive ? (
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-700/50 shrink-0">
+                  <span className="text-zinc-500 text-xs font-bold">{index + 1}</span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="flex items-center gap-1 bg-zinc-700/60 rounded-lg px-2 py-0.5">
+                <Hash size={9} className="text-orange-400" />
+                <span className="text-zinc-300 text-xs">{exercise.sets} series</span>
+              </div>
+              <div className="flex items-center gap-1 bg-zinc-700/60 rounded-lg px-2 py-0.5">
+                <Zap size={9} className="text-blue-400" />
+                <span className="text-zinc-300 text-xs">{exercise.reps} reps</span>
+              </div>
+              <div className="flex items-center gap-1 bg-zinc-700/60 rounded-lg px-2 py-0.5">
+                <TimerReset size={9} className="text-purple-400" />
+                <span className="text-zinc-300 text-xs">{exercise.rest}</span>
+              </div>
+            </div>
+
+            {isCompleted && loggedSets && loggedSets.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                {loggedSets.map((s, i) => (
+                  <span key={i} className="text-xs text-zinc-500 bg-zinc-800/80 rounded-md px-1.5 py-0.5">
+                    {s.weight > 0 ? `${s.weight}kg×${s.reps}` : `×${s.reps}`}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {isActive && phase === 'idle' && !loggerOpen && (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <Button size="sm" onClick={onStart}
+                  className="bg-blue-500 hover:bg-blue-600 text-white text-xs h-9 gap-1 px-3 active:scale-95">
+                  <Play size={12} /> Iniciar ejercicio
+                </Button>
+                <button onClick={() => setShowLogger(true)}
+                  className="text-zinc-300 hover:text-white transition text-xs flex items-center justify-center gap-1 h-9 px-3 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-green-500/30 hover:bg-green-500/10">
+                  <Check size={12} /> Registrar series
+                </button>
+              </div>
+            )}
           </div>
-        ) : isCompleted ? (
-          <div className="w-8 h-8 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
-            <Check size={14} className="text-green-400" />
-          </div>
-        ) : !isActive ? (
-          <div className="w-8 h-8 rounded-xl bg-zinc-700/50 flex items-center justify-center shrink-0">
-            <span className="text-zinc-600 text-xs font-bold">{index + 1}</span>
-          </div>
-        ) : null}
+        </div>
       </div>
 
       {isActive && phase === 'working' && (
@@ -357,13 +364,23 @@ function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogCo
         </div>
       )}
 
-      {isActive && showLogger && phase === 'idle' && (
+      {isActive && phase === 'idle' && autoOpenLogger && !loggerOpen && (
+        <div className="px-4 py-3 border-t border-emerald-500/20 bg-emerald-500/5 flex items-start gap-2">
+          <Sparkles size={14} className="text-emerald-400 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-emerald-300 text-sm font-medium">Tiempo completado</p>
+            <p className="text-zinc-400 text-xs mt-1">Registra las series para pasar al siguiente paso del entrenamiento.</p>
+          </div>
+        </div>
+      )}
+
+      {isActive && loggerOpen && phase === 'idle' && (
         <div className="px-4 pb-4 pt-3 border-t border-zinc-700/50">
           <SetLogger exercise={exercise} onComplete={(sets) => { setShowLogger(false); onLogComplete(sets) }} />
         </div>
       )}
 
-      {isActive && phase === 'idle' && !showLogger && exercise.notes && (
+      {isActive && phase === 'idle' && !loggerOpen && exercise.notes && (
         <div className="px-4 py-2 border-t border-zinc-700/50 flex items-center gap-1.5">
           <span className="text-zinc-600 text-xs">💡</span>
           <p className="text-zinc-500 text-xs">{exercise.notes}</p>
@@ -379,7 +396,7 @@ function CompletionScreen({ exercises, allLogs, onReset, isToday, completedAt }:
   onReset: () => void; isToday: boolean; completedAt: string | null
 }) {
   const [showConfetti, setShowConfetti] = useState(true)
-  const motivation = useRef(MOTIVATIONAL[Math.floor(Math.random() * MOTIVATIONAL.length)])
+  const motivation = MOTIVATIONAL[exercises.length % MOTIVATIONAL.length]
 
   useEffect(() => { const t = setTimeout(() => setShowConfetti(false), 2200); return () => clearTimeout(t) }, [])
 
@@ -399,7 +416,7 @@ function CompletionScreen({ exercises, allLogs, onReset, isToday, completedAt }:
             <Check size={13} className="text-white" />
           </div>
         </div>
-        <h3 className="text-white font-bold text-xl mt-2">{motivation.current}</h3>
+        <h3 className="text-white font-bold text-xl mt-2">{motivation}</h3>
         <p className="text-zinc-500 text-sm">Entrenamiento completado</p>
       </div>
 
@@ -460,16 +477,16 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const supabase = createClient()
   const dayNames = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
   const todayName = dayNames[new Date().getDay()]
-  const days = routine ? ((routine.content as any).days ?? []) : []
+  const days: WorkoutDay[] = routine?.content?.days ?? []
 
-  const todayDay: WorkoutDay | undefined = days.find((d: any) =>
+  const todayDay: WorkoutDay | undefined = days.find((d) =>
     d.day?.toLowerCase().includes(todayName.toLowerCase())
   )
   const nextDayInfo = !todayDay && days.length > 0 ? (() => {
     const todayIdx = new Date().getDay()
     for (let i = 1; i <= 7; i++) {
       const nextName = dayNames[(todayIdx + i) % 7]
-      const found = days.find((d: any) => d.day?.toLowerCase().includes(nextName.toLowerCase()))
+      const found = days.find((d) => d.day?.toLowerCase().includes(nextName.toLowerCase()))
       if (found) return { day: found as WorkoutDay, daysUntil: i }
     }
     return null
@@ -492,13 +509,14 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const [workoutStarted, setWorkoutStarted] = useState(false)
   const [allDone, setAllDone] = useState(false)
   const [completedAt, setCompletedAt] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => Boolean(clientId && routineId && isToday))
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [autoOpenLoggerIndex, setAutoOpenLoggerIndex] = useState<number | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
   // ── Load today's session on mount ──────────────────────────────────────────
   useEffect(() => {
-    if (!clientId || !routineId || !isToday) { setLoading(false); return }
+    if (!clientId || !routineId || !isToday) return
     const today = new Date().toISOString().split('T')[0]
     const exCount = exercises.length
 
@@ -526,7 +544,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
         }
         setLoading(false)
       })
-  }, [clientId, routineId, isToday, exercises.length])
+  }, [clientId, exercises.length, isToday, routineId, supabase])
 
   const clearTimer = () => { if (timerRef.current) clearInterval(timerRef.current) }
 
@@ -534,12 +552,18 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     const workSecs = estimateWorkSeconds(exercises[index])
     setWorkoutStarted(true)
     setPhase('working')
+    setAutoOpenLoggerIndex(null)
     setWorkTimeLeft(workSecs)
     setWorkTotal(workSecs)
     clearTimer()
     timerRef.current = setInterval(() => {
       setWorkTimeLeft(prev => {
-        if (prev <= 1) { clearInterval(timerRef.current!); setPhase('idle'); return 0 }
+        if (prev <= 1) {
+          clearInterval(timerRef.current!)
+          setPhase('idle')
+          setAutoOpenLoggerIndex(index)
+          return 0
+        }
         return prev - 1
       })
     }, 1000)
@@ -570,6 +594,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     clearTimer()
     setPhase('idle')
     setWorkoutStarted(true)
+    setAutoOpenLoggerIndex(null)
 
     const newCompleted = [...completed]
     newCompleted[index] = true
@@ -604,14 +629,14 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
 
     const isLast = index + 1 >= exercises.length
     if (isLast) {
-      await saveSession(newLogs)
+      await saveSession()
     } else {
       startRestAfter(index)
     }
   }
 
   // ── Save session — upsert by date to prevent duplicates ────────────────────
-  const saveSession = async (_logs: Record<number, SetLog[]>) => {
+  const saveSession = async () => {
     const now = new Date()
     const today = now.toISOString().split('T')[0]
     const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
@@ -665,6 +690,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     setCompleted(exercises.map(() => false))
     setAllLogs({})
     setPhase('idle')
+    setAutoOpenLoggerIndex(null)
     setResting(false)
     setWorkTimeLeft(0)
     setRestTimeLeft(0)
@@ -795,6 +821,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
                     phase={i === activeIndex ? phase : 'idle'}
                     timeLeft={workTimeLeft}
                     totalTime={workTotal}
+                    autoOpenLogger={i === autoOpenLoggerIndex}
                     loggedSets={allLogs[i]}
                     onStart={() => startExercise(i)}
                     onLogComplete={(sets) => completeExercise(i, sets)}

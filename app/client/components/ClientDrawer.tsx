@@ -1,27 +1,21 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet'
 import { Home, Dumbbell, Salad, ClipboardList, LogOut, Camera, User, Bell, CheckCheck, X, BarChart2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/badge'
+import { useRealtimeNotifications } from '@/lib/notifications/useRealtimeNotifications'
 
 interface Props {
   email: string
   clientName: string
+  clientId: string
   avatarUrl?: string
   appName: string
   onLogout: () => void
-}
-
-interface Notification {
-  id: string
-  message: string
-  read: boolean
-  created_at: string
-  type: string
 }
 
 const navItems = [
@@ -40,72 +34,25 @@ const typeIcon: Record<string, string> = {
   checkin: '✅',
 }
 
-export default function ClientDrawer({ email, clientName, avatarUrl: initialAvatar = '', appName, onLogout }: Props) {
+export default function ClientDrawer({ email, clientName, clientId, avatarUrl: initialAvatar = '', appName, onLogout }: Props) {
   const [open, setOpen] = useState(false)
   const [showNotifs, setShowNotifs] = useState(false)
   const [avatar, setAvatar] = useState(initialAvatar)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pathname = usePathname()
-  const router = useRouter()
   const supabase = createClient()
   const initial = clientName?.charAt(0).toUpperCase() ?? '?'
-  const unreadCount = notifications.filter(n => !n.read).length
-
-  useEffect(() => {
-    fetchNotifications()
-
-    const channel = supabase
-      .channel('client-notifications')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-      }, payload => {
-        const notif = payload.new as Notification & { target_role: string }
-        if (notif.target_role === 'client') {
-          setNotifications(prev => [notif, ...prev])
-        }
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [])
-
-  const fetchNotifications = async () => {
-    const { data: clientData } = await supabase
-      .from('clients')
-      .select('id')
-      .single()
-    if (!clientData) return
-
-    const { data } = await supabase
-      .from('notifications')
-      .select('*')
-      .eq('client_id', clientData.id)
-      .eq('target_role', 'client')
-      .order('created_at', { ascending: false })
-      .limit(20)
-    if (data) setNotifications(data)
-  }
-
-  const markAllRead = async () => {
-    const ids = notifications.filter(n => !n.read).map(n => n.id)
-    if (ids.length === 0) return
-    await supabase.from('notifications').update({ read: true }).in('id', ids)
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-  }
-
-  const markRead = async (id: string) => {
-    await supabase.from('notifications').update({ read: true }).eq('id', id)
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-  }
-
-  const deleteNotif = async (id: string) => {
-    await supabase.from('notifications').delete().eq('id', id)
-    setNotifications(prev => prev.filter(n => n.id !== id))
-  }
+  const {
+    notifications,
+    unreadCount,
+    markAllRead,
+    markRead,
+    removeNotification,
+  } = useRealtimeNotifications({
+    clientId,
+    targetRole: 'client',
+  })
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -136,15 +83,19 @@ export default function ClientDrawer({ email, clientName, avatarUrl: initialAvat
     setUploadingAvatar(false)
   }
 
-  const timeAgo = (date: string) => {
-    const diff = Date.now() - new Date(date).getTime()
-    const mins = Math.floor(diff / 60000)
-    const hours = Math.floor(diff / 3600000)
-    const days = Math.floor(diff / 86400000)
-    if (mins < 1) return 'Ahora'
-    if (mins < 60) return `Hace ${mins}m`
-    if (hours < 24) return `Hace ${hours}h`
-    return `Hace ${days}d`
+  const formatNotificationTime = (date: string) => {
+    return new Date(date).toLocaleString('es-CL', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
+  const openNotifications = async () => {
+    setOpen(true)
+    setShowNotifs(true)
+    await markAllRead()
   }
 
   const isActive = (href: string, exact: boolean) => {
@@ -157,7 +108,7 @@ export default function ClientDrawer({ email, clientName, avatarUrl: initialAvat
 
       {/* Bell */}
       <button
-        onClick={() => { setOpen(true); setShowNotifs(true) }}
+        onClick={() => void openNotifications()}
         className="relative w-10 h-10 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center hover:bg-zinc-800 transition"
       >
         <Bell size={16} className="text-zinc-400" />
@@ -168,7 +119,10 @@ export default function ClientDrawer({ email, clientName, avatarUrl: initialAvat
         )}
       </button>
 
-      <Sheet open={open} onOpenChange={v => { setOpen(v); if (!v) setShowNotifs(false) }}>
+      <Sheet open={open} onOpenChange={v => {
+        setOpen(v)
+        if (!v) setShowNotifs(false)
+      }}>
         <SheetTrigger asChild>
           <button className="w-10 h-10 rounded-full bg-orange-500/20 border border-orange-500/40 flex items-center justify-center hover:bg-orange-500/30 transition overflow-hidden">
             {avatar ? (
@@ -226,7 +180,7 @@ export default function ClientDrawer({ email, clientName, avatarUrl: initialAvat
                 Menú
               </button>
               <button
-                onClick={() => setShowNotifs(true)}
+                onClick={() => void openNotifications()}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition relative ${showNotifs ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
               >
                 Notificaciones
@@ -301,13 +255,13 @@ export default function ClientDrawer({ email, clientName, avatarUrl: initialAvat
                             <p className={`text-xs leading-relaxed ${!notif.read ? 'text-white' : 'text-zinc-400'}`}>
                               {notif.message}
                             </p>
-                            <p className="text-zinc-600 text-xs mt-1">{timeAgo(notif.created_at)}</p>
+                            <p className="text-zinc-600 text-xs mt-1">{formatNotificationTime(notif.created_at)}</p>
                           </div>
                         </button>
                         <div className="flex items-center gap-1 shrink-0 mt-1">
                           {!notif.read && <div className="w-2 h-2 rounded-full bg-orange-500" />}
                           <button
-                            onClick={() => deleteNotif(notif.id)}
+                            onClick={() => removeNotification(notif.id)}
                             className="text-zinc-700 hover:text-red-400 transition p-1"
                           >
                             <X size={13} />

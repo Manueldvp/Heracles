@@ -17,14 +17,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (profile?.role === 'client') redirect('/client')
 
-  const { data: unreadNotifs } = await supabase
-    .from('notifications')
-    .select('id')
-    .eq('trainer_id', user.id)
-    .eq('read', false)
-
-  const unreadCount = unreadNotifs?.length ?? 0
-
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
       <style>{`
@@ -45,8 +37,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <TrainerDrawerWrapper
           email={user.email ?? ''}
           trainerName={profile?.full_name ?? 'Entrenador'}
+          trainerId={user.id}
           avatarUrl={profile?.avatar_url ?? ''}
-          unreadCount={unreadCount}
         />
       </header>
 

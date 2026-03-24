@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -17,12 +16,10 @@ const benefits = [
 ]
 
 function RegisterForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
   const isClient = !!token
 
-  const supabase = createClient()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -37,24 +34,20 @@ function RegisterForm() {
     setLoading(true)
     setError('')
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://treinex.com'
-    const redirectTo = isClient
-      ? `${appUrl}/onboarding/${token}`
-      : `${appUrl}/dashboard`
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          full_name: name,
-          role: isClient ? 'client' : 'trainer',
-        },
-        emailRedirectTo: redirectTo,
-      },
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        role: isClient ? 'client' : 'trainer',
+        token,
+      }),
     })
 
-    if (signUpError) { setError(signUpError.message); setLoading(false); return }
+    const data = await res.json()
+    if (!res.ok) { setError(data.error ?? 'No se pudo crear la cuenta'); setLoading(false); return }
 
     // Mostrar pantalla de confirmación
     setRegistered(true)

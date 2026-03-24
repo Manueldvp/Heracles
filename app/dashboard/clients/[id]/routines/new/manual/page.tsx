@@ -13,12 +13,16 @@ interface Exercise {
   exerciseId: string
   name: string
   imageUrl: string
+  videoUrl?: string
+  mediaType?: string
 }
 
 interface RoutineExercise {
   exerciseId: string
   name: string
   imageUrl: string
+  videoUrl?: string
+  mediaType?: string
   sets: number
   reps: string
   rest: string
@@ -78,6 +82,8 @@ export default function ManualRoutinePage() {
       exerciseId: selectedExercise.exerciseId,
       name: selectedExercise.name,
       imageUrl: selectedExercise.imageUrl,
+      videoUrl: selectedExercise.videoUrl,
+      mediaType: selectedExercise.mediaType,
       ...exForm,
     }
     const updated = [...days]
@@ -111,6 +117,8 @@ export default function ManualRoutinePage() {
         exercises: d.exercises.map(e => ({
           name: e.name,
           image_url: e.imageUrl,
+          video_url: e.videoUrl,
+          media_type: e.mediaType,
           sets: e.sets,
           reps: e.reps,
           rest: e.rest,
@@ -261,7 +269,7 @@ export default function ManualRoutinePage() {
                 )}
 
                 {searchResults.length === 0 && search && !searching && (
-                  <p className="text-zinc-500 text-xs text-center">Sin resultados para "{search}"</p>
+                  <p className="text-zinc-500 text-xs text-center">Sin resultados para &quot;{search}&quot;</p>
                 )}
 
                 {/* Configurar ejercicio seleccionado */}

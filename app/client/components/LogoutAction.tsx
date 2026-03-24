@@ -7,11 +7,12 @@ import ClientDrawer from './ClientDrawer'
 interface Props {
   email: string
   clientName: string
+  clientId: string
   avatarUrl?: string
   appName: string
 }
 
-export default function ClientDrawerWrapper({ email, clientName, avatarUrl = '', appName }: Props) {
+export default function ClientDrawerWrapper({ email, clientName, clientId, avatarUrl = '', appName }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -24,6 +25,7 @@ export default function ClientDrawerWrapper({ email, clientName, avatarUrl = '',
     <ClientDrawer
       email={email}
       clientName={clientName}
+      clientId={clientId}
       avatarUrl={avatarUrl}
       appName={appName}
       onLogout={handleLogout}
