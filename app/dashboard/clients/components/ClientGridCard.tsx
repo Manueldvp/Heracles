@@ -14,9 +14,9 @@ type Props = {
 }
 
 const statusConfig = {
-  active: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
-  pending: 'border-orange-500/20 bg-orange-500/10 text-orange-200',
-  expired: 'border-rose-500/20 bg-rose-500/10 text-rose-200',
+  active: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  pending: 'border-orange-200 bg-orange-50 text-orange-700',
+  expired: 'border-rose-200 bg-rose-50 text-rose-700',
 } as const
 
 export default function ClientGridCard({
@@ -32,38 +32,38 @@ export default function ClientGridCard({
 
   return (
     <Link href={href}>
-      <Card className="h-full border-zinc-800 bg-[#151c31] transition hover:-translate-y-1 hover:border-zinc-700 hover:shadow-[0_24px_60px_rgba(0,0,0,0.24)]">
+      <Card className="h-full rounded-3xl border-stone-200 bg-white transition hover:-translate-y-1 hover:border-orange-200 hover:shadow-md">
         <CardContent className="p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-orange-500/15 bg-zinc-900">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-orange-100 bg-orange-50">
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-sm font-semibold text-orange-200">{name.charAt(0).toUpperCase()}</span>
+                  <span className="text-sm font-semibold text-orange-600">{name.charAt(0).toUpperCase()}</span>
                 )}
               </div>
-              <div>
-                <p className="text-lg font-semibold tracking-[-0.04em] text-white">{name}</p>
-                <p className="mt-1 text-sm text-zinc-400">{subtitle}</p>
+              <div className="min-w-0">
+                <p className="break-words text-lg font-semibold tracking-[-0.04em] text-stone-950">{name}</p>
+                <p className="mt-1 break-words text-sm text-stone-500">{subtitle}</p>
               </div>
             </div>
-            <Badge className={statusConfig[status]}>
+            <Badge className={`w-fit ${statusConfig[status]}`}>
               {status === 'active' ? 'Activo' : status === 'pending' ? 'Pendiente' : 'Expirado'}
             </Badge>
           </div>
 
-          <div className="mt-6 flex items-center gap-2 text-sm text-zinc-400">
-            <Icon className="h-4 w-4 text-zinc-500" />
+          <div className="mt-6 flex items-center gap-2 text-sm text-stone-500">
+            <Icon className="h-4 w-4 text-stone-400" />
             <span>{lastActivity}</span>
           </div>
 
           {note ? (
-            <p className="mt-3 text-sm text-zinc-500">{note}</p>
+            <p className="mt-3 text-sm text-stone-500">{note}</p>
           ) : null}
 
           <div className="mt-6 flex justify-end">
-            <ChevronRight className="h-4 w-4 text-zinc-600" />
+            <ChevronRight className="h-4 w-4 text-stone-400" />
           </div>
         </CardContent>
       </Card>

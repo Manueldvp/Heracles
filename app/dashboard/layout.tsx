@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import DashboardSidebar from './components/DashboardSidebar'
 import DashboardTopbar from './components/DashboardTopbar'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -17,16 +16,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (profile?.role === 'client') redirect('/client')
 
   return (
-    <div className="min-h-screen bg-[#0b1120] text-white">
-      <DashboardSidebar />
-      <div className="lg:pl-72">
+    <div className="min-h-screen overflow-x-hidden bg-stone-50 text-stone-950">
+      <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col">
         <DashboardTopbar
           email={user.email ?? ''}
           trainerName={profile?.full_name ?? 'Entrenador'}
           trainerId={user.id}
           avatarUrl={profile?.avatar_url ?? ''}
         />
-        <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>

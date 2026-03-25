@@ -6,14 +6,14 @@ import { CircleHelp, ClipboardList, Home, Settings, Users } from 'lucide-react'
 import InviteClientDialog from '@/app/dashboard/clients/components/InviteClientDialog'
 
 const navItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
-  { href: '/dashboard/clients', label: 'Clients', icon: Users },
-  { href: '/dashboard/forms', label: 'Check-ins', icon: ClipboardList },
+  { href: '/dashboard', label: 'Resumen', icon: Home },
+  { href: '/dashboard/clients', label: 'Clientes', icon: Users },
+  { href: '/dashboard/forms', label: 'Formularios', icon: ClipboardList },
 ]
 
 const secondaryItems = [
-  { href: '/dashboard/profile', label: 'Settings', icon: Settings },
-  { href: '/dashboard/profile', label: 'Support', icon: CircleHelp },
+  { href: '/dashboard/profile', label: 'Configuración', icon: Settings },
+  { href: '/dashboard/profile', label: 'Soporte', icon: CircleHelp },
 ]
 
 export default function DashboardSidebar() {
