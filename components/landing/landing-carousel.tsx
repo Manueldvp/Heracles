@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
 type CarouselItem = {
@@ -14,11 +13,9 @@ type CarouselItem = {
 
 type Props = {
   items: CarouselItem[]
-  previousLabel: string
-  nextLabel: string
 }
 
-export default function LandingCarousel({ items, previousLabel, nextLabel }: Props) {
+export default function LandingCarousel({ items }: Props) {
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {
@@ -76,22 +73,26 @@ export default function LandingCarousel({ items, previousLabel, nextLabel }: Pro
         </div>
       </div>
 
-      <div className="flex justify-end gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="border-zinc-800 bg-zinc-950 text-zinc-200 hover:bg-zinc-900"
-          onClick={() => setCurrent((value) => (value - 1 + items.length) % items.length)}
-        >
-          {previousLabel}
-        </Button>
-        <Button
-          type="button"
-          className="bg-orange-500 text-white hover:bg-orange-600"
-          onClick={() => setCurrent((value) => (value + 1) % items.length)}
-        >
-          {nextLabel}
-        </Button>
+      <div className="flex items-center justify-between gap-4">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-900">
+          <div
+            className="h-full rounded-full bg-orange-500 transition-all duration-500"
+            style={{ width: `${((current + 1) / items.length) * 100}%` }}
+          />
+        </div>
+        <div className="flex gap-2">
+          {items.map((item, index) => (
+            <button
+              key={`${item.name}-${index}`}
+              type="button"
+              aria-label={item.name}
+              onClick={() => setCurrent(index)}
+              className={`h-2 rounded-full transition-all ${
+                index === current ? 'w-8 bg-orange-500' : 'w-2 bg-zinc-700 hover:bg-zinc-500'
+              }`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )

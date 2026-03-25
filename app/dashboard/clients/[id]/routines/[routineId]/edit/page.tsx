@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import PageLoader from '@/components/ui/page-loader'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
 
 interface Exercise {
@@ -115,7 +116,7 @@ export default function EditRoutinePage() {
     router.push(`/dashboard/clients/${id}/routines/${routineId}`)
   }
 
-  if (loading) return <p className="text-zinc-400">Cargando...</p>
+  if (loading) return <PageLoader compact />
   if (!routine) return <p className="text-zinc-400">No se encontró la rutina.</p>
 
   return (
@@ -243,7 +244,7 @@ export default function EditRoutinePage() {
                         onClick={() => addExercise(dayIndex, search)}
                         className="text-left px-3 py-2 rounded text-orange-400 hover:bg-zinc-600 text-sm transition"
                       >
-                        + Agregar "{search}" como ejercicio nuevo
+                        + Agregar &quot;{search}&quot; como ejercicio nuevo
                       </button>
                     )}
                   </div>

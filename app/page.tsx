@@ -4,13 +4,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import LandingPage from '@/components/landing-page'
-import { createTranslator } from '@/lib/i18n'
+import PageLoader from '@/components/ui/page-loader'
 
 export default function HomePage() {
   const router = useRouter()
   const supabase = createClient()
   const [ready, setReady] = useState(false)
-  const t = createTranslator('es')
 
   useEffect(() => {
     const resolveRoleRedirect = async (userId: string) => {
@@ -70,11 +69,7 @@ export default function HomePage() {
   }, [router, supabase])
 
   if (!ready) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <p className="text-zinc-500">{t('common.loading')}</p>
-      </div>
-    )
+    return <PageLoader className="min-h-screen bg-black" compact />
   }
 
   return <LandingPage />

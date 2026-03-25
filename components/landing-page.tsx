@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import { ArrowRight, BarChart3, BellRing, LayoutDashboard, Sparkles, UsersRound } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import BrandLockup from '@/components/brand-lockup'
+import FeatureCard from '@/components/landing/feature-card'
 import LandingCarousel from '@/components/landing/landing-carousel'
 import { createTranslator, getTranslationValue } from '@/lib/i18n'
 
@@ -25,6 +27,7 @@ export default function LandingPage() {
   const featureItems = getTranslationValue<LandingItem[]>('landing.features.items', 'es')
   const carouselItems = getTranslationValue<CarouselItem[]>('landing.carousel.items', 'es')
   const snapshotSecondary = getTranslationValue<Array<{ title: string; value: string; copy: string }>>('landing.snapshot.secondary', 'es')
+  const featureIcons = [UsersRound, LayoutDashboard, Sparkles, BellRing]
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -64,7 +67,9 @@ export default function LandingPage() {
               <h1 className="max-w-5xl text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl xl:text-8xl">
                 {t('landing.hero.title')}
                 <br />
-                <span className="text-zinc-500">{t('landing.hero.title_emphasis')}</span>
+                <span className="bg-gradient-to-r from-orange-200 via-orange-400 to-orange-500 bg-clip-text text-transparent">
+                  {t('landing.hero.title_emphasis')}
+                </span>
               </h1>
               <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-400 sm:text-xl">
                 {t('landing.hero.description')}
@@ -72,8 +77,9 @@ export default function LandingPage() {
 
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                 <Link href="/register">
-                  <Button size="lg" className="w-full bg-orange-500 px-8 text-white hover:bg-orange-600 sm:w-auto">
+                  <Button size="lg" className="w-full gap-2 bg-orange-500 px-8 text-white hover:bg-orange-600 sm:w-auto">
                     {t('common.start_free')}
+                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/login">
@@ -81,6 +87,21 @@ export default function LandingPage() {
                     {t('common.login')}
                   </Button>
                 </Link>
+              </div>
+
+              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-3xl border border-zinc-900 bg-zinc-950/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Operación</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Más clara</p>
+                </div>
+                <div className="rounded-3xl border border-zinc-900 bg-zinc-950/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Seguimiento</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Más visible</p>
+                </div>
+                <div className="rounded-3xl border border-zinc-900 bg-zinc-950/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Escala</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Más control</p>
+                </div>
               </div>
             </div>
 
@@ -99,11 +120,30 @@ export default function LandingPage() {
 
                   <div className="mt-6 grid gap-4">
                     <div className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-5">
-                      <div className="h-1 w-14 rounded-full bg-orange-500" />
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="h-1 w-14 rounded-full bg-orange-500" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-orange-500/10">
+                          <LayoutDashboard className="h-5 w-5 text-orange-300" />
+                        </div>
+                      </div>
                       <p className="mt-5 text-base font-semibold text-white">{t('landing.snapshot.primary_title')}</p>
                       <p className="mt-2 text-sm leading-6 text-zinc-400">
                         {t('landing.snapshot.primary_copy')}
                       </p>
+                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Clientes</p>
+                          <p className="mt-2 text-lg font-semibold text-white">24 activos</p>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Check-ins</p>
+                          <p className="mt-2 text-lg font-semibold text-white">18 recibidos</p>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Adherencia</p>
+                          <p className="mt-2 text-lg font-semibold text-white">87%</p>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -112,6 +152,9 @@ export default function LandingPage() {
                           <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">{item.title}</p>
                           <p className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-white">{item.value}</p>
                           <p className="mt-2 text-sm text-zinc-500">{item.copy}</p>
+                          <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
+                            <div className={`h-full rounded-full ${item.title === 'Notificaciones' ? 'w-[82%] bg-orange-500' : 'w-[68%] bg-blue-400'}`} />
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -165,16 +208,13 @@ export default function LandingPage() {
 
           <div className="mt-12 grid gap-4 md:grid-cols-2">
             {featureItems.map((item, index) => (
-              <Card
+              <FeatureCard
                 key={item.title}
-                className={`border-zinc-800 ${index === 2 ? 'bg-orange-500 text-white' : 'bg-zinc-950/85'}`}
-              >
-                <CardContent className="p-8">
-                  <div className={`h-1 w-14 rounded-full ${index === 2 ? 'bg-white/90' : 'bg-orange-500'}`} />
-                  <h3 className="mt-6 text-2xl font-semibold tracking-[-0.04em]">{item.title}</h3>
-                  <p className={`mt-4 text-sm leading-7 ${index === 2 ? 'text-white/85' : 'text-zinc-400'}`}>{item.copy}</p>
-                </CardContent>
-              </Card>
+                title={item.title}
+                copy={item.copy}
+                icon={featureIcons[index] ?? BarChart3}
+                accent={index === 2 ? 'orange' : 'neutral'}
+              />
             ))}
           </div>
         </div>
@@ -193,11 +233,7 @@ export default function LandingPage() {
           </div>
 
           <div className="mt-12">
-            <LandingCarousel
-              items={carouselItems}
-              previousLabel={t('landing.carousel.previous')}
-              nextLabel={t('landing.carousel.next')}
-            />
+            <LandingCarousel items={carouselItems} />
           </div>
         </div>
       </section>

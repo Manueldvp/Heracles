@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import PageLoader from '@/components/ui/page-loader'
 
 const PAIN_ZONES = ['Cuello', 'Hombros', 'Espalda alta', 'Espalda baja', 'Cadera', 'Rodillas', 'Tobillos']
 const SCALE = [1, 2, 3, 4, 5]
@@ -518,7 +519,7 @@ function CheckinForm() {
 
 export default function ClientCheckinPage() {
   return (
-    <Suspense fallback={<div className="py-20 text-center text-zinc-500">Cargando check-in...</div>}>
+    <Suspense fallback={<PageLoader compact />}>
       <CheckinForm />
     </Suspense>
   )

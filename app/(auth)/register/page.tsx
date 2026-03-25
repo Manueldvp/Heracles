@@ -3,11 +3,13 @@
 import { Suspense, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react'
 import BrandLockup from '@/components/brand-lockup'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import PageLoader from '@/components/ui/page-loader'
 import { createTranslator, getTranslationValue } from '@/lib/i18n'
 
 type Benefit = {
@@ -114,10 +116,10 @@ function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.18),transparent_28%),linear-gradient(180deg,#0b0b0c_0%,#050505_100%)] text-white">
       <div className="mx-auto grid min-h-screen max-w-7xl gap-12 px-6 py-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-10">
         <section className="mx-auto w-full max-w-md lg:order-2">
-          <Card className="border-zinc-900 bg-zinc-950/90">
+          <Card className="border-zinc-900 bg-zinc-950/90 shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
             <CardContent className="p-8 sm:p-10">
               <BrandLockup subtitle={t('common.tagline')} compact className="mb-10 lg:hidden" />
 
@@ -133,45 +135,52 @@ function RegisterForm() {
               <div className="space-y-5">
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-[0.2em] text-zinc-500">{t('auth.shared.full_name')}</Label>
-                  <Input
-                    type="text"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    placeholder={t('auth.register.name_placeholder')}
-                    className="h-12 border-zinc-800 bg-zinc-900 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500"
-                  />
+                  <div className="relative">
+                    <UserRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                    <Input
+                      type="text"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      placeholder={t('auth.register.name_placeholder')}
+                      className="h-12 border-zinc-800 bg-zinc-900 pl-11 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500 focus-visible:shadow-[0_0_0_3px_rgba(249,115,22,0.16)]"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-xs uppercase tracking-[0.2em] text-zinc-500">{t('auth.shared.email')}</Label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    placeholder={t('auth.register.email_placeholder')}
-                    className="h-12 border-zinc-800 bg-zinc-900 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500"
-                  />
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder={t('auth.register.email_placeholder')}
+                      className="h-12 border-zinc-800 bg-zinc-900 pl-11 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500 focus-visible:shadow-[0_0_0_3px_rgba(249,115,22,0.16)]"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-xs uppercase tracking-[0.2em] text-zinc-500">{t('auth.shared.password')}</Label>
+                  <Label className="text-xs uppercase tracking-[0.2em] text-zinc-500">{t('auth.shared.password')}</Label>
+                  <div className="relative">
+                    <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      onKeyDown={(event) => event.key === 'Enter' && handleRegister()}
+                      placeholder={t('auth.register.password_placeholder')}
+                      className="h-12 border-zinc-800 bg-zinc-900 pl-11 pr-11 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500 focus-visible:shadow-[0_0_0_3px_rgba(249,115,22,0.16)]"
+                    />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="text-xs text-zinc-500 transition hover:text-zinc-300"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-zinc-200"
                     >
-                      {showPassword ? t('auth.shared.hide') : t('auth.shared.show')}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <Input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    onKeyDown={(event) => event.key === 'Enter' && handleRegister()}
-                    placeholder={t('auth.register.password_placeholder')}
-                    className="h-12 border-zinc-800 bg-zinc-900 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500"
-                  />
                   {password.length > 0 ? (
                     <div className="flex items-center gap-3 pt-1">
                       <div className="flex flex-1 gap-1">
@@ -222,7 +231,7 @@ function RegisterForm() {
         </section>
 
         {!isClient ? (
-          <section className="rounded-[32px] border border-zinc-900 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.18),transparent_28%),linear-gradient(180deg,#111111_0%,#080808_100%)] p-8 sm:p-10 lg:order-1">
+          <section className="rounded-[32px] border border-zinc-900 bg-zinc-950/70 p-8 backdrop-blur-sm sm:p-10 lg:order-1">
             <BrandLockup subtitle={t('common.tagline')} />
 
             <div className="mt-14 max-w-2xl">
@@ -258,15 +267,9 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
-  const t = createTranslator('es')
-
   return (
     <Suspense
-      fallback={(
-        <div className="min-h-screen bg-black flex items-center justify-center">
-          <p className="text-zinc-500">{t('common.loading')}</p>
-        </div>
-      )}
+      fallback={<PageLoader className="min-h-screen bg-black" compact />}
     >
       <RegisterForm />
     </Suspense>

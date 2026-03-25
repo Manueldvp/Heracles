@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import PageLoader from '@/components/ui/page-loader'
 import { Upload, X, FileText, Trash2, Plus, Camera, Zap, User, Brain, GraduationCap } from 'lucide-react'
 
 const DEFAULT_PROMPT = `Eres un asistente experto de entrenamiento personal.
@@ -158,11 +159,7 @@ export default function ProfilePage() {
     setTimeout(() => setSaved(false), 3000)
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-6 h-6 border-2 border-zinc-700 border-t-orange-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <PageLoader compact />
 
   return (
     <div className="max-w-3xl mx-auto pb-10">

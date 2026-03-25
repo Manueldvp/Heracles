@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Camera, User, Target, Ruler } from 'lucide-react'
+import PageLoader from '@/components/ui/page-loader'
+import { Camera, User, Target } from 'lucide-react'
 
 const goalOptions = [
   { value: 'muscle_gain', label: 'Ganancia muscular' },
@@ -107,11 +108,7 @@ export default function ClientProfilePage() {
     setTimeout(() => setSaved(false), 3000)
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="w-6 h-6 border-2 border-zinc-700 border-t-orange-500 rounded-full animate-spin" />
-    </div>
-  )
+  if (loading) return <PageLoader compact />
 
   return (
     <div className="max-w-lg mx-auto pb-10">

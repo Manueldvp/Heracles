@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import PageLoader from '@/components/ui/page-loader'
 
 export default function EditClientPage() {
   const router = useRouter()
@@ -80,7 +81,7 @@ export default function EditClientPage() {
     router.push(`/dashboard/clients/${id}`)
   }
 
-  if (loading) return <p className="text-zinc-400">Cargando...</p>
+  if (loading) return <PageLoader compact />
 
   return (
     <div className="max-w-2xl mx-auto">
