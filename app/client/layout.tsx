@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import ClientDrawerWrapper from './components/LogoutAction'
 import Link from 'next/link'
 import { Zap } from 'lucide-react'
+import ThemeToggle from '@/components/theme-toggle'
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -28,27 +29,29 @@ export default async function ClientLayout({ children }: { children: React.React
   const appName = trainerProfile?.ai_trainer_name || 'Treinex'
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         .font-display { font-family: 'Bebas Neue', sans-serif; }
       `}</style>
 
-      <header className="border-b border-zinc-800/80 px-4 sm:px-6 h-14 flex items-center justify-between sticky top-0 z-10"
-        style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
+      <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6">
         <Link href="/client" className="flex items-center gap-2 group">
-          <div className="w-7 h-7 bg-orange-500 rounded-lg flex items-center justify-center group-hover:bg-orange-600 transition">
-            <Zap size={14} className="text-white" fill="white" />
+          <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center transition group-hover:bg-primary-hover">
+            <Zap size={14} className="text-primary-foreground" fill="currentColor" />
           </div>
-          <span className="font-display text-xl text-white tracking-widest">{appName.toUpperCase()}</span>
+          <span className="font-display text-xl text-foreground tracking-widest">{appName.toUpperCase()}</span>
         </Link>
-        <ClientDrawerWrapper
-          email={user.email ?? ''}
-          clientName={clientData.full_name ?? ''}
-          clientId={clientData.id}
-          avatarUrl={clientData.avatar_url ?? ''}
-          appName={appName}
-        />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <ClientDrawerWrapper
+            email={user.email ?? ''}
+            clientName={clientData.full_name ?? ''}
+            clientId={clientData.id}
+            avatarUrl={clientData.avatar_url ?? ''}
+            appName={appName}
+          />
+        </div>
       </header>
 
       <main className="max-w-2xl mx-auto w-full p-4 sm:p-6 flex-1">

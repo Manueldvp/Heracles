@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Search } from 'lucide-react'
 import TrainerDrawerWrapper from './TrainerDrawerWrapper'
+import ThemeToggle from '@/components/theme-toggle'
 
 type Props = {
   email: string
@@ -55,9 +56,11 @@ export default function DashboardTopbar({ email, trainerName, trainerId, avatarU
               )
             })}
           </nav>
+          <ThemeToggle />
         </div>
 
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle className="lg:hidden" />
           <TrainerDrawerWrapper
             email={email}
             trainerName={trainerName}

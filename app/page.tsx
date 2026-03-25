@@ -69,7 +69,7 @@ export default function HomePage() {
   }, [router, supabase])
 
   if (!ready) {
-    return <PageLoader className="min-h-screen bg-black" compact />
+    return <PageLoader className="min-h-screen bg-background" compact />
   }
 
   return <LandingPage />

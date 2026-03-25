@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import BrandLockup from '@/components/brand-lockup'
 import FeatureCard from '@/components/landing/feature-card'
 import LandingCarousel from '@/components/landing/landing-carousel'
+import ThemeToggle from '@/components/theme-toggle'
 import { createTranslator, getTranslationValue } from '@/lib/i18n'
 
 type LandingItem = {
@@ -30,104 +31,105 @@ export default function LandingPage() {
   const featureIcons = [UsersRound, LayoutDashboard, Sparkles, BellRing]
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="border-b border-zinc-900 bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.22),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.08),transparent_18%),linear-gradient(180deg,#0a0a0a_0%,#050505_100%)]">
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-6 pb-24 pt-6 sm:px-8 lg:px-10">
-          <header className="sticky top-0 z-20 rounded-2xl border border-white/10 bg-black/40 px-5 py-4 backdrop-blur">
+          <header className="sticky top-0 z-20 rounded-2xl border border-border bg-background/85 px-5 py-4 backdrop-blur">
             <div className="flex items-center justify-between gap-6">
               <BrandLockup subtitle={t('common.tagline')} compact />
 
               <nav className="hidden items-center gap-8 md:flex">
-                <span className="text-sm font-medium text-orange-300">{t('landing.nav.platform')}</span>
-                <span className="text-sm text-zinc-500">{t('landing.nav.coaching')}</span>
-                <span className="text-sm text-zinc-500">{t('landing.nav.pricing')}</span>
-                <span className="text-sm text-zinc-500">{t('landing.nav.about')}</span>
+                <span className="text-sm font-medium text-primary">{t('landing.nav.platform')}</span>
+                <span className="text-sm text-muted-foreground">{t('landing.nav.coaching')}</span>
+                <span className="text-sm text-muted-foreground">{t('landing.nav.pricing')}</span>
+                <span className="text-sm text-muted-foreground">{t('landing.nav.about')}</span>
               </nav>
 
               <div className="flex items-center gap-3">
                 <Link href="/login">
-                  <Button variant="ghost" className="text-zinc-300 hover:bg-white/5 hover:text-white">
+                  <Button variant="ghost" className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
                     {t('common.login')}
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-orange-500 text-white hover:bg-orange-600">
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary-hover">
                     {t('common.start_free')}
                   </Button>
                 </Link>
+                <ThemeToggle />
               </div>
             </div>
           </header>
 
           <section className="grid gap-12 pb-20 pt-24 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
             <div className="max-w-4xl">
-              <Badge className="mb-6 border-orange-500/20 bg-orange-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-orange-200">
+              <Badge className="mb-6 border-primary/20 bg-primary/10 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-primary">
                 {t('landing.hero.badge')}
               </Badge>
-              <h1 className="max-w-5xl text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-white sm:text-6xl lg:text-7xl xl:text-8xl">
+              <h1 className="max-w-5xl text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-foreground sm:text-6xl lg:text-7xl xl:text-8xl">
                 {t('landing.hero.title')}
                 <br />
                 <span className="bg-gradient-to-r from-orange-200 via-orange-400 to-orange-500 bg-clip-text text-transparent">
                   {t('landing.hero.title_emphasis')}
                 </span>
               </h1>
-              <p className="mt-8 max-w-2xl text-lg leading-8 text-zinc-400 sm:text-xl">
+              <p className="mt-8 max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl">
                 {t('landing.hero.description')}
               </p>
 
               <div className="mt-10 flex flex-col gap-4 sm:flex-row">
                 <Link href="/register">
-                  <Button size="lg" className="w-full gap-2 bg-orange-500 px-8 text-white hover:bg-orange-600 sm:w-auto">
+                  <Button size="lg" className="w-full gap-2 bg-primary px-8 text-primary-foreground hover:bg-primary-hover sm:w-auto">
                     {t('common.start_free')}
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="lg" variant="outline" className="w-full border-zinc-800 bg-zinc-950/70 px-8 text-zinc-200 hover:bg-zinc-900 sm:w-auto">
+                  <Button size="lg" variant="outline" className="w-full border-border bg-card px-8 text-foreground hover:bg-accent sm:w-auto">
                     {t('common.login')}
                   </Button>
                 </Link>
               </div>
 
               <div className="mt-10 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-zinc-900 bg-zinc-950/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Operación</p>
-                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Más clara</p>
+                <div className="rounded-3xl border border-border bg-card p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Operación</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-foreground">Más clara</p>
                 </div>
-                <div className="rounded-3xl border border-zinc-900 bg-zinc-950/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Seguimiento</p>
-                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Más visible</p>
+                <div className="rounded-3xl border border-border bg-card p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Seguimiento</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-foreground">Más visible</p>
                 </div>
-                <div className="rounded-3xl border border-zinc-900 bg-zinc-950/80 p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Escala</p>
-                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">Más control</p>
+                <div className="rounded-3xl border border-border bg-card p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Escala</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-foreground">Más control</p>
                 </div>
               </div>
             </div>
 
-            <Card className="overflow-hidden border-zinc-800 bg-zinc-950/85 shadow-[0_40px_120px_rgba(0,0,0,0.45)]">
+            <Card className="overflow-hidden border-border bg-card shadow-sm">
               <CardContent className="p-6 sm:p-8">
-                <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(24,24,27,1),rgba(10,10,10,1))] p-6">
-                  <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-5">
+                <div className="rounded-[28px] border border-border bg-card p-6">
+                  <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.snapshot.eyebrow')}</p>
-                      <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">{t('landing.snapshot.title')}</p>
+                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{t('landing.snapshot.eyebrow')}</p>
+                      <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">{t('landing.snapshot.title')}</p>
                     </div>
-                    <div className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-xs text-orange-200">
+                    <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
                       {t('landing.snapshot.status')}
                     </div>
                   </div>
 
                   <div className="mt-6 grid gap-4">
-                    <div className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-5">
+                    <div className="rounded-3xl border border-border bg-muted/30 p-5">
                       <div className="flex items-center justify-between gap-3">
-                        <div className="h-1 w-14 rounded-full bg-orange-500" />
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-orange-500/10">
-                          <LayoutDashboard className="h-5 w-5 text-orange-300" />
+                        <div className="h-1 w-14 rounded-full bg-primary" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-primary/10">
+                          <LayoutDashboard className="h-5 w-5 text-primary" />
                         </div>
                       </div>
-                      <p className="mt-5 text-base font-semibold text-white">{t('landing.snapshot.primary_title')}</p>
-                      <p className="mt-2 text-sm leading-6 text-zinc-400">
+                      <p className="mt-5 text-base font-semibold text-foreground">{t('landing.snapshot.primary_title')}</p>
+                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
                         {t('landing.snapshot.primary_copy')}
                       </p>
                       <div className="mt-5 grid gap-3 sm:grid-cols-3">

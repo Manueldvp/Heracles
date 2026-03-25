@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import PageLoader from '@/components/ui/page-loader'
 import { createClient } from '@/lib/supabase/client'
 import { createTranslator, getTranslationValue } from '@/lib/i18n'
+import ThemeToggle from '@/components/theme-toggle'
 
 function LoginForm() {
   const router = useRouter()
@@ -96,27 +97,30 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(249,115,22,0.18),transparent_28%),linear-gradient(180deg,#0b0b0c_0%,#050505_100%)] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto grid min-h-screen max-w-7xl gap-12 px-6 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-10">
-        <section className="rounded-[32px] border border-zinc-900 bg-zinc-950/70 p-8 backdrop-blur-sm sm:p-10">
+        <section className="relative rounded-[32px] border border-border bg-card/85 p-8 backdrop-blur-sm sm:p-10">
+          <div className="absolute right-6 top-6">
+            <ThemeToggle />
+          </div>
           <BrandLockup subtitle={t('common.tagline')} />
 
           <div className="mt-14 max-w-2xl">
-            <p className="text-xs uppercase tracking-[0.24em] text-orange-300">{t('common.app_name')}</p>
-            <h1 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
+            <p className="text-xs uppercase tracking-[0.24em] text-primary">{t('common.app_name')}</p>
+            <h1 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-foreground sm:text-5xl">
               {t('auth.login.headline')}
             </h1>
-            <p className="mt-6 text-lg leading-8 text-zinc-400">
+            <p className="mt-6 text-lg leading-8 text-muted-foreground">
               {t('auth.login.description')}
             </p>
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2">
             {metrics.map((metric) => (
-              <Card key={metric.label} className="border-zinc-800 bg-zinc-950/70">
+              <Card key={metric.label} className="border-border bg-card/80">
                 <CardContent className="p-5">
-                  <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">{metric.label}</p>
-                  <p className="mt-4 text-2xl font-semibold tracking-[-0.05em] text-white">{metric.value}</p>
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{metric.label}</p>
+                  <p className="mt-4 text-2xl font-semibold tracking-[-0.05em] text-foreground">{metric.value}</p>
                 </CardContent>
               </Card>
             ))}
@@ -124,59 +128,59 @@ function LoginForm() {
 
           <div className="mt-8 space-y-3">
             {benefits.map((benefit) => (
-              <div key={benefit} className="rounded-2xl border border-zinc-900 bg-zinc-950/60 px-4 py-4">
-                <p className="text-sm leading-7 text-zinc-300">{benefit}</p>
+              <div key={benefit} className="rounded-2xl border border-border bg-card/70 px-4 py-4">
+                <p className="text-sm leading-7 text-muted-foreground">{benefit}</p>
               </div>
             ))}
           </div>
         </section>
 
         <section className="mx-auto w-full max-w-md">
-          <Card className="border-zinc-900 bg-zinc-950/90 shadow-[0_30px_90px_rgba(0,0,0,0.35)]">
+          <Card className="border-border bg-card/95 shadow-sm">
             <CardContent className="p-8 sm:p-10">
               <BrandLockup subtitle={t('common.tagline')} compact className="mb-10 lg:hidden" />
 
               <div className="mb-8">
-                <h2 className="text-3xl font-semibold tracking-[-0.05em] text-white">
+                <h2 className="text-3xl font-semibold tracking-[-0.05em] text-foreground">
                   {t('auth.login.title')}
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-zinc-400">
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   {t('auth.login.subtitle')}
                 </p>
               </div>
 
               <div className="space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-[0.2em] text-zinc-500">{t('auth.shared.email')}</Label>
+                  <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t('auth.shared.email')}</Label>
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                    <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
                       onKeyDown={(event) => event.key === 'Enter' && handleLogin()}
                       placeholder={t('auth.login.email_placeholder')}
-                      className="h-12 border-zinc-800 bg-zinc-900 pl-11 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500 focus-visible:shadow-[0_0_0_3px_rgba(249,115,22,0.16)]"
+                      className="h-12 border-border bg-background pl-11 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/15"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-xs uppercase tracking-[0.2em] text-zinc-500">{t('auth.shared.password')}</Label>
+                  <Label className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{t('auth.shared.password')}</Label>
                   <div className="relative">
-                    <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                    <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       onKeyDown={(event) => event.key === 'Enter' && handleLogin()}
                       placeholder={t('auth.login.password_placeholder')}
-                      className="h-12 border-zinc-800 bg-zinc-900 pl-11 pr-11 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-orange-500 focus-visible:shadow-[0_0_0_3px_rgba(249,115,22,0.16)]"
+                      className="h-12 border-border bg-background pl-11 pr-11 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/15"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((value) => !value)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition hover:text-zinc-200"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -198,7 +202,7 @@ function LoginForm() {
                 <Button
                   onClick={handleLogin}
                   disabled={loading}
-                  className="h-12 w-full bg-orange-500 text-white hover:bg-orange-600"
+                  className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary-hover"
                 >
                   {loading ? t('auth.login.submitting') : t('auth.login.submit')}
                 </Button>
@@ -207,20 +211,20 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={handleForgotPassword}
-                    className="text-xs text-zinc-500 transition hover:text-orange-300"
+                    className="text-xs text-muted-foreground transition hover:text-primary"
                   >
                     {t('auth.login.forgot_password')}
                   </button>
                   <Link
                     href={token ? `/register?token=${token}` : '/register'}
-                    className="text-xs text-orange-300 transition hover:text-orange-200"
+                    className="text-xs text-primary transition hover:text-primary-hover"
                   >
                     {t('auth.login.create_account')}
                   </Link>
                 </div>
               </div>
 
-              <p className="mt-10 text-center text-xs text-zinc-600">{t('common.copyright')}</p>
+              <p className="mt-10 text-center text-xs text-muted-foreground">{t('common.copyright')}</p>
             </CardContent>
           </Card>
         </section>
@@ -232,7 +236,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense
-      fallback={<PageLoader className="min-h-screen bg-black" compact />}
+      fallback={<PageLoader className="min-h-screen bg-background" compact />}
     >
       <LoginForm />
     </Suspense>

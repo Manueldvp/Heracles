@@ -11,18 +11,18 @@ export default function BrandLockup({ subtitle, className, compact = false }: Pr
   return (
     <div className={cn('flex items-center gap-4', className)}>
       <div className={cn(
-        'rounded-2xl border border-white/10 bg-white/5',
+        'rounded-2xl border border-border bg-card',
         compact ? 'h-9 w-9' : 'h-11 w-11'
       )} />
       <div className="min-w-0">
         <p className={cn(
-          'truncate font-semibold tracking-[-0.04em] text-white',
+          'truncate font-semibold tracking-[-0.04em] text-foreground',
           compact ? 'text-lg' : 'text-xl'
         )}>
           {APP_NAME}
         </p>
         {subtitle ? (
-          <p className="truncate text-xs uppercase tracking-[0.22em] text-zinc-500">
+          <p className="truncate text-xs uppercase tracking-[0.22em] text-muted-foreground">
             {subtitle}
           </p>
         ) : null}
