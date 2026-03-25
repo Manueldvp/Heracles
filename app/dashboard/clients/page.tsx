@@ -1,12 +1,23 @@
 import Link from 'next/link'
+import { AlertTriangle, Search, Users } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import InviteClientDialog from './components/InviteClientDialog'
-import { ActiveClientRow, ExpiredClientRow, PendingClientRow } from './components/ClientRow'
+import ClientGridCard from './components/ClientGridCard'
 
 type SortOption = 'newest' | 'oldest' | 'registration'
 type FilterOption = 'all' | 'active' | 'pending' | 'expired'
+
+function formatLastActivity(date?: string) {
+  if (!date) return 'Sin actividad reciente'
+
+  const target = new Date(date)
+  const diffDays = Math.floor((Date.now() - target.getTime()) / 86400000)
+
+  if (diffDays <= 0) return 'Actividad hoy'
+  if (diffDays === 1) return 'Última actividad: hace 1 día'
+  return `Última actividad: hace ${diffDays} días`
+}
 
 export default async function ClientsPage({
   searchParams,
@@ -23,54 +34,48 @@ export default async function ClientsPage({
 
   const allClients = clients ?? []
   const now = new Date()
+  const activeClients = allClients.filter((client) => client.status !== 'pending')
+  const pendingClients = allClients.filter((client) => client.status === 'pending' && (!client.invite_token_expires_at || new Date(client.invite_token_expires_at) >= now))
+  const expiredInvites = allClients.filter((client) => client.status === 'pending' && client.invite_token_expires_at && new Date(client.invite_token_expires_at) < now)
 
-  const activeClients = allClients.filter(client => client.status !== 'pending')
-  const pendingClients = allClients.filter(client => client.status === 'pending' && (!client.invite_token_expires_at || new Date(client.invite_token_expires_at) >= now))
-  const expiredClients = allClients.filter(client => client.status === 'pending' && client.invite_token_expires_at && new Date(client.invite_token_expires_at) < now)
+  const activeIds = activeClients.map((client) => client.id)
 
-  const activeIds = activeClients.map(client => client.id)
-  const [{ data: activeRoutines }, { data: activeNutrition }] = await Promise.all([
+  const [
+    { data: activeRoutines },
+    { data: activeNutrition },
+    { data: recentCheckins },
+  ] = await Promise.all([
     supabase.from('routines').select('client_id').in('client_id', activeIds.length > 0 ? activeIds : ['none']).eq('is_active', true),
     supabase.from('nutrition_plans').select('client_id').in('client_id', activeIds.length > 0 ? activeIds : ['none']).eq('is_active', true),
+    supabase.from('checkins').select('client_id, created_at').in('client_id', activeIds.length > 0 ? activeIds : ['none']).order('created_at', { ascending: false }),
   ])
 
-  const clientsWithRoutine = new Set((activeRoutines ?? []).map(item => item.client_id))
-  const clientsWithNutrition = new Set((activeNutrition ?? []).map(item => item.client_id))
-  const expiredPlanningClients = activeClients.filter(client => !clientsWithRoutine.has(client.id) && !clientsWithNutrition.has(client.id))
-
-  const sections = [
-    { id: 'active', title: 'Active clients', description: 'Clientes activos con acceso vigente.', items: activeClients },
-    { id: 'pending', title: 'Pending clients', description: 'Invitaciones enviadas pendientes de aceptación.', items: pendingClients },
-    { id: 'expired', title: 'Expired plans', description: 'Clientes activos sin rutina ni nutrición activa.', items: expiredPlanningClients },
-    { id: 'expired_invites', title: 'Expired invites', description: 'Invitaciones vencidas que necesitan reenvío.', items: expiredClients },
-  ] as const
-
-  const filteredSections = sections.map(section => {
-    if (filter === 'all') return section
-    const matchesFilter =
-      filter === 'expired'
-        ? section.id === 'expired' || section.id === 'expired_invites'
-        : section.id === filter
-
-    return { ...section, items: matchesFilter ? section.items : [] }
+  const latestCheckinByClient = new Map<string, string>()
+  ;(recentCheckins ?? []).forEach((checkin) => {
+    if (!latestCheckinByClient.has(checkin.client_id)) {
+      latestCheckinByClient.set(checkin.client_id, checkin.created_at)
+    }
   })
 
-  const sortLinks: Array<{ value: SortOption; label: string }> = [
-    { value: 'newest', label: 'Más nuevos' },
-    { value: 'oldest', label: 'Más antiguos' },
-    { value: 'registration', label: 'Registro' },
-  ]
+  const clientsWithRoutine = new Set((activeRoutines ?? []).map((item) => item.client_id))
+  const clientsWithNutrition = new Set((activeNutrition ?? []).map((item) => item.client_id))
+  const expiredPlans = activeClients.filter((client) => !clientsWithRoutine.has(client.id) && !clientsWithNutrition.has(client.id))
+  const inactiveClients = activeClients.filter((client) => !latestCheckinByClient.has(client.id))
 
-  const filterLinks: Array<{ value: FilterOption; label: string }> = [
-    { value: 'all', label: 'Todos' },
-    { value: 'active', label: 'Activos' },
-    { value: 'pending', label: 'Pendientes' },
-    { value: 'expired', label: 'Expirados' },
-  ]
+  const sections = [
+    { id: 'active', title: 'Active clients', description: 'Clientes activos con seguimiento vigente.', items: activeClients },
+    { id: 'pending', title: 'Pending clients', description: 'Clientes en proceso de registro u onboarding.', items: pendingClients },
+    { id: 'expired', title: 'Expired plans', description: 'Clientes que requieren nueva planificación.', items: [...expiredPlans, ...expiredInvites] },
+  ] as const
+
+  const filteredSections = sections.map((section) => {
+    if (filter === 'all') return section
+    return { ...section, items: section.id === filter ? section.items : [] }
+  })
 
   const orderedSections = sort === 'registration'
     ? filteredSections
-    : filteredSections.map(section => ({
+    : filteredSections.map((section) => ({
         ...section,
         items: [...section.items].sort((a, b) => {
           const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -78,46 +83,117 @@ export default async function ClientsPage({
         }),
       }))
 
-  const hasClients = allClients.length > 0
+  const filterLinks: Array<{ value: FilterOption; label: string; count: number }> = [
+    { value: 'all', label: 'Todos', count: allClients.length },
+    { value: 'active', label: 'Activos', count: activeClients.length },
+    { value: 'pending', label: 'Pendientes', count: pendingClients.length },
+    { value: 'expired', label: 'Expirados', count: expiredPlans.length + expiredInvites.length },
+  ]
+
+  const sortLinks: Array<{ value: SortOption; label: string }> = [
+    { value: 'newest', label: 'Más nuevos' },
+    { value: 'oldest', label: 'Más antiguos' },
+    { value: 'registration', label: 'Fecha de registro' },
+  ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-white">Clientes</h2>
-          <p className="mt-1 text-sm text-zinc-500">
-            {activeClients.length} activos · {pendingClients.length} pendientes · {expiredPlanningClients.length + expiredClients.length} con atención pendiente
+          <p className="text-xs uppercase tracking-[0.26em] text-zinc-500">Client system</p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-white">Clients</h1>
+          <p className="mt-3 max-w-2xl text-lg text-zinc-400">
+            Gestiona clientes activos, pendientes y planes vencidos desde una sola vista operativa.
           </p>
         </div>
         <InviteClientDialog />
       </div>
 
-      <Card className="bg-zinc-900 border-zinc-800">
-        <CardContent className="flex flex-col gap-4 p-4">
-          <div className="flex flex-wrap gap-2">
-            {sortLinks.map(link => (
-              <Link
-                key={link.value}
-                href={`/dashboard/clients?sort=${link.value}&filter=${filter}`}
-                className={`rounded-full border px-3 py-2 text-sm transition ${
-                  sort === link.value
-                    ? 'border-orange-500 bg-orange-500 text-white'
-                    : 'border-zinc-700 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-white'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="border-zinc-800 bg-[#151c31]">
+          <CardContent className="p-6">
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Active clients</p>
+            <p className="mt-4 text-5xl font-semibold tracking-[-0.06em] text-white">{activeClients.length}</p>
+            <p className="mt-2 text-sm text-emerald-300">Clientes con acceso y seguimiento activo.</p>
+          </CardContent>
+        </Card>
+        <Card className="border-zinc-800 bg-[#151c31]">
+          <CardContent className="p-6">
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Pending clients</p>
+            <p className="mt-4 text-5xl font-semibold tracking-[-0.06em] text-white">{pendingClients.length}</p>
+            <p className="mt-2 text-sm text-orange-200">Invitaciones esperando registro.</p>
+          </CardContent>
+        </Card>
+        <Card className="border-zinc-800 bg-[#151c31]">
+          <CardContent className="p-6">
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-500">Priority attention</p>
+            <p className="mt-4 text-5xl font-semibold tracking-[-0.06em] text-rose-200">{inactiveClients.length + expiredPlans.length}</p>
+            <p className="mt-2 text-sm text-rose-200">Clientes sin actividad o con planificación vencida.</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {(inactiveClients.length > 0 || expiredPlans.length > 0) && (
+        <Card className="border-zinc-800 bg-[#151c31]">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-300" />
+              <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">Clients needing attention</p>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              {inactiveClients.slice(0, 2).map((client) => (
+                <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-2xl border border-zinc-700 bg-[#0f1629] p-4 transition hover:border-zinc-600">
+                  <p className="text-lg font-semibold text-white">{client.full_name}</p>
+                  <p className="mt-2 text-sm text-orange-200">Sin check-ins recientes</p>
+                </Link>
+              ))}
+              {expiredPlans.slice(0, 2).map((client) => (
+                <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-2xl border border-zinc-700 bg-[#0f1629] p-4 transition hover:border-zinc-600">
+                  <p className="text-lg font-semibold text-white">{client.full_name}</p>
+                  <p className="mt-2 text-sm text-orange-200">Sin rutina ni nutrición activa</p>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="border-zinc-800 bg-[#151c31]">
+        <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative max-w-md flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="text"
+              placeholder="Search clients, status or activity..."
+              className="h-12 w-full rounded-2xl border border-zinc-800 bg-[#0f1629] pl-11 pr-4 text-sm text-white placeholder:text-zinc-500 outline-none transition focus:border-orange-500/50"
+            />
           </div>
+
           <div className="flex flex-wrap gap-2">
-            {filterLinks.map(link => (
+            {filterLinks.map((link) => (
               <Link
                 key={link.value}
                 href={`/dashboard/clients?sort=${sort}&filter=${link.value}`}
-                className={`rounded-full border px-3 py-2 text-sm transition ${
+                className={`rounded-2xl px-4 py-2 text-sm transition ${
                   filter === link.value
-                    ? 'border-zinc-200 bg-zinc-100 text-zinc-950'
-                    : 'border-zinc-700 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-white'
+                    ? 'bg-white/7 text-orange-200'
+                    : 'bg-[#0f1629] text-zinc-400 hover:text-white'
+                }`}
+              >
+                {link.label} ({link.count})
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {sortLinks.map((link) => (
+              <Link
+                key={link.value}
+                href={`/dashboard/clients?sort=${link.value}&filter=${filter}`}
+                className={`rounded-2xl px-4 py-2 text-sm transition ${
+                  sort === link.value
+                    ? 'bg-orange-500 text-white'
+                    : 'bg-[#0f1629] text-zinc-400 hover:text-white'
                 }`}
               >
                 {link.label}
@@ -127,37 +203,72 @@ export default async function ClientsPage({
         </CardContent>
       </Card>
 
-      {!hasClients && (
-        <Card className="bg-zinc-900 border-dashed border-zinc-700">
-          <CardContent className="py-16 text-center">
-            <p className="text-lg text-zinc-300">No tienes clientes todavía.</p>
-            <p className="mt-2 text-sm text-zinc-500">Envía una invitación para empezar a trabajar con tu primer cliente.</p>
-            <div className="mt-5 flex justify-center">
-              <InviteClientDialog />
+      {orderedSections.map((section) => (
+        section.items.length > 0 ? (
+          <section key={section.id} className="space-y-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.26em] text-zinc-500">{section.title}</p>
+                <p className="mt-2 text-sm text-zinc-400">{section.description}</p>
+              </div>
+              <div className="flex h-10 min-w-10 items-center justify-center rounded-2xl border border-zinc-800 bg-[#0f1629] px-3 text-sm text-zinc-300">
+                {section.items.length}
+              </div>
             </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {section.items.map((client) => {
+                const latestActivity = latestCheckinByClient.get(client.id)
+                const isPending = client.status === 'pending'
+                const isExpiredInvite = expiredInvites.some((item) => item.id === client.id)
+                const isExpiredPlan = expiredPlans.some((item) => item.id === client.id)
+
+                return (
+                  <ClientGridCard
+                    key={client.id}
+                    href={`/dashboard/clients/${client.id}`}
+                    name={client.full_name || client.email}
+                    subtitle={isPending ? client.email : 'Seguimiento activo'}
+                    status={isPending ? (isExpiredInvite ? 'expired' : 'pending') : isExpiredPlan ? 'expired' : 'active'}
+                    lastActivity={
+                      isPending
+                        ? client.invite_token_expires_at
+                          ? `Invitación ${isExpiredInvite ? 'vencida' : 'expira'} ${new Date(client.invite_token_expires_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}`
+                          : 'Pendiente de registro'
+                        : formatLastActivity(latestActivity)
+                    }
+                    avatarUrl={client.avatar_url}
+                    note={
+                      isExpiredPlan
+                        ? 'Requiere nueva rutina o nutrición.'
+                        : latestActivity
+                          ? 'Cliente con actividad registrada.'
+                          : isPending
+                            ? 'Esperando aceptación de la invitación.'
+                            : 'Sin actividad reciente.'
+                    }
+                  />
+                )
+              })}
+            </div>
+          </section>
+        ) : null
+      ))}
+
+      {allClients.length === 0 && (
+        <Card className="border-dashed border-zinc-700 bg-[#151c31]">
+          <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10">
+              <Users className="h-6 w-6 text-orange-300" />
+            </div>
+            <div>
+              <p className="text-xl font-semibold text-white">No tienes clientes todavía.</p>
+              <p className="mt-2 text-sm text-zinc-500">Envía una invitación para empezar a trabajar con tu primer cliente.</p>
+            </div>
+            <InviteClientDialog />
           </CardContent>
         </Card>
       )}
-
-      {orderedSections.map(section => (
-        section.items.length > 0 ? (
-          <div key={section.id} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-white">{section.title}</h3>
-                <p className="text-xs text-zinc-500">{section.description}</p>
-              </div>
-              <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">{section.items.length}</Badge>
-            </div>
-            <div className="space-y-3">
-              {section.id === 'active' && section.items.map(client => <ActiveClientRow key={client.id} client={client} />)}
-              {section.id === 'pending' && section.items.map(client => <PendingClientRow key={client.id} client={client} />)}
-              {section.id === 'expired' && section.items.map(client => <ExpiredClientRow key={client.id} client={client} variant="plan" />)}
-              {section.id === 'expired_invites' && section.items.map(client => <ExpiredClientRow key={client.id} client={client} variant="invite" />)}
-            </div>
-          </div>
-        ) : null
-      ))}
     </div>
   )
 }

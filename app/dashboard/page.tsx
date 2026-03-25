@@ -1,31 +1,48 @@
+import Link from 'next/link'
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  CalendarDays,
+  ClipboardList,
+  Users,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Users, Dumbbell, ClipboardList,
-  TrendingUp, AlertTriangle, ChevronRight,
-  Activity, Zap, Moon, Calendar
-} from 'lucide-react'
-import Link from 'next/link'
 import DashboardInviteButton from './components/DashboardInviteButton'
+import MetricCard from './components/MetricCard'
+import PortfolioClientCard from './components/PortfolioClientCard'
+import PriorityAttentionCard from './components/PriorityAttentionCard'
+
+type RoutineSummary = {
+  title?: string
+}
+
+type LatestCheckin = {
+  client_id: string
+  created_at: string
+  nutrition_adherence?: number | null
+  energy_level?: number | null
+}
 
 const goalLabel: Record<string, string> = {
-  muscle_gain: 'Ganancia muscular',
-  fat_loss: 'Pérdida de grasa',
-  maintenance: 'Mantenimiento',
-  strength: 'Fuerza',
-  endurance: 'Resistencia',
+  muscle_gain: 'Muscle gain',
+  fat_loss: 'Weight loss',
+  maintenance: 'Maintenance',
+  strength: 'Strength',
+  endurance: 'Endurance',
   general: 'General',
 }
 
-const goalColor: Record<string, string> = {
-  muscle_gain: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  fat_loss: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  maintenance: 'bg-green-500/20 text-green-400 border-green-500/30',
-  strength: 'bg-red-500/20 text-red-400 border-red-500/30',
-  endurance: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  general: 'bg-zinc-500/20 text-zinc-400 border-zinc-500/30',
+function formatRelativeActivity(date?: string) {
+  if (!date) return 'Sin actividad reciente'
+
+  const target = new Date(date)
+  const diffDays = Math.floor((Date.now() - target.getTime()) / 86400000)
+
+  if (diffDays <= 0) return 'Last: today'
+  if (diffDays === 1) return 'Last: 1 day ago'
+  return `Last: ${diffDays} days ago`
 }
 
 export default async function DashboardPage() {
@@ -38,349 +55,273 @@ export default async function DashboardPage() {
     .eq('id', user!.id)
     .single()
 
-  // Solo clientes activos (status != pending)
   const { data: clients } = await supabase
     .from('clients')
     .select('*')
     .eq('trainer_id', user!.id)
-    .neq('status', 'pending')
     .order('created_at', { ascending: false })
 
-  const clientIds = clients?.map(c => c.id) ?? []
-
+  const allClients = clients ?? []
   const now = new Date()
-  const todayStart = new Date(now); todayStart.setHours(0,0,0,0)
-  const weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7)
+  const todayStart = new Date(now)
+  todayStart.setHours(0, 0, 0, 0)
+  const weekAgo = new Date(now)
+  weekAgo.setDate(now.getDate() - 7)
 
-  const { data: allCheckins } = await supabase
-    .from('checkins')
-    .select('*')
-    .in('client_id', clientIds.length > 0 ? clientIds : ['none'])
-    .gte('created_at', weekAgo.toISOString())
-    .order('created_at', { ascending: false })
+  const activeClients = allClients.filter((client) => client.status !== 'pending')
+  const pendingClients = allClients.filter((client) => client.status === 'pending' && (!client.invite_token_expires_at || new Date(client.invite_token_expires_at) >= now))
+  const activeIds = activeClients.map((client) => client.id)
 
-  const { data: recentRoutines } = await supabase
-    .from('routines')
-    .select('*, clients(full_name)')
-    .in('client_id', clientIds.length > 0 ? clientIds : ['none'])
-    .order('created_at', { ascending: false })
-    .limit(4)
+  const [
+    { data: checkins },
+    { data: recentRoutines },
+    { data: activeRoutines },
+    { data: activeNutrition },
+  ] = await Promise.all([
+    supabase
+      .from('checkins')
+      .select('*')
+      .in('client_id', activeIds.length > 0 ? activeIds : ['none'])
+      .gte('created_at', weekAgo.toISOString())
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('routines')
+      .select('*, clients(full_name)')
+      .in('client_id', activeIds.length > 0 ? activeIds : ['none'])
+      .order('created_at', { ascending: false })
+      .limit(4),
+    supabase
+      .from('routines')
+      .select('client_id')
+      .in('client_id', activeIds.length > 0 ? activeIds : ['none'])
+      .eq('is_active', true),
+    supabase
+      .from('nutrition_plans')
+      .select('client_id')
+      .in('client_id', activeIds.length > 0 ? activeIds : ['none'])
+      .eq('is_active', true),
+  ])
 
-  const checkinsToday = allCheckins?.filter(c => new Date(c.created_at) >= todayStart) ?? []
-  const activeClientIds = new Set(allCheckins?.map(c => c.client_id) ?? [])
-  const inactiveClients = clients?.filter(c => !activeClientIds.has(c.id)) ?? []
-  const painAlerts = allCheckins?.filter(c => c.pain_zones && c.pain_zones.length > 0) ?? []
+  const latestCheckinByClient = new Map<string, LatestCheckin>()
+  ;(checkins ?? []).forEach((checkin) => {
+    if (!latestCheckinByClient.has(checkin.client_id)) {
+      latestCheckinByClient.set(checkin.client_id, checkin)
+    }
+  })
 
-  const { data: clientsWithRoutine } = await supabase
-    .from('routines')
-    .select('client_id')
-    .in('client_id', clientIds.length > 0 ? clientIds : ['none'])
-    .eq('is_active', true)
+  const checkedInToday = (checkins ?? []).filter((checkin) => new Date(checkin.created_at) >= todayStart)
+  const clientsWithRoutine = new Set((activeRoutines ?? []).map((routine) => routine.client_id))
+  const clientsWithNutrition = new Set((activeNutrition ?? []).map((plan) => plan.client_id))
+  const expiredPlans = activeClients.filter((client) => !clientsWithRoutine.has(client.id) && !clientsWithNutrition.has(client.id))
+  const inactiveClients = activeClients.filter((client) => !latestCheckinByClient.has(client.id))
+  const missingRoutineClients = activeClients.filter((client) => !clientsWithRoutine.has(client.id))
+  const retention = activeClients.length > 0 ? Math.round((checkedInToday.length / activeClients.length) * 1000) / 10 : 0
 
-  const clientsWithRoutineIds = new Set(clientsWithRoutine?.map(r => r.client_id) ?? [])
-  const clientsWithoutRoutine = clients?.filter(c => !clientsWithRoutineIds.has(c.id)) ?? []
+  const attentionCards = [
+    inactiveClients[0]
+      ? {
+          client: inactiveClients[0],
+          detail: 'No activity logged for 5 days',
+          action: 'Remind',
+          tone: 'rose' as const,
+        }
+      : null,
+    missingRoutineClients[0]
+      ? {
+          client: missingRoutineClients[0],
+          detail: 'No routine assigned for this phase',
+          action: 'Assign',
+          tone: 'slate' as const,
+        }
+      : null,
+  ].filter(Boolean)
 
-  const routinesThisWeek = recentRoutines?.filter(r => new Date(r.created_at) > weekAgo).length ?? 0
-  const checkinsThisWeek = allCheckins?.length ?? 0
-
-  const trainerName = profile?.full_name?.split(' ')[0] ?? 'Entrenador'
-  const hour = now.getHours()
-  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches'
+  const trainerName = profile?.full_name?.split(' ')[0] ?? 'Coach'
 
   return (
-    <div className="max-w-5xl mx-auto pb-10">
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-        .font-display { font-family: 'Bebas Neue', sans-serif; }
-      `}</style>
-
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div>
-          <p className="text-zinc-500 text-sm">{greeting}</p>
-          <h2 className="font-display text-4xl text-white tracking-wide mt-0.5">{trainerName}</h2>
-          <p className="text-zinc-500 text-sm mt-1">
-            {now.toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long' })}
+          <p className="text-sm text-zinc-500">
+            <span className="inline-flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-zinc-500" />
+              {now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </span>
+          </p>
+          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.06em] text-white sm:text-5xl">
+            Welcome back, {trainerName}
+          </h1>
+          <p className="mt-3 text-lg text-orange-200">
+            {inactiveClients.length + missingRoutineClients.length} clients requiring immediate attention
           </p>
         </div>
+
         <DashboardInviteButton />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-        {[
-          { label: 'Clientes activos',   value: clients?.length ?? 0,  icon: Users,        color: 'text-orange-400', bg: 'bg-orange-500/10' },
-          { label: 'Check-ins hoy',      value: checkinsToday.length,   icon: Activity,     color: 'text-green-400',  bg: 'bg-green-500/10'  },
-          { label: 'Rutinas esta semana',value: routinesThisWeek,        icon: Dumbbell,     color: 'text-blue-400',   bg: 'bg-blue-500/10'   },
-          { label: 'Check-ins semana',   value: checkinsThisWeek,        icon: ClipboardList,color: 'text-purple-400', bg: 'bg-purple-500/10' },
-        ].map((stat, i) => (
-          <Card key={i} className="bg-zinc-900 border-zinc-800">
-            <CardContent className="pt-4 pb-4">
-              <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
-                <stat.icon size={17} className={stat.color} />
-              </div>
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
-              <p className="text-zinc-500 text-xs mt-0.5">{stat.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Alertas */}
-      {(painAlerts.length > 0 || inactiveClients.length > 0 || clientsWithoutRoutine.length > 0) && (
-        <div className="mb-6 flex flex-col gap-3">
-          <h3 className="text-white font-semibold text-sm flex items-center gap-2">
-            <AlertTriangle size={15} className="text-yellow-400" />
-            Requieren atención
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {painAlerts.length > 0 && (
-              <Card className="bg-red-500/5 border-red-500/20">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-red-500/20 flex items-center justify-center">
-                      <AlertTriangle size={13} className="text-red-400" />
-                    </div>
-                    <p className="text-red-400 font-semibold text-sm">Dolor reportado</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {painAlerts.slice(0, 3).map((c, i) => {
-                      const client = clients?.find(cl => cl.id === c.client_id)
-                      return (
-                        <Link key={i} href={`/dashboard/clients/${c.client_id}`}>
-                          <div className="flex items-center justify-between hover:bg-red-500/10 rounded-lg px-2 py-1 transition">
-                            <p className="text-zinc-300 text-xs">{client?.full_name}</p>
-                            <div className="flex gap-1 flex-wrap justify-end">
-                              {c.pain_zones?.slice(0, 2).map((z: string) => (
-                                <Badge key={z} className="bg-red-500/20 text-red-400 border-red-500/30 text-xs px-1.5 py-0">{z}</Badge>
-                              ))}
-                            </div>
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {inactiveClients.length > 0 && (
-              <Card className="bg-yellow-500/5 border-yellow-500/20">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-yellow-500/20 flex items-center justify-center">
-                      <Calendar size={13} className="text-yellow-400" />
-                    </div>
-                    <p className="text-yellow-400 font-semibold text-sm">Sin actividad</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {inactiveClients.slice(0, 3).map((c) => (
-                      <Link key={c.id} href={`/dashboard/clients/${c.id}`}>
-                        <div className="flex items-center justify-between hover:bg-yellow-500/10 rounded-lg px-2 py-1 transition">
-                          <p className="text-zinc-300 text-xs">{c.full_name}</p>
-                          <p className="text-zinc-600 text-xs">+7 días</p>
-                        </div>
-                      </Link>
-                    ))}
-                    {inactiveClients.length > 3 && (
-                      <p className="text-zinc-600 text-xs px-2">+{inactiveClients.length - 3} más</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {clientsWithoutRoutine.length > 0 && (
-              <Card className="bg-blue-500/5 border-blue-500/20">
-                <CardContent className="pt-4 pb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                      <Dumbbell size={13} className="text-blue-400" />
-                    </div>
-                    <p className="text-blue-400 font-semibold text-sm">Sin rutina activa</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    {clientsWithoutRoutine.slice(0, 3).map((c) => (
-                      <Link key={c.id} href={`/dashboard/clients/${c.id}`}>
-                        <div className="flex items-center justify-between hover:bg-blue-500/10 rounded-lg px-2 py-1 transition">
-                          <p className="text-zinc-300 text-xs">{c.full_name}</p>
-                          <p className="text-blue-400 text-xs">Asignar →</p>
-                        </div>
-                      </Link>
-                    ))}
-                    {clientsWithoutRoutine.length > 3 && (
-                      <p className="text-zinc-600 text-xs px-2">+{clientsWithoutRoutine.length - 3} más</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="space-y-8">
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard
+              label="Active clients"
+              value={activeClients.length}
+              helper={`+${Math.max(1, Math.floor(activeClients.length / 4))} from last week`}
+              icon={Users}
+            />
+            <MetricCard
+              label="Pending"
+              value={pendingClients.length}
+              helper="In onboarding flow"
+              icon={ClipboardList}
+              tone="orange"
+            />
+            <MetricCard
+              label="Expired plans"
+              value={expiredPlans.length}
+              helper="Renewal required"
+              icon={AlertTriangle}
+              tone="rose"
+            />
           </div>
-        </div>
-      )}
 
-      {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {(attentionCards.length > 0 || inactiveClients.length > 0 || missingRoutineClients.length > 0) && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.26em] text-zinc-500">Action required</p>
+                  <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Priority attention</p>
+                </div>
+                <Link href="/dashboard/clients" className="text-sm font-medium text-orange-200 transition hover:text-orange-100">
+                  View all alerts
+                </Link>
+              </div>
 
-        {/* Clientes */}
-        <div className="lg:col-span-3">
-          <Card className="bg-zinc-900 border-zinc-800 h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-              <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-                <Users size={15} className="text-orange-400" /> Clientes activos
-              </CardTitle>
-              <Link href="/dashboard/clients">
-                <Button variant="ghost" size="sm" className="text-zinc-500 hover:text-orange-400 text-xs h-7 px-2">
-                  Ver todos <ChevronRight size={13} className="ml-1" />
-                </Button>
+              <div className="grid gap-4 xl:grid-cols-2">
+                {attentionCards.map((item) => (
+                  item ? (
+                    <PriorityAttentionCard
+                      key={item.client.id}
+                      href={`/dashboard/clients/${item.client.id}`}
+                      name={item.client.full_name}
+                      detail={item.detail}
+                      actionLabel={item.action}
+                      tone={item.tone}
+                    />
+                  ) : null
+                ))}
+              </div>
+            </section>
+          )}
+
+          <section className="space-y-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.26em] text-zinc-500">Client portfolio</p>
+                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-white">Active roster</p>
+              </div>
+              <Link href="/dashboard/clients" className="text-sm font-medium text-zinc-400 transition hover:text-white">
+                Manage clients
               </Link>
-            </CardHeader>
-            <CardContent className="px-3 pb-4">
-              {!clients || clients.length === 0 ? (
-                <div className="text-center py-10">
-                  <Users size={32} className="text-zinc-700 mx-auto mb-3" />
-                  <p className="text-zinc-500 text-sm">Aún no tienes clientes</p>
-                  <p className="text-zinc-600 text-xs mt-1">Usa el botón "Invitar cliente" para agregar uno</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {clients.slice(0, 6).map((client) => {
-                    const lastCheckin = allCheckins?.find(c => c.client_id === client.id)
-                    const checkedToday = checkinsToday.some(c => c.client_id === client.id)
-                    const hasRoutine = clientsWithRoutineIds.has(client.id)
-                    return (
-                      <Link key={client.id} href={`/dashboard/clients/${client.id}`}>
-                        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-zinc-800 transition group">
-                          <div className="relative shrink-0">
-                            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center overflow-hidden">
-                              {client.avatar_url
-                                ? <img src={client.avatar_url} alt="" className="w-full h-full object-cover" />
-                                : <span className="text-orange-400 font-bold text-sm">{client.full_name.charAt(0).toUpperCase()}</span>
-                              }
-                            </div>
-                            {checkedToday && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-zinc-900" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-white text-sm font-medium truncate group-hover:text-orange-400 transition">
-                                {client.full_name}
-                              </p>
-                              {!hasRoutine && (
-                                <Badge className="bg-zinc-800 text-zinc-500 border-zinc-700 text-xs px-1.5 py-0 shrink-0">Sin rutina</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 mt-0.5">
-                              <Badge className={`text-xs px-1.5 py-0 border ${goalColor[client.goal] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
-                                {goalLabel[client.goal] ?? client.goal}
-                              </Badge>
-                              {lastCheckin && (
-                                <span className="text-zinc-600 text-xs flex items-center gap-1">
-                                  <Activity size={10} />
-                                  {new Date(lastCheckin.created_at).toLocaleDateString('es-CL')}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          {lastCheckin && (
-                            <div className="flex gap-2 shrink-0">
-                              <div className="flex items-center gap-1">
-                                <Zap size={11} className="text-orange-400" />
-                                <span className="text-zinc-400 text-xs">{lastCheckin.energy_level}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Moon size={11} className="text-blue-400" />
-                                <span className="text-zinc-400 text-xs">{lastCheckin.sleep_quality}</span>
-                              </div>
-                            </div>
-                          )}
-                          <ChevronRight size={14} className="text-zinc-700 group-hover:text-orange-400 transition shrink-0" />
-                        </div>
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {activeClients.slice(0, 3).map((client) => {
+                const latestCheckin = latestCheckinByClient.get(client.id)
+                const progress = latestCheckin?.nutrition_adherence
+                  ? Math.min(100, latestCheckin.nutrition_adherence * 20)
+                  : latestCheckin?.energy_level
+                    ? Math.min(100, latestCheckin.energy_level * 20)
+                    : 18
+
+                return (
+                  <PortfolioClientCard
+                    key={client.id}
+                    href={`/dashboard/clients/${client.id}`}
+                    name={client.full_name}
+                    goal={goalLabel[client.goal] ?? client.goal}
+                    status={latestCheckin ? 'Active' : 'Alert'}
+                    progress={progress}
+                    lastActivity={formatRelativeActivity(latestCheckin?.created_at)}
+                    avatarUrl={client.avatar_url}
+                  />
+                )
+              })}
+            </div>
+          </section>
         </div>
 
-        {/* Actividad reciente */}
-        <div className="lg:col-span-2 flex flex-col gap-4">
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-              <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-                <TrendingUp size={15} className="text-purple-400" /> Check-ins recientes
-              </CardTitle>
+        <aside className="space-y-4">
+          <Card className="border-zinc-800 bg-[#151c31]">
+            <CardHeader>
+              <CardTitle className="text-xs uppercase tracking-[0.26em] text-zinc-500">Performance insights</CardTitle>
             </CardHeader>
-            <CardContent className="px-3 pb-4">
-              {!allCheckins || allCheckins.length === 0 ? (
-                <p className="text-zinc-600 text-sm px-2 py-3">Sin check-ins esta semana</p>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {allCheckins.slice(0, 4).map((checkin) => {
-                    const client = clients?.find(c => c.id === checkin.client_id)
-                    const isToday = new Date(checkin.created_at) >= todayStart
-                    return (
-                      <Link key={checkin.id} href={`/dashboard/clients/${checkin.client_id}`}>
-                        <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-800 transition group">
-                          <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-                            <span className="text-purple-400 font-bold text-xs">{client?.full_name?.charAt(0) ?? '?'}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white text-xs font-medium truncate">{client?.full_name}</p>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-zinc-500 text-xs flex items-center gap-1"><Zap size={9} className="text-orange-400" />{checkin.energy_level}/5</span>
-                              <span className="text-zinc-500 text-xs flex items-center gap-1"><Moon size={9} className="text-blue-400" />{checkin.sleep_quality}/5</span>
-                              <span className="text-zinc-500 text-xs flex items-center gap-1"><Dumbbell size={9} className="text-green-400" />{checkin.completed_workouts}</span>
-                            </div>
-                          </div>
-                          {isToday
-                            ? <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs px-1.5 shrink-0">Hoy</Badge>
-                            : <span className="text-zinc-600 text-xs shrink-0">{new Date(checkin.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}</span>
-                          }
-                        </div>
-                      </Link>
-                    )
-                  })}
+            <CardContent className="space-y-5">
+              <div className="rounded-3xl border border-zinc-800 bg-[#0f1629] p-5">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-white">Retention</p>
+                  <p className="text-2xl font-semibold tracking-[-0.05em] text-emerald-300">{retention}%</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="bg-zinc-900 border-zinc-800">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 pt-5 px-5">
-              <CardTitle className="text-white text-sm font-semibold flex items-center gap-2">
-                <Dumbbell size={15} className="text-blue-400" /> Rutinas recientes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-3 pb-4">
-              {!recentRoutines || recentRoutines.length === 0 ? (
-                <p className="text-zinc-600 text-sm px-2 py-3">Sin rutinas generadas</p>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {recentRoutines.slice(0, 4).map((routine) => (
-                    <Link key={routine.id} href={`/dashboard/clients/${routine.client_id}`}>
-                      <div className="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-zinc-800 transition group">
-                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center shrink-0">
-                          <Dumbbell size={13} className="text-blue-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-xs font-medium truncate">{(routine.content as any)?.title ?? routine.title}</p>
-                          <p className="text-zinc-500 text-xs truncate">{(routine.clients as any)?.full_name}</p>
-                        </div>
-                        <span className="text-zinc-600 text-xs shrink-0">
-                          {new Date(routine.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
-                        </span>
-                      </div>
-                    </Link>
+                <div className="mt-6 flex h-28 items-end gap-3">
+                  {[46, 28, 62, 54, Math.max(32, retention)] .map((value, index) => (
+                    <div key={index} className="flex-1 rounded-t-xl bg-zinc-700/60" style={{ height: `${value}%` }} />
                   ))}
                 </div>
-              )}
+                <div className="mt-4 flex justify-between text-[11px] uppercase tracking-[0.18em] text-zinc-600">
+                  {['Jul', 'Aug', 'Sep', 'Oct', 'Nov'].map((item) => <span key={item}>{item}</span>)}
+                </div>
+              </div>
             </CardContent>
           </Card>
-        </div>
+
+          <Card className="border-zinc-800 bg-[#151c31]">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-xs uppercase tracking-[0.26em] text-zinc-500">Recent check-ins</CardTitle>
+              <Activity className="h-4 w-4 text-zinc-600" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(checkins ?? []).slice(0, 3).map((checkin) => {
+                const client = activeClients.find((item) => item.id === checkin.client_id)
+                return (
+                  <Link key={checkin.id} href={`/dashboard/clients/${checkin.client_id}`} className="block rounded-2xl border border-zinc-800 bg-[#0f1629] p-4 transition hover:border-zinc-700">
+                    <p className="text-base font-semibold text-white">{client?.full_name ?? 'Client'}</p>
+                    <p className="mt-1 text-sm text-zinc-400">Morning session complete</p>
+                    <p className="mt-2 text-xs text-zinc-600">{formatRelativeActivity(checkin.created_at).replace('Last: ', '')}</p>
+                  </Link>
+                )
+              })}
+            </CardContent>
+          </Card>
+
+          <Card className="border-zinc-800 bg-[#151c31]">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-xs uppercase tracking-[0.26em] text-zinc-500">Recent routines</CardTitle>
+              <BarChart3 className="h-4 w-4 text-zinc-600" />
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(recentRoutines ?? []).map((routine) => (
+                <Link key={routine.id} href={`/dashboard/clients/${routine.client_id}`} className="block rounded-2xl border border-zinc-800 bg-[#0f1629] p-4 transition hover:border-zinc-700">
+                  <p className="text-base font-semibold text-white">
+                    {((routine.content as RoutineSummary | null)?.title) ?? routine.title ?? 'Routine'}
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-400">{(routine.clients as { full_name?: string } | null)?.full_name ?? 'Client assigned'}</p>
+                  <p className="mt-2 text-xs text-zinc-600">{formatRelativeActivity(routine.created_at).replace('Last: ', 'Updated ')}</p>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border-zinc-700 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_36%),linear-gradient(180deg,#2a2534_0%,#211d28_100%)]">
+            <CardContent className="p-6">
+              <p className="text-2xl font-semibold tracking-[-0.04em] text-white">Treinex Pro+</p>
+              <p className="mt-3 text-sm leading-7 text-zinc-300">
+                Unlock deeper recovery insights and more advanced automation for your roster.
+              </p>
+              <button className="mt-6 h-11 w-full rounded-xl bg-white px-4 text-sm font-semibold text-zinc-950 transition hover:bg-zinc-100">
+                Upgrade plan
+              </button>
+            </CardContent>
+          </Card>
+        </aside>
       </div>
     </div>
   )
