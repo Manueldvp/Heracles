@@ -97,9 +97,9 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-12 px-6 py-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-10">
-        <section className="relative rounded-[32px] border border-border bg-card/85 p-8 backdrop-blur-sm sm:p-10">
+    <div className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center lg:grid lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
+        <section className="relative hidden rounded-[32px] border border-border bg-card/85 p-8 backdrop-blur-sm sm:p-10 lg:block">
           <div className="absolute right-6 top-6">
             <ThemeToggle />
           </div>
@@ -135,10 +135,13 @@ function LoginForm() {
           </div>
         </section>
 
-        <section className="mx-auto w-full max-w-md">
-          <Card className="border-border bg-card/95 shadow-sm">
-            <CardContent className="p-8 sm:p-10">
-              <BrandLockup subtitle={t('common.tagline')} compact className="mb-10 lg:hidden" />
+        <section className="mx-auto flex w-full max-w-md items-center justify-center">
+          <Card className="w-full border-border bg-card/95 shadow-sm">
+            <CardContent className="p-6 sm:p-8">
+              <div className="mb-8 flex items-center justify-between gap-4 lg:hidden">
+                <BrandLockup compact className="min-w-0" />
+                <ThemeToggle />
+              </div>
 
               <div className="mb-8">
                 <h2 className="text-3xl font-semibold tracking-[-0.05em] text-foreground">
@@ -207,7 +210,7 @@ function LoginForm() {
                   {loading ? t('auth.login.submitting') : t('auth.login.submit')}
                 </Button>
 
-                <div className="flex items-center justify-between gap-4 pt-2">
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
                   <button
                     type="button"
                     onClick={handleForgotPassword}
@@ -224,7 +227,7 @@ function LoginForm() {
                 </div>
               </div>
 
-              <p className="mt-10 text-center text-xs text-muted-foreground">{t('common.copyright')}</p>
+              <p className="mt-8 text-center text-xs text-muted-foreground">{t('common.copyright')}</p>
             </CardContent>
           </Card>
         </section>

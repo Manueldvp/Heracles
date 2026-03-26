@@ -48,7 +48,7 @@ export default function DashboardTopbar({ email, trainerName, trainerId, avatarU
                   key={item.href}
                   href={item.href}
                   className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                    active ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                    active ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground'
                   }`}
                 >
                   {item.label}

@@ -15,7 +15,7 @@ export default function ThemeToggle({ className }: { className?: string }) {
   )
 
   if (!mounted) {
-    return <div className={cn('size-9 rounded-full border border-border bg-card shadow-sm', className)} />
+    return <div className={cn('size-9 rounded-full border border-border bg-transparent', className)} />
   }
 
   const isDark = resolvedTheme === 'dark'
@@ -30,7 +30,7 @@ export default function ThemeToggle({ className }: { className?: string }) {
       aria-label={label}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
       className={cn(
-        'size-9 rounded-full border-border bg-card text-muted-foreground shadow-sm hover:bg-accent hover:text-accent-foreground',
+        'size-9 rounded-full border-border bg-transparent text-muted-foreground shadow-none hover:bg-accent/70 hover:text-foreground',
         className
       )}
     >

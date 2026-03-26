@@ -81,7 +81,7 @@ function RegisterForm() {
         <div className="mx-auto flex min-h-screen max-w-xl items-center justify-center">
           <Card className="w-full border-border bg-card">
             <CardContent className="p-8 text-center sm:p-10">
-              <BrandLockup subtitle={t('common.tagline')} compact className="justify-center" />
+              <BrandLockup compact className="justify-center" />
               <div className="mx-auto mt-8 h-14 w-14 rounded-full border border-primary/20 bg-primary/10" />
               <h2 className="mt-8 text-3xl font-semibold tracking-[-0.05em] text-foreground">
                 {t('auth.register.confirmation.title')}
@@ -117,15 +117,15 @@ function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto grid min-h-screen max-w-7xl gap-12 px-6 py-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center lg:px-10">
+    <div className="min-h-screen bg-background px-4 py-8 text-foreground sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center lg:grid lg:grid-cols-[0.95fr_1.05fr] lg:gap-12">
         <section className="mx-auto w-full max-w-md lg:order-2">
-          <Card className="border-border bg-card/95 shadow-sm">
-            <CardContent className="p-8 sm:p-10">
-              <div className="mb-6 flex justify-end">
+          <Card className="w-full border-border bg-card/95 shadow-sm">
+            <CardContent className="p-6 sm:p-8">
+              <div className="mb-8 flex items-center justify-between gap-4">
+                <BrandLockup compact className="min-w-0 lg:hidden" />
                 <ThemeToggle />
               </div>
-              <BrandLockup subtitle={t('common.tagline')} compact className="mb-10 lg:hidden" />
 
               <div className="mb-8">
                 <h1 className="text-3xl font-semibold tracking-[-0.05em] text-foreground">
@@ -229,13 +229,13 @@ function RegisterForm() {
                 </div>
               </div>
 
-              <p className="mt-10 text-center text-xs text-muted-foreground">{t('common.copyright')}</p>
+              <p className="mt-8 text-center text-xs text-muted-foreground">{t('common.copyright')}</p>
             </CardContent>
           </Card>
         </section>
 
         {!isClient ? (
-          <section className="rounded-[32px] border border-border bg-card/85 p-8 backdrop-blur-sm sm:p-10 lg:order-1">
+          <section className="hidden rounded-[32px] border border-border bg-card/85 p-8 backdrop-blur-sm sm:p-10 lg:order-1 lg:block">
             <BrandLockup subtitle={t('common.tagline')} />
 
             <div className="mt-14 max-w-2xl">

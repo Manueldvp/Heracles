@@ -43,7 +43,7 @@ export default function LandingPage() {
         <div className="mx-auto w-full max-w-screen-xl px-4 pb-24 pt-6">
           <header className="sticky top-0 z-20 rounded-2xl border border-border bg-background/85 px-4 py-4 backdrop-blur sm:px-5">
             <div className="flex max-w-full items-center gap-3 overflow-x-hidden">
-              <BrandLockup subtitle={t('common.tagline')} compact className="min-w-0" />
+              <BrandLockup compact className="min-w-0" />
 
               <nav className="hidden items-center gap-8 md:flex">
                 <span className="text-sm font-medium text-primary">{t('landing.nav.platform')}</span>
@@ -55,7 +55,7 @@ export default function LandingPage() {
               <div className="ml-auto flex shrink-0 items-center gap-2">
                 <div className="hidden items-center gap-2 md:flex">
                   <Link href="/login">
-                    <Button variant="ghost" size="sm" className="px-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                    <Button variant="ghost" size="sm" className="px-3 text-muted-foreground hover:bg-accent/70 hover:text-foreground">
                       {t('common.login')}
                     </Button>
                   </Link>
@@ -81,7 +81,7 @@ export default function LandingPage() {
                         <SheetClose asChild key={item.label}>
                           <Link
                             href={item.href}
-                            className="rounded-2xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                            className="rounded-2xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition hover:bg-accent/70 hover:text-foreground"
                           >
                             {item.label}
                           </Link>
@@ -320,7 +320,7 @@ export default function LandingPage() {
       <footer className="border-t border-border bg-background px-4 py-16">
         <div className="mx-auto grid w-full max-w-screen-xl gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
-            <BrandLockup subtitle={t('common.tagline')} />
+            <BrandLockup />
             <p className="mt-6 text-xs uppercase tracking-[0.2em] text-zinc-500">{t('common.copyright')}</p>
           </div>
 
@@ -340,8 +340,8 @@ export default function LandingPage() {
 
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.footer.access')}</p>
-            <Link href="/login" className="block text-sm text-zinc-400 transition hover:text-white">{t('common.login')}</Link>
-            <Link href="/register" className="block text-sm text-zinc-400 transition hover:text-white">{t('common.start_free')}</Link>
+            <Link href="/login" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('common.login')}</Link>
+            <Link href="/register" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('common.start_free')}</Link>
           </div>
         </div>
       </footer>

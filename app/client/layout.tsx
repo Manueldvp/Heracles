@@ -37,9 +37,7 @@ export default async function ClientLayout({ children }: { children: React.React
 
       <header className="sticky top-0 z-10 flex h-14 max-w-full items-center justify-between overflow-x-hidden border-b border-border bg-background/95 px-4 backdrop-blur sm:px-6">
         <Link href="/client" className="group flex min-w-0 items-center gap-2">
-          <div className="h-7 w-7 shrink-0 rounded-lg bg-primary flex items-center justify-center transition group-hover:bg-primary-hover">
-            <Zap size={14} className="text-primary-foreground" fill="currentColor" />
-          </div>
+          <Zap size={16} className="shrink-0 text-primary transition group-hover:text-primary-hover" />
           <span className="truncate font-display text-xl text-foreground tracking-widest">{appName.toUpperCase()}</span>
         </Link>
         <div className="flex shrink-0 items-center gap-2">
