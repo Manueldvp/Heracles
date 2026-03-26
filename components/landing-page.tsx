@@ -1,8 +1,9 @@
 import Link from 'next/link'
-import { ArrowRight, BarChart3, BellRing, LayoutDashboard, Sparkles, UsersRound } from 'lucide-react'
+import { ArrowRight, BarChart3, BellRing, LayoutDashboard, Menu, Sparkles, UsersRound } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import BrandLockup from '@/components/brand-lockup'
 import FeatureCard from '@/components/landing/feature-card'
 import LandingCarousel from '@/components/landing/landing-carousel'
@@ -29,11 +30,17 @@ export default function LandingPage() {
   const carouselItems = getTranslationValue<CarouselItem[]>('landing.carousel.items', 'es')
   const snapshotSecondary = getTranslationValue<Array<{ title: string; value: string; copy: string }>>('landing.snapshot.secondary', 'es')
   const featureIcons = [UsersRound, LayoutDashboard, Sparkles, BellRing]
+  const mobileLinks = [
+    { href: '#valor', label: 'Coaching' },
+    { href: '#precios', label: 'Precios' },
+    { href: '/login', label: t('common.login') },
+    { href: '/register', label: t('common.start_free') },
+  ]
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="border-b border-border bg-background">
-        <div className="mx-auto max-w-7xl px-6 pb-24 pt-6 sm:px-8 lg:px-10">
+        <div className="mx-auto w-full max-w-screen-xl px-4 pb-24 pt-6">
           <header className="sticky top-0 z-20 rounded-2xl border border-border bg-background/85 px-4 py-4 backdrop-blur sm:px-5">
             <div className="flex max-w-full items-center gap-3 overflow-x-hidden">
               <BrandLockup subtitle={t('common.tagline')} compact className="min-w-0" />
@@ -46,17 +53,43 @@ export default function LandingPage() {
               </nav>
 
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                <Link href="/login">
-                  <Button variant="ghost" size="sm" className="px-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
-                    {t('common.login')}
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary-hover">
-                    {t('common.start_free')}
-                  </Button>
-                </Link>
+                <div className="hidden items-center gap-2 md:flex">
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm" className="px-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                      {t('common.login')}
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary-hover">
+                      {t('common.start_free')}
+                    </Button>
+                  </Link>
+                </div>
                 <ThemeToggle />
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="outline" size="icon" className="md:hidden">
+                      <Menu className="size-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[84vw] max-w-sm border-border bg-background">
+                    <SheetHeader>
+                      <SheetTitle>Navegación</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex flex-col gap-3 px-4 pb-6">
+                      {mobileLinks.map((item) => (
+                        <SheetClose asChild key={item.label}>
+                          <Link
+                            href={item.href}
+                            className="rounded-2xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                          >
+                            {item.label}
+                          </Link>
+                        </SheetClose>
+                      ))}
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
             </div>
           </header>
@@ -195,8 +228,8 @@ export default function LandingPage() {
         </div>
       </div>
 
-      <section className="border-b border-zinc-900 bg-zinc-950/60 px-6 py-24 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-7xl">
+      <section id="valor" className="border-b border-border bg-muted/20 px-4 py-24">
+        <div className="mx-auto w-full max-w-screen-xl">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.value.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
@@ -217,8 +250,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 py-24 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-7xl">
+      <section className="px-4 py-24">
+        <div className="mx-auto w-full max-w-screen-xl">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.features.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
@@ -240,8 +273,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="border-y border-zinc-900 bg-zinc-950/60 px-6 py-24 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-7xl">
+      <section className="border-y border-border bg-muted/20 px-4 py-24">
+        <div className="mx-auto w-full max-w-screen-xl">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.24em] text-orange-300">{t('landing.carousel.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
@@ -258,8 +291,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 py-24 sm:px-8 lg:px-10">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[32px] border border-zinc-800 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.28),transparent_24%),linear-gradient(180deg,#111111_0%,#090909_100%)] p-10 sm:p-14 lg:p-20">
+      <section id="precios" className="px-4 py-24">
+        <div className="mx-auto w-full max-w-screen-xl overflow-hidden rounded-[32px] border border-border bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_24%),linear-gradient(180deg,var(--card)_0%,var(--background)_100%)] p-10 sm:p-14 lg:p-20">
           <div className="max-w-3xl">
             <p className="text-xs uppercase tracking-[0.24em] text-orange-300">{t('landing.cta.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
@@ -284,8 +317,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t border-zinc-900 bg-zinc-950 px-6 py-16 sm:px-8 lg:px-10">
-        <div className="mx-auto grid max-w-7xl gap-10 md:grid-cols-4">
+      <footer className="border-t border-border bg-background px-4 py-16">
+        <div className="mx-auto grid w-full max-w-screen-xl gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
             <BrandLockup subtitle={t('common.tagline')} />
             <p className="mt-6 text-xs uppercase tracking-[0.2em] text-zinc-500">{t('common.copyright')}</p>

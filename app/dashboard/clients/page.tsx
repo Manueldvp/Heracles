@@ -177,7 +177,7 @@ export default async function ClientsPage({
                 href={`/dashboard/clients?sort=${sort}&filter=${link.value}`}
                 className={`rounded-2xl px-4 py-2 text-sm transition ${
                   filter === link.value
-                    ? 'bg-orange-50 text-orange-600'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-stone-100 text-stone-500 hover:text-stone-900'
                 }`}
               >
@@ -193,7 +193,7 @@ export default async function ClientsPage({
                 href={`/dashboard/clients?sort=${link.value}&filter=${filter}`}
                 className={`rounded-2xl px-4 py-2 text-sm transition ${
                   sort === link.value
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-stone-100 text-stone-500 hover:text-stone-900'
                 }`}
               >

@@ -63,6 +63,10 @@ function estimateWorkSeconds(exercise: Exercise): number {
 }
 
 type Phase = 'idle' | 'working'
+type RestTransition =
+  | { type: 'set'; exerciseIndex: number; nextSet: number }
+  | { type: 'exercise'; nextExerciseIndex: number }
+  | null
 
 const MOTIVATIONAL = [
   '¡Bestia mode activado!',
@@ -539,6 +543,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const [restTimeLeft, setRestTimeLeft] = useState(0)
   const [restTotal, setRestTotal] = useState(0)
   const [restForIndex, setRestForIndex] = useState(0)
+  const [restTransition, setRestTransition] = useState<RestTransition>(null)
   const [workTimeLeft, setWorkTimeLeft] = useState(0)
   const [workTotal, setWorkTotal] = useState(0)
   const [currentSet, setCurrentSet] = useState(1)
@@ -601,7 +606,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
             setPhase('idle')
             setAutoOpenLoggerIndex(index)
           } else {
-            startRestAfter(index)
+            startRestTransition({ type: 'set', exerciseIndex: index, nextSet: setNumber + 1 }, index)
           }
           return 0
         }
@@ -610,39 +615,44 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     }, 1000)
   }
 
-  const startRestAfter = (completedIndex: number) => {
+  const startRestTransition = (transition: Exclude<RestTransition, null>, completedIndex: number) => {
     const restSecs = parseRestSeconds(exercises[completedIndex].rest)
     setResting(true)
     setRestForIndex(completedIndex)
+    setRestTransition(transition)
     setRestTimeLeft(restSecs)
     setRestTotal(restSecs)
     clearTimer()
     timerRef.current = setInterval(() => {
       setRestTimeLeft(prev => {
-        if (prev <= 1) { clearInterval(timerRef.current!); finishRest(completedIndex); return 0 }
+        if (prev <= 1) { clearInterval(timerRef.current!); finishRest(); return 0 }
         return prev - 1
       })
     }, 1000)
   }
 
-  const finishRest = (completedIndex: number) => {
+  const finishRest = () => {
     setResting(false)
-    const nextSet = currentSet + 1
-    if (nextSet <= exercises[completedIndex].sets) {
-      setCurrentSet(nextSet)
-      startExercise(completedIndex, nextSet)
+    const transition = restTransition
+    setRestTransition(null)
+
+    if (!transition) {
+      void saveSession()
       return
     }
 
-    const next = getNextPendingIndex(completed, completedIndex + 1)
-    if (next >= 0) {
-      setActiveIndex(next)
-      setCurrentSet(1)
-      setPhase('idle')
+    if (transition.type === 'set') {
+      setActiveIndex(transition.exerciseIndex)
+      setCurrentSet(transition.nextSet)
+      startExercise(transition.exerciseIndex, transition.nextSet)
       return
     }
 
-    void saveSession()
+    setActiveIndex(transition.nextExerciseIndex)
+    setCurrentSet(1)
+    setPhase('idle')
+    setAutoOpenLoggerIndex(null)
+    setWorkoutStarted(true)
   }
 
   const completeExercise = async (index: number, sets: SetLog[]) => {
@@ -688,7 +698,12 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     if (isLast) {
       await saveSession()
     } else {
-      startRestAfter(index)
+      const nextExerciseIndex = getNextPendingIndex(newCompleted, index + 1)
+      if (nextExerciseIndex >= 0) {
+        startRestTransition({ type: 'exercise', nextExerciseIndex }, index)
+      } else {
+        await saveSession()
+      }
     }
   }
 
@@ -749,6 +764,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     setPhase('idle')
     setAutoOpenLoggerIndex(null)
     setResting(false)
+    setRestTransition(null)
     setCurrentSet(1)
     setWorkTimeLeft(0)
     setWorkTotal(0)
@@ -856,13 +872,13 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
                 onReset={resetWorkout} isToday={isToday} completedAt={completedAt} />
             ) : resting ? (
               <RestScreen
-        nextExercise={exercises[restForIndex + 1] ?? null}
-        exercise={exercises[restForIndex] ?? null}
-        currentSet={currentSet + 1}
-        totalSets={exercises[restForIndex]?.sets ?? currentSet}
+        nextExercise={restTransition?.type === 'exercise' ? exercises[restTransition.nextExerciseIndex] ?? null : exercises[restForIndex + 1] ?? null}
+        exercise={restTransition?.type === 'set' ? exercises[restTransition.exerciseIndex] ?? null : exercises[restForIndex] ?? null}
+        currentSet={restTransition?.type === 'set' ? restTransition.nextSet : 1}
+        totalSets={restTransition?.type === 'set' ? exercises[restTransition.exerciseIndex]?.sets ?? currentSet : exercises[restForIndex]?.sets ?? currentSet}
         timeLeft={restTimeLeft}
         total={restTotal}
-        onSkip={() => { clearTimer(); finishRest(restForIndex) }}
+        onSkip={() => { clearTimer(); finishRest() }}
               />
             ) : (
               <div className="flex flex-col gap-2">
