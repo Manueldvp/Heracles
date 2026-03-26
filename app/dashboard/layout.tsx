@@ -16,7 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (profile?.role === 'client') redirect('/client')
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-stone-50 text-stone-950">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[1600px] flex-col">
         <DashboardTopbar
           email={user.email ?? ''}

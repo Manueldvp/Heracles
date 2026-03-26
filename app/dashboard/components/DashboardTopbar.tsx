@@ -23,19 +23,19 @@ export default function DashboardTopbar({ email, trainerName, trainerId, avatarU
   const pathname = usePathname()
 
   return (
-    <header className="sticky top-0 z-30 border-b border-stone-200 bg-stone-50/95 backdrop-blur">
-      <div className="flex h-20 items-center gap-4 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-30 max-w-full border-b border-border bg-background/95 backdrop-blur">
+      <div className="flex h-20 max-w-full items-center gap-3 overflow-x-hidden px-4 sm:px-6 lg:px-8">
         <div className="min-w-0 lg:hidden">
-          <p className="text-lg font-semibold tracking-[-0.04em] text-orange-600">Treinex</p>
+          <p className="truncate text-lg font-semibold tracking-[-0.04em] text-primary">Treinex</p>
         </div>
 
         <div className="hidden lg:flex lg:flex-1 lg:items-center lg:gap-4">
           <div className="relative max-w-md flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               placeholder="Buscar clientes, rutinas o métricas..."
-              className="h-12 w-full rounded-2xl border border-stone-200 bg-white pl-11 pr-4 text-sm text-stone-900 placeholder:text-stone-400 outline-none transition focus:border-orange-500/60 focus:ring-4 focus:ring-orange-100"
+              className="h-12 w-full rounded-2xl border border-border bg-card pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
             />
           </div>
 
@@ -48,7 +48,7 @@ export default function DashboardTopbar({ email, trainerName, trainerId, avatarU
                   key={item.href}
                   href={item.href}
                   className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
-                    active ? 'bg-orange-50 text-orange-600' : 'text-stone-500 hover:bg-stone-100 hover:text-stone-900'
+                    active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                 >
                   {item.label}
@@ -59,7 +59,7 @@ export default function DashboardTopbar({ email, trainerName, trainerId, avatarU
           <ThemeToggle />
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex max-w-full shrink-0 items-center gap-2">
           <ThemeToggle className="lg:hidden" />
           <TrainerDrawerWrapper
             email={email}

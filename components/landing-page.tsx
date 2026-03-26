@@ -34,9 +34,9 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="border-b border-border bg-background">
         <div className="mx-auto max-w-7xl px-6 pb-24 pt-6 sm:px-8 lg:px-10">
-          <header className="sticky top-0 z-20 rounded-2xl border border-border bg-background/85 px-5 py-4 backdrop-blur">
-            <div className="flex items-center justify-between gap-6">
-              <BrandLockup subtitle={t('common.tagline')} compact />
+          <header className="sticky top-0 z-20 rounded-2xl border border-border bg-background/85 px-4 py-4 backdrop-blur sm:px-5">
+            <div className="flex max-w-full items-center gap-3 overflow-x-hidden">
+              <BrandLockup subtitle={t('common.tagline')} compact className="min-w-0" />
 
               <nav className="hidden items-center gap-8 md:flex">
                 <span className="text-sm font-medium text-primary">{t('landing.nav.platform')}</span>
@@ -45,14 +45,14 @@ export default function LandingPage() {
                 <span className="text-sm text-muted-foreground">{t('landing.nav.about')}</span>
               </nav>
 
-              <div className="flex items-center gap-3">
+              <div className="ml-auto flex shrink-0 items-center gap-2">
                 <Link href="/login">
-                  <Button variant="ghost" className="text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                  <Button variant="ghost" size="sm" className="px-3 text-muted-foreground hover:bg-accent hover:text-accent-foreground">
                     {t('common.login')}
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary-hover">
+                  <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary-hover">
                     {t('common.start_free')}
                   </Button>
                 </Link>
@@ -109,57 +109,75 @@ export default function LandingPage() {
 
             <Card className="overflow-hidden border-border bg-card shadow-sm">
               <CardContent className="p-6 sm:p-8">
-                <div className="rounded-[28px] border border-border bg-card p-6">
-                  <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{t('landing.snapshot.eyebrow')}</p>
-                      <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">{t('landing.snapshot.title')}</p>
+                <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                  <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-4 border-b border-border pb-5">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{t('landing.snapshot.eyebrow')}</p>
+                        <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-foreground">{t('landing.snapshot.title')}</p>
+                      </div>
+                      <div className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
+                        {t('landing.snapshot.status')}
+                      </div>
                     </div>
-                    <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs text-primary">
-                      {t('landing.snapshot.status')}
+
+                    <div className="mt-6 grid gap-4">
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        <div className="rounded-2xl border border-border bg-muted/40 px-4 py-4">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Clientes</p>
+                          <p className="mt-2 text-lg font-semibold text-foreground">24 activos</p>
+                        </div>
+                        <div className="rounded-2xl border border-border bg-muted/40 px-4 py-4">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Check-ins</p>
+                          <p className="mt-2 text-lg font-semibold text-foreground">18 recibidos</p>
+                        </div>
+                        <div className="rounded-2xl border border-border bg-muted/40 px-4 py-4">
+                          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Adherencia</p>
+                          <p className="mt-2 text-lg font-semibold text-foreground">87%</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-3xl border border-border bg-muted/30 p-5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="h-1 w-14 rounded-full bg-primary" />
+                          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10">
+                            <LayoutDashboard className="h-5 w-5 text-primary" />
+                          </div>
+                        </div>
+                        <p className="mt-5 text-base font-semibold text-foreground">{t('landing.snapshot.primary_title')}</p>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                          {t('landing.snapshot.primary_copy')}
+                        </p>
+
+                        <div className="mt-5 grid gap-3">
+                          <div className="flex items-center justify-between rounded-2xl border border-border bg-background px-4 py-3">
+                            <span className="text-sm text-muted-foreground">Clientes con seguimiento activo</span>
+                            <span className="text-sm font-semibold text-foreground">12</span>
+                          </div>
+                          <div className="flex items-center justify-between rounded-2xl border border-border bg-background px-4 py-3">
+                            <span className="text-sm text-muted-foreground">Pendientes de revisión</span>
+                            <span className="text-sm font-semibold text-foreground">3</span>
+                          </div>
+                          <div className="flex items-center justify-between rounded-2xl border border-border bg-background px-4 py-3">
+                            <span className="text-sm text-muted-foreground">Alertas de adherencia</span>
+                            <span className="text-sm font-semibold text-primary">2 críticas</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 grid gap-4">
-                    <div className="rounded-3xl border border-border bg-muted/30 p-5">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="h-1 w-14 rounded-full bg-primary" />
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border bg-primary/10">
-                          <LayoutDashboard className="h-5 w-5 text-primary" />
+                  <div className="grid gap-4">
+                    {snapshotSecondary.map((item) => (
+                      <div key={item.title} className="rounded-3xl border border-border bg-muted/30 p-5">
+                        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{item.title}</p>
+                        <p className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-foreground">{item.value}</p>
+                        <p className="mt-2 text-sm text-muted-foreground">{item.copy}</p>
+                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-border">
+                          <div className={`h-full rounded-full ${item.title === 'Notificaciones' ? 'w-[82%] bg-primary' : 'w-[68%] bg-chart-5'}`} />
                         </div>
                       </div>
-                      <p className="mt-5 text-base font-semibold text-foreground">{t('landing.snapshot.primary_title')}</p>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                        {t('landing.snapshot.primary_copy')}
-                      </p>
-                      <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3">
-                          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Clientes</p>
-                          <p className="mt-2 text-lg font-semibold text-white">24 activos</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3">
-                          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Check-ins</p>
-                          <p className="mt-2 text-lg font-semibold text-white">18 recibidos</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-800 bg-zinc-950/80 px-3 py-3">
-                          <p className="text-[11px] uppercase tracking-[0.16em] text-zinc-500">Adherencia</p>
-                          <p className="mt-2 text-lg font-semibold text-white">87%</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      {snapshotSecondary.map((item) => (
-                        <div key={item.title} className="rounded-3xl border border-zinc-800 bg-zinc-900/80 p-5">
-                          <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">{item.title}</p>
-                          <p className="mt-4 text-3xl font-semibold tracking-[-0.05em] text-white">{item.value}</p>
-                          <p className="mt-2 text-sm text-zinc-500">{item.copy}</p>
-                          <div className="mt-4 h-2 overflow-hidden rounded-full bg-zinc-800">
-                            <div className={`h-full rounded-full ${item.title === 'Notificaciones' ? 'w-[82%] bg-orange-500' : 'w-[68%] bg-blue-400'}`} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </div>
               </CardContent>
