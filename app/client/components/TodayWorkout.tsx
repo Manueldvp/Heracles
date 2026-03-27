@@ -241,10 +241,14 @@ function SetLogger({ exercise, onComplete }: {
         }
       `}</style>
 
-      <Button onClick={handleComplete}
-        className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold h-11 gap-2 mt-1 active:scale-[0.98] transition-all">
-        <Check size={16} /> Guardar y continuar
-      </Button>
+      <div className="mt-4 flex justify-end">
+        <Button
+          onClick={handleComplete}
+          className="h-10 w-full rounded-xl px-5 text-sm font-semibold active:scale-[0.98] sm:w-auto sm:min-w-[190px]"
+        >
+          <Check size={16} /> Guardar y continuar
+        </Button>
+      </div>
     </div>
   )
 }
