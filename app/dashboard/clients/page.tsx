@@ -101,9 +101,9 @@ export default async function ClientsPage({
     <div className="max-w-full space-y-6 lg:space-y-8">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.26em] text-stone-500">Sistema de clientes</p>
-          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.06em] text-stone-950 sm:text-4xl">Clientes</h1>
-          <p className="mt-3 max-w-2xl text-base text-stone-600 sm:text-lg">
+          <p className="text-sm text-muted-foreground">Sistema de clientes</p>
+          <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-foreground sm:text-4xl">Clientes</h1>
+          <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
             Gestiona clientes activos, pendientes y planes vencidos desde una sola vista operativa.
           </p>
         </div>
@@ -111,47 +111,47 @@ export default async function ClientsPage({
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+        <Card className="rounded-xl border border-border bg-card shadow-sm">
           <CardContent className="p-6">
-            <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Clientes activos</p>
-            <p className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-stone-950 sm:text-5xl">{activeClients.length}</p>
-            <p className="mt-2 text-sm text-emerald-600">Clientes con acceso y seguimiento activo.</p>
+            <p className="text-sm text-muted-foreground">Clientes activos</p>
+            <p className="mt-4 text-2xl font-bold text-foreground sm:text-3xl">{activeClients.length}</p>
+            <p className="mt-2 text-sm text-muted-foreground">Clientes con acceso y seguimiento activo.</p>
           </CardContent>
         </Card>
-        <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+        <Card className="rounded-xl border border-border bg-card shadow-sm">
           <CardContent className="p-6">
-            <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Clientes pendientes</p>
-            <p className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-stone-950 sm:text-5xl">{pendingClients.length}</p>
-            <p className="mt-2 text-sm text-orange-600">Invitaciones esperando registro.</p>
+            <p className="text-sm text-muted-foreground">Clientes pendientes</p>
+            <p className="mt-4 text-2xl font-bold text-foreground sm:text-3xl">{pendingClients.length}</p>
+            <p className="mt-2 text-sm text-primary">Invitaciones esperando registro.</p>
           </CardContent>
         </Card>
-        <Card className="rounded-3xl border-stone-200 bg-white shadow-sm md:col-span-2 xl:col-span-1">
+        <Card className="rounded-xl border border-red-500/20 bg-red-500/10 shadow-sm md:col-span-2 xl:col-span-1">
           <CardContent className="p-6">
-            <p className="text-xs uppercase tracking-[0.22em] text-stone-500">Atención prioritaria</p>
-            <p className="mt-4 text-4xl font-semibold tracking-[-0.06em] text-rose-600 sm:text-5xl">{inactiveClients.length + expiredPlans.length}</p>
-            <p className="mt-2 text-sm text-rose-500">Clientes sin actividad o con planificación vencida.</p>
+            <p className="text-sm text-red-400">Atención prioritaria</p>
+            <p className="mt-4 text-2xl font-bold text-red-400 sm:text-3xl">{inactiveClients.length + expiredPlans.length}</p>
+            <p className="mt-2 text-sm text-red-400">Clientes sin actividad o con planificación vencida.</p>
           </CardContent>
         </Card>
       </div>
 
       {(inactiveClients.length > 0 || expiredPlans.length > 0) && (
-        <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+        <Card className="rounded-xl border border-red-500/20 bg-red-500/10 shadow-sm">
           <CardContent className="p-6">
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
-              <p className="text-xs uppercase tracking-[0.24em] text-stone-500">Clientes que requieren atención</p>
+              <AlertTriangle className="h-4 w-4 text-red-400" />
+              <p className="text-sm text-red-400">Clientes que requieren atención</p>
             </div>
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {inactiveClients.slice(0, 2).map((client) => (
-                <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-2xl border border-stone-200 bg-stone-50 p-4 transition hover:border-orange-200">
-                  <p className="text-lg font-semibold text-stone-950">{client.full_name}</p>
-                  <p className="mt-2 text-sm text-orange-600">Sin check-ins recientes</p>
+                <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-xl border border-red-500/20 bg-background p-4 transition hover:border-red-500/30">
+                  <p className="text-lg font-semibold text-foreground">{client.full_name}</p>
+                  <p className="mt-2 text-sm text-red-400">Sin check-ins recientes</p>
                 </Link>
               ))}
               {expiredPlans.slice(0, 2).map((client) => (
-                <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-2xl border border-stone-200 bg-stone-50 p-4 transition hover:border-orange-200">
-                  <p className="text-lg font-semibold text-stone-950">{client.full_name}</p>
-                  <p className="mt-2 text-sm text-orange-600">Sin rutina ni nutrición activa</p>
+                <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-xl border border-red-500/20 bg-background p-4 transition hover:border-red-500/30">
+                  <p className="text-lg font-semibold text-foreground">{client.full_name}</p>
+                  <p className="mt-2 text-sm text-red-400">Sin rutina ni nutrición activa</p>
                 </Link>
               ))}
             </div>
@@ -159,14 +159,14 @@ export default async function ClientsPage({
         </Card>
       )}
 
-      <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+      <Card className="rounded-xl border border-border bg-card shadow-sm">
         <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full max-w-full lg:max-w-md lg:flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Buscar clientes, estado o actividad..."
-              className="h-12 w-full rounded-2xl border-stone-200 bg-stone-50 pl-11 pr-4 text-sm text-stone-900 placeholder:text-stone-400 focus-visible:border-orange-500 focus-visible:ring-4 focus-visible:ring-orange-100"
+              className="h-12 w-full rounded-xl border-border bg-background pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/15"
             />
           </div>
 
@@ -175,10 +175,10 @@ export default async function ClientsPage({
               <Link
                 key={link.value}
                 href={`/dashboard/clients?sort=${sort}&filter=${link.value}`}
-                className={`rounded-2xl px-4 py-2 text-sm transition ${
+                className={`rounded-xl border px-4 py-2 text-sm transition ${
                   filter === link.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-stone-100 text-stone-500 hover:text-stone-900'
+                    ? 'border-primary/20 bg-primary/10 text-primary'
+                    : 'border-border bg-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground'
                 }`}
               >
                 {link.label} ({link.count})
@@ -191,10 +191,10 @@ export default async function ClientsPage({
               <Link
                 key={link.value}
                 href={`/dashboard/clients?sort=${link.value}&filter=${filter}`}
-                className={`rounded-2xl px-4 py-2 text-sm transition ${
+                className={`rounded-xl border px-4 py-2 text-sm transition ${
                   sort === link.value
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-stone-100 text-stone-500 hover:text-stone-900'
+                    ? 'border-primary/20 bg-primary/10 text-primary'
+                    : 'border-border bg-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground'
                 }`}
               >
                 {link.label}
@@ -209,10 +209,10 @@ export default async function ClientsPage({
           <section key={section.id} className="space-y-4">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.26em] text-stone-500">{section.title}</p>
-                <p className="mt-2 text-sm text-stone-600">{section.description}</p>
+                <p className="text-lg font-semibold text-foreground">{section.title}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{section.description}</p>
               </div>
-              <div className="flex h-10 min-w-10 items-center justify-center rounded-2xl border border-stone-200 bg-white px-3 text-sm text-stone-600">
+              <div className="flex h-10 min-w-10 items-center justify-center rounded-xl border border-border bg-card px-3 text-sm text-muted-foreground">
                 {section.items.length}
               </div>
             </div>

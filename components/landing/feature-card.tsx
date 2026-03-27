@@ -10,14 +10,14 @@ type Props = {
 
 export default function FeatureCard({ title, copy, icon: Icon, accent = 'neutral' }: Props) {
   const accentClasses = accent === 'orange'
-    ? 'bg-primary text-primary-foreground border-primary/20'
+    ? 'border-primary/20 bg-primary/10 text-foreground'
     : 'bg-card border-border'
 
   const iconClasses = accent === 'orange'
-    ? 'bg-transparent text-primary-foreground'
+    ? 'bg-transparent text-primary'
     : 'bg-transparent text-primary'
 
-  const copyClasses = accent === 'orange' ? 'text-primary-foreground/85' : 'text-muted-foreground'
+  const copyClasses = 'text-muted-foreground'
 
   return (
     <Card className={`group overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(0,0,0,0.35)] ${accentClasses}`}>

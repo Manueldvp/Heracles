@@ -54,10 +54,10 @@ export default function ClientDrawer({ email, clientName, clientId, avatarUrl: i
     targetRole: 'client',
   })
   const menuTabClass = 'flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition'
-  const menuTabActive = 'bg-primary text-primary-foreground'
+  const menuTabActive = 'border border-primary/20 bg-primary/10 text-primary'
   const menuTabInactive = 'bg-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground'
   const navItemBase = 'flex items-center gap-3 rounded-xl border px-4 py-3 transition'
-  const navItemActive = 'border-primary bg-primary text-primary-foreground'
+  const navItemActive = 'border-primary/20 bg-primary/10 text-primary'
   const navItemInactive = 'border-transparent bg-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground'
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -171,7 +171,7 @@ export default function ClientDrawer({ email, clientName, clientId, avatarUrl: i
                 <p className="mt-0.5 text-xs text-primary">Cliente</p>
               </div>
               {unreadCount > 0 && (
-                <Badge className="shrink-0 border-primary bg-primary text-primary-foreground">
+                <Badge className="shrink-0">
                   {unreadCount}
                 </Badge>
               )}
@@ -213,7 +213,7 @@ export default function ClientDrawer({ email, clientName, clientId, avatarUrl: i
                   >
                     <Icon size={18} />
                     <span className="text-sm font-medium">{label}</span>
-                    {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+                    {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
                   </Link>
                 )
               })}

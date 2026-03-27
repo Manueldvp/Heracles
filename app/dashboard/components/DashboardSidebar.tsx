@@ -21,7 +21,7 @@ export default function DashboardSidebar() {
   const pathname = usePathname()
   const navLinkBase = 'group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition'
   const navLinkInactive = 'bg-transparent text-muted-foreground hover:bg-accent/70 hover:text-foreground'
-  const navLinkActive = 'bg-primary text-primary-foreground'
+  const navLinkActive = 'border border-primary/20 bg-primary/10 text-primary'
 
   return (
     <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:flex lg:w-72 lg:flex-col lg:border-r lg:border-border lg:bg-sidebar">
@@ -40,7 +40,7 @@ export default function DashboardSidebar() {
                 href={item.href}
                 className={`${navLinkBase} ${active ? navLinkActive : navLinkInactive}`}
               >
-                <item.icon className={`h-5 w-5 ${active ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                <item.icon className={`h-5 w-5 ${active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
                 <span className="font-medium">{item.label}</span>
               </Link>
             )

@@ -142,16 +142,16 @@ export default async function DashboardPage() {
     <div className="max-w-full space-y-6 lg:space-y-8">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-muted-foreground">
             <span className="inline-flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-stone-400" />
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
               {now.toLocaleDateString('es-CL', { month: 'long', day: 'numeric', year: 'numeric' })}
             </span>
           </p>
-          <h1 className="mt-3 break-words text-3xl font-semibold tracking-[-0.06em] text-stone-950 sm:text-4xl lg:text-5xl">
+          <h1 className="mt-3 break-words text-3xl font-semibold tracking-[-0.05em] text-foreground sm:text-4xl lg:text-5xl">
             Bienvenido de vuelta, {trainerName}
           </h1>
-          <p className="mt-3 text-base text-orange-600 sm:text-lg">
+          <p className="mt-3 text-sm text-primary sm:text-base">
             {inactiveClients.length + missingRoutineClients.length} clientes requieren atención inmediata
           </p>
         </div>
@@ -188,10 +188,10 @@ export default async function DashboardPage() {
             <section className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.26em] text-stone-500">Acción requerida</p>
-                  <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-stone-950">Atención prioritaria</p>
+                  <p className="text-sm text-muted-foreground">Acción requerida</p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">Atención prioritaria</p>
                 </div>
-                <Link href="/dashboard/clients" className="text-sm font-medium text-orange-600 transition hover:text-orange-700">
+                <Link href="/dashboard/clients" className="text-sm font-medium text-primary transition hover:text-primary-hover">
                   Ver todas las alertas
                 </Link>
               </div>
@@ -216,10 +216,10 @@ export default async function DashboardPage() {
           <section className="space-y-4">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-xs uppercase tracking-[0.26em] text-stone-500">Portafolio de clientes</p>
-                <p className="mt-2 text-2xl font-semibold tracking-[-0.04em] text-stone-950">Cartera activa</p>
+                <p className="text-sm text-muted-foreground">Portafolio de clientes</p>
+                <p className="mt-2 text-lg font-semibold text-foreground">Cartera activa</p>
               </div>
-              <Link href="/dashboard/clients" className="text-sm font-medium text-stone-500 transition hover:text-stone-900">
+              <Link href="/dashboard/clients" className="text-sm font-medium text-muted-foreground transition hover:text-foreground">
                 Gestionar clientes
               </Link>
             </div>
@@ -251,12 +251,12 @@ export default async function DashboardPage() {
         </div>
 
         <aside className="min-w-0 space-y-4">
-          <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+          <Card className="rounded-xl border border-border bg-card shadow-sm">
             <CardHeader>
-              <CardTitle className="text-xs uppercase tracking-[0.26em] text-stone-500">Indicadores de rendimiento</CardTitle>
+              <CardTitle className="text-lg font-semibold text-foreground">Indicadores de rendimiento</CardTitle>
             </CardHeader>
             <CardContent className="space-y-5">
-              <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
+              <div className="rounded-xl border border-border bg-muted/40 p-5">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-stone-950">Retención</p>
                   <p className="text-2xl font-semibold tracking-[-0.05em] text-emerald-600">{retention}%</p>
