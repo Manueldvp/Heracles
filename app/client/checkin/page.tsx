@@ -2,6 +2,7 @@
 
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Camera, CheckCircle2, ClipboardList, HeartPulse, Sparkles } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,10 +46,10 @@ function ScaleSelector({
     <div className="space-y-3">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-white">{label}</p>
-          {helper && <p className="text-xs text-zinc-500 mt-1">{helper}</p>}
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          {helper && <p className="mt-1 text-xs text-muted-foreground">{helper}</p>}
         </div>
-        <span className="text-sm font-semibold text-white">{value}/5</span>
+        <span className="text-sm font-semibold text-foreground">{value}/5</span>
       </div>
       <div className="grid grid-cols-5 gap-2">
         {SCALE.map(option => (
@@ -58,8 +59,8 @@ function ScaleSelector({
             onClick={() => onChange(option)}
             className={`rounded-xl border px-3 py-3 text-sm transition ${
               value === option
-                ? 'border-orange-500 bg-orange-500 text-white'
-                : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                ? 'border-primary/20 bg-primary/10 text-primary'
+                : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground'
             }`}
           >
             {option}
@@ -73,9 +74,9 @@ function ScaleSelector({
 function StepPill({ active, done, label }: { active: boolean; done: boolean; label: string }) {
   return (
     <div className={`rounded-full border px-3 py-1.5 text-xs transition ${
-      active ? 'border-orange-500 bg-orange-500 text-white' :
-      done ? 'border-zinc-700 bg-zinc-900 text-zinc-200' :
-      'border-zinc-800 bg-zinc-950 text-zinc-500'
+      active ? 'border-primary/20 bg-primary/10 text-primary' :
+      done ? 'border-border bg-muted/40 text-foreground' :
+      'border-border bg-background text-muted-foreground'
     }`}>
       {label}
     </div>
@@ -261,24 +262,24 @@ function CheckinForm() {
 
     if (step === 1) {
       return (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Cumplimiento del día</CardTitle>
+            <CardTitle className="text-base text-foreground">Cumplimiento del día</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <ScaleSelector label="Adherencia al plan" helper="Qué tan bien cumpliste con lo planificado hoy" value={form.adherence} onChange={value => setForm(current => ({ ...current, adherence: value }))} />
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Entrenos</Label>
-                <Input type="number" min={0} max={7} value={form.completed_workouts} onChange={event => setForm(current => ({ ...current, completed_workouts: Math.max(0, parseInt(event.target.value || '0', 10)) }))} className="bg-zinc-950 border-zinc-800 text-white" />
+                <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Entrenos</Label>
+                <Input type="number" min={0} max={7} value={form.completed_workouts} onChange={event => setForm(current => ({ ...current, completed_workouts: Math.max(0, parseInt(event.target.value || '0', 10)) }))} className="border-border bg-background text-foreground" />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Agua</Label>
-                <Input type="number" step="0.5" value={form.water_liters} onChange={event => setForm(current => ({ ...current, water_liters: event.target.value }))} placeholder="2.5" className="bg-zinc-950 border-zinc-800 text-white" />
+                <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Agua</Label>
+                <Input type="number" step="0.5" value={form.water_liters} onChange={event => setForm(current => ({ ...current, water_liters: event.target.value }))} placeholder="2.5" className="border-border bg-background text-foreground" />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Calorías</Label>
-                <Input type="number" value={form.calories_consumed} onChange={event => setForm(current => ({ ...current, calories_consumed: event.target.value }))} placeholder="2100" className="bg-zinc-950 border-zinc-800 text-white" />
+                <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Calorías</Label>
+                <Input type="number" value={form.calories_consumed} onChange={event => setForm(current => ({ ...current, calories_consumed: event.target.value }))} placeholder="2100" className="border-border bg-background text-foreground" />
               </div>
             </div>
           </CardContent>
@@ -287,13 +288,13 @@ function CheckinForm() {
     }
 
     return (
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-white text-base">Notas opcionales</CardTitle>
+          <CardTitle className="text-base text-foreground">Notas opcionales</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Molestias o dolor</Label>
+            <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Molestias o dolor</Label>
             <div className="flex flex-wrap gap-2">
               {PAIN_ZONES.map(zone => (
                 <button
@@ -302,8 +303,8 @@ function CheckinForm() {
                   onClick={() => togglePainZone(zone)}
                   className={`rounded-full border px-3 py-2 text-xs transition ${
                     form.pain_zones.includes(zone)
-                      ? 'border-orange-500 bg-orange-500 text-white'
-                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                      ? 'border-primary/20 bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground'
                   }`}
                 >
                   {zone}
@@ -312,13 +313,13 @@ function CheckinForm() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Notas</Label>
+            <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Notas</Label>
             <textarea
               value={form.notes}
               onChange={event => setForm(current => ({ ...current, notes: event.target.value }))}
               rows={4}
               placeholder="Cuéntale a tu entrenador cómo estuvo el día o si necesitas ajustar algo."
-              className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-700"
+              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary/20"
             />
           </div>
         </CardContent>
@@ -329,9 +330,9 @@ function CheckinForm() {
   const renderWeeklyStep = () => {
     if (step === 0) {
       return (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Resumen de la semana</CardTitle>
+            <CardTitle className="text-base text-foreground">Resumen de la semana</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <ScaleSelector label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
@@ -344,21 +345,21 @@ function CheckinForm() {
 
     if (step === 1) {
       return (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Cumplimiento semanal</CardTitle>
+            <CardTitle className="text-base text-foreground">Cumplimiento semanal</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <ScaleSelector label="Adherencia nutricional" value={form.nutrition_adherence} onChange={value => setForm(current => ({ ...current, nutrition_adherence: value }))} />
             <ScaleSelector label="Nivel de estrés" value={form.stress_level} onChange={value => setForm(current => ({ ...current, stress_level: value }))} />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Peso actual</Label>
-                <Input type="number" step="0.1" value={form.weight} onChange={event => setForm(current => ({ ...current, weight: event.target.value }))} placeholder="75.5" className="bg-zinc-950 border-zinc-800 text-white" />
+                <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Peso actual</Label>
+                <Input type="number" step="0.1" value={form.weight} onChange={event => setForm(current => ({ ...current, weight: event.target.value }))} placeholder="75.5" className="border-border bg-background text-foreground" />
               </div>
               <div className="space-y-2">
-                <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Entrenos</Label>
-                <Input type="number" min={0} max={14} value={form.completed_workouts} onChange={event => setForm(current => ({ ...current, completed_workouts: Math.max(0, parseInt(event.target.value || '0', 10)) }))} className="bg-zinc-950 border-zinc-800 text-white" />
+                <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Entrenos</Label>
+                <Input type="number" min={0} max={14} value={form.completed_workouts} onChange={event => setForm(current => ({ ...current, completed_workouts: Math.max(0, parseInt(event.target.value || '0', 10)) }))} className="border-border bg-background text-foreground" />
               </div>
             </div>
           </CardContent>
@@ -368,28 +369,29 @@ function CheckinForm() {
 
     if (step === 2) {
       return (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Foto de progreso</CardTitle>
+            <CardTitle className="text-base text-foreground">Foto de progreso</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {photoPreview ? (
               <div className="space-y-3">
-                <button type="button" onClick={() => setShowPhotoModal(true)} className="block w-full overflow-hidden rounded-2xl border border-zinc-800">
+                <button type="button" onClick={() => setShowPhotoModal(true)} className="block w-full overflow-hidden rounded-xl border border-border">
                   <img src={photoPreview} alt="Vista previa" className="h-[320px] w-full object-cover" />
                 </button>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-zinc-400">{uploadingPhoto ? 'Subiendo imagen...' : 'Imagen lista para enviar'}</p>
-                  <Button type="button" variant="outline" className="border-zinc-700 text-zinc-300" onClick={() => { setPhotoPreview(null); setPhotoUrl(null) }}>
+                  <p className="text-sm text-muted-foreground">{uploadingPhoto ? 'Subiendo imagen...' : 'Imagen lista para enviar'}</p>
+                  <Button type="button" variant="outline" className="border-border text-foreground" onClick={() => { setPhotoPreview(null); setPhotoUrl(null) }}>
                     Quitar
                   </Button>
                 </div>
               </div>
             ) : (
-              <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-950 px-6 text-center">
-                <p className="text-base font-medium text-white">Sube tu foto semanal</p>
-                <p className="mt-2 max-w-sm text-sm text-zinc-500">Puedes ampliar la imagen antes de enviarla para revisar encuadre y calidad.</p>
-                <span className="mt-4 rounded-full border border-zinc-700 px-4 py-2 text-sm text-zinc-300">Seleccionar archivo</span>
+              <label className="flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 text-center">
+                <Camera className="h-7 w-7 text-primary" />
+                <p className="mt-4 text-base font-medium text-foreground">Sube tu foto semanal</p>
+                <p className="mt-2 max-w-sm text-sm text-muted-foreground">Puedes ampliar la imagen antes de enviarla para revisar encuadre y calidad.</p>
+                <span className="mt-4 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm text-primary">Seleccionar archivo</span>
                 <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
               </label>
             )}
@@ -399,13 +401,13 @@ function CheckinForm() {
     }
 
     return (
-      <Card className="bg-zinc-900 border-zinc-800">
+      <Card className="border-border bg-card">
         <CardHeader>
-          <CardTitle className="text-white text-base">Cierre semanal</CardTitle>
+          <CardTitle className="text-base text-foreground">Cierre semanal</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Molestias o dolor</Label>
+            <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Molestias o dolor</Label>
             <div className="flex flex-wrap gap-2">
               {PAIN_ZONES.map(zone => (
                 <button
@@ -414,8 +416,8 @@ function CheckinForm() {
                   onClick={() => togglePainZone(zone)}
                   className={`rounded-full border px-3 py-2 text-xs transition ${
                     form.pain_zones.includes(zone)
-                      ? 'border-orange-500 bg-orange-500 text-white'
-                      : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                      ? 'border-primary/20 bg-primary/10 text-primary'
+                      : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground'
                   }`}
                 >
                   {zone}
@@ -424,13 +426,13 @@ function CheckinForm() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label className="text-zinc-400 text-xs uppercase tracking-[0.18em]">Notas</Label>
+            <Label className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Notas</Label>
             <textarea
               value={form.notes}
               onChange={event => setForm(current => ({ ...current, notes: event.target.value }))}
               rows={4}
               placeholder="Qué funcionó bien, qué te costó más y qué quieres revisar con tu entrenador."
-              className="w-full rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition focus:border-zinc-700"
+              className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary/20"
             />
           </div>
         </CardContent>
@@ -440,9 +442,33 @@ function CheckinForm() {
 
   return (
     <div className="mx-auto max-w-2xl pb-10">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-white">Check-in</h2>
-        <p className="mt-1 text-sm text-zinc-400">Un flujo más simple para registrar cómo vienes y darle contexto real a tu entrenador.</p>
+      <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+            <ClipboardList className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Check-in</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Un flujo más simple para registrar cómo vienes y darle contexto real a tu entrenador.</p>
+          </div>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border bg-muted/30 p-3">
+            <HeartPulse className="h-4 w-4 text-primary" />
+            <p className="mt-2 text-sm font-medium text-foreground">Estado general</p>
+            <p className="mt-1 text-xs text-muted-foreground">Energía, sueño y adherencia.</p>
+          </div>
+          <div className="rounded-xl border border-border bg-muted/30 p-3">
+            <Camera className="h-4 w-4 text-primary" />
+            <p className="mt-2 text-sm font-medium text-foreground">Seguimiento visual</p>
+            <p className="mt-1 text-xs text-muted-foreground">Foto semanal cuando aplique.</p>
+          </div>
+          <div className="rounded-xl border border-border bg-muted/30 p-3">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <p className="mt-2 text-sm font-medium text-foreground">Contexto útil</p>
+            <p className="mt-1 text-xs text-muted-foreground">Notas y molestias para mejores ajustes.</p>
+          </div>
+        </div>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-2">
@@ -451,8 +477,8 @@ function CheckinForm() {
           onClick={() => { setCheckinType('daily'); setStep(0) }}
           className={`rounded-full border px-4 py-2 text-sm transition ${
             checkinType === 'daily'
-              ? 'border-orange-500 bg-orange-500 text-white'
-              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+              ? 'border-primary/20 bg-primary/10 text-primary'
+              : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground'
           }`}
         >
           Diario
@@ -462,8 +488,8 @@ function CheckinForm() {
           onClick={() => { setCheckinType('weekly'); setStep(0) }}
           className={`rounded-full border px-4 py-2 text-sm transition ${
             checkinType === 'weekly'
-              ? 'border-orange-500 bg-orange-500 text-white'
-              : 'border-zinc-800 bg-zinc-950 text-zinc-400 hover:border-zinc-700 hover:text-white'
+              ? 'border-primary/20 bg-primary/10 text-primary'
+              : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground'
           }`}
         >
           Semanal
@@ -471,9 +497,9 @@ function CheckinForm() {
       </div>
 
       <div className="mb-6 space-y-3">
-        <div className="h-2 overflow-hidden rounded-full bg-zinc-900">
+        <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
-            className="h-full rounded-full bg-orange-500 transition-all"
+            className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${((step + 1) / steps.length) * 100}%` }}
           />
         </div>
@@ -491,22 +517,23 @@ function CheckinForm() {
       )}
 
       <div className="mt-6 flex gap-3">
-        <Button variant="outline" onClick={step === 0 ? () => router.back() : goBack} className="flex-1 border-zinc-700 text-zinc-300">
+        <Button variant="outline" onClick={step === 0 ? () => router.back() : goBack} className="flex-1 border-border text-foreground">
           {step === 0 ? 'Cancelar' : 'Volver'}
         </Button>
         {step === steps.length - 1 ? (
-          <Button onClick={handleSubmit} disabled={loading || uploadingPhoto} className="flex-1 bg-orange-500 text-white hover:bg-orange-600">
+          <Button onClick={handleSubmit} disabled={loading || uploadingPhoto} className="flex-1 rounded-xl">
+            <CheckCircle2 className="mr-2 h-4 w-4" />
             {loading ? 'Enviando...' : 'Enviar check-in'}
           </Button>
         ) : (
-          <Button onClick={goNext} className="flex-1 bg-orange-500 text-white hover:bg-orange-600">
+          <Button onClick={goNext} className="flex-1 rounded-xl">
             Continuar
           </Button>
         )}
       </div>
 
       <Dialog open={showPhotoModal} onOpenChange={setShowPhotoModal}>
-        <DialogContent className="max-w-3xl bg-zinc-950 border-zinc-800 p-2">
+        <DialogContent className="max-w-3xl border-border bg-card p-2">
           <DialogTitle className="sr-only">Vista completa de la foto</DialogTitle>
           {photoPreview && (
             <img src={photoPreview} alt="Vista completa" className="max-h-[80vh] w-full object-contain rounded-xl" />

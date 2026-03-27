@@ -225,6 +225,50 @@ export default function LandingPage() {
               </div>
             ))}
           </section>
+
+          <section className="mt-8 grid gap-4 lg:grid-cols-3">
+            {[
+              {
+                title: 'Vista entrenador',
+                copy: 'Panel operativo para clientes, rutinas y alertas.',
+                icon: LayoutDashboard,
+              },
+              {
+                title: 'Progreso cliente',
+                copy: 'Peso, adherencia y evolución en una vista clara.',
+                icon: BarChart3,
+              },
+              {
+                title: 'Rutinas y planes',
+                copy: 'Bloques visuales listos para futuros screenshots reales.',
+                icon: Sparkles,
+              },
+            ].map(({ title, copy, icon: Icon }) => (
+              <Card key={title} className="overflow-hidden border-border bg-card shadow-sm">
+                <CardContent className="p-0">
+                  <div className="border-b border-border bg-[linear-gradient(135deg,rgba(249,115,22,0.12),transparent_60%),linear-gradient(180deg,var(--card)_0%,var(--background)_100%)] p-5">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">{title}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{copy}</p>
+                      </div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+                        <Icon className="h-4 w-4 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid gap-3 p-5">
+                    <div className="h-28 rounded-2xl border border-dashed border-border bg-muted/40" />
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="h-14 rounded-xl border border-border bg-background" />
+                      <div className="h-14 rounded-xl border border-border bg-background" />
+                      <div className="h-14 rounded-xl border border-border bg-background" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </section>
         </div>
       </div>
 

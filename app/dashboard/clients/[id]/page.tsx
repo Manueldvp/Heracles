@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ClientExerciseProgress from './components/ClientExerciseProgress'
 import ClientNotes from './components/ClientNotes'
 import CheckinHistory from './progress/CheckinHistory'
+import CheckinPhotoGallery from './components/CheckinPhotoGallery'
 import { Button } from '@/components/ui/button'
 import {
   TrendingUp, Dumbbell, Salad, Pencil,
@@ -83,6 +84,13 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
 
   const hasPainAlert = lastCheckin?.pain_zones?.length > 0
   const bestLift = exerciseLogs?.[0]
+  const checkinPhotos = (checkins ?? [])
+    .filter(checkin => checkin.photo_url)
+    .map(checkin => ({
+      id: checkin.id,
+      url: checkin.photo_url as string,
+      createdAt: checkin.created_at,
+    }))
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
@@ -175,12 +183,9 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         ))}
       </div>
 
-      {/* Progreso de cargas */}
+      {/* Notas privadas */}
       <div className="mb-4">
-        <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
-          <BarChart2 size={16} className="text-blue-400" /> Progreso de cargas
-        </h3>
-        <ClientExerciseProgress clientId={client.id} />
+        <ClientNotes clientId={client.id} />
       </div>
 
       {bestLift && bestLift.max_weight > 0 && (
@@ -321,9 +326,16 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      {/* Notas privadas */}
+      {/* Progreso de cargas */}
       <div className="mb-4">
-        <ClientNotes clientId={client.id} />
+        <h3 className="text-white font-semibold mb-3 flex items-center gap-2">
+          <BarChart2 size={16} className="text-blue-400" /> Progreso de cargas
+        </h3>
+        <ClientExerciseProgress clientId={client.id} />
+      </div>
+
+      <div className="mb-4">
+        <CheckinPhotoGallery items={checkinPhotos} />
       </div>
 
       {/* Check-ins */}

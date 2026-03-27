@@ -26,7 +26,7 @@ export default function AIRoutinePage() {
     const data = await res.json()
 
     if (!res.ok) {
-      setError('Error generando la rutina, intenta de nuevo.')
+      setError(data.error ?? 'Error generando la rutina, intenta de nuevo.')
       setLoading(false)
       return
     }

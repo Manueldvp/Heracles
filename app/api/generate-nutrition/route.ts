@@ -1,4 +1,5 @@
 import { generateContent } from '@/lib/gemini'
+import { consumeAiGeneration } from '@/lib/billing'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -15,6 +16,15 @@ export async function POST(request: Request) {
   ])
 
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+
+  const usageResult = await consumeAiGeneration(supabase, user.id)
+  if (!usageResult.ok) {
+    return NextResponse.json({
+      error: usageResult.message,
+      upgradeRequired: true,
+      status: usageResult.status,
+    }, { status: 402 })
+  }
 
   // Calcular calorías base (fórmula Mifflin-St Jeor)
   const bmr = client.weight && client.height && client.age
@@ -92,7 +102,7 @@ IMPORTANTE: Responde SOLO con el JSON. Sin texto antes ni después. Sin comentar
       .select()
       .single()
 
-    return NextResponse.json({ plan: saved })
+    return NextResponse.json({ plan: saved, status: usageResult.status })
   } catch (error) {
     console.error('Error completo:', error)
     return NextResponse.json({ error: String(error) }, { status: 500 })

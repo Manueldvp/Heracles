@@ -28,6 +28,7 @@ export default function InviteClientDialog({ onInvited }: Props) {
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
+  const [upgradeRequired, setUpgradeRequired] = useState(false)
 
   useEffect(() => {
     if (open) loadForms()
@@ -47,52 +48,21 @@ export default function InviteClientDialog({ onInvited }: Props) {
     if (!email.trim()) return
     setLoading(true)
     setError('')
+    setUpgradeRequired(false)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('No autenticado')
-
-      // Generate unique token
-      const token = crypto.randomUUID()
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-
-      // Create pending client record
-      const { error: clientError } = await supabase.from('clients').insert({
-        trainer_id: user.id,
-        email: email.trim().toLowerCase(),
-        full_name: email.split('@')[0],
-        invite_token: token,
-        invite_token_expires_at: expiresAt,
-        form_id: selectedFormId,
-        onboarding_completed: false,
-        status: 'pending',
-        goal: 'muscle_gain',
-        level: 'beginner',
-      })
-
-      if (clientError) throw new Error(clientError.message)
-
-      // Get trainer profile for email
-      const { data: trainerProfile } = await supabase
-        .from('profiles').select('full_name').eq('id', user.id).single()
-
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-      const inviteUrl = `${appUrl}/invite/${token}`
-
-      // Send email
-      const res = await fetch('/api/send-invite', {
+      const res = await fetch('/api/clients/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          to: email.trim(),
-          inviteUrl,
-          trainerName: trainerProfile?.full_name ?? 'Tu entrenador',
-          hasForm: !!selectedFormId,
+          email: email.trim(),
+          formId: selectedFormId,
         }),
       })
 
       if (!res.ok) {
         const resData = await res.json()
+        setUpgradeRequired(Boolean(resData.upgradeRequired))
         throw new Error(resData.error ?? 'Error enviando email')
       }
 
@@ -115,7 +85,7 @@ export default function InviteClientDialog({ onInvited }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => {
       setOpen(v)
-      if (!v) { setError(''); setSent(false); setEmail('') }
+      if (!v) { setError(''); setSent(false); setEmail(''); setUpgradeRequired(false) }
     }}>
       <DialogTrigger asChild>
         <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5">
@@ -221,7 +191,14 @@ export default function InviteClientDialog({ onInvited }: Props) {
             {error && (
               <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5">
                 <AlertCircle size={14} className="text-red-400 shrink-0" />
-                <p className="text-red-400 text-sm">{error}</p>
+                <div className="flex-1">
+                  <p className="text-red-400 text-sm">{error}</p>
+                  {upgradeRequired ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Pásate a Premium para invitar más de 5 clientes y desbloquear IA ilimitada.
+                    </p>
+                  ) : null}
+                </div>
               </div>
             )}
 

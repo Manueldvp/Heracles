@@ -4,11 +4,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 type Props = {
-  href: string
+  href?: string
   name: string
   detail: string
   actionLabel: string
   tone?: 'rose' | 'slate'
+  onAction?: () => void
+  disabled?: boolean
 }
 
 const toneConfig = {
@@ -34,6 +36,8 @@ export default function PriorityAttentionCard({
   detail,
   actionLabel,
   tone = 'slate',
+  onAction,
+  disabled = false,
 }: Props) {
   const config = toneConfig[tone]
   const Icon = config.Icon
@@ -48,9 +52,20 @@ export default function PriorityAttentionCard({
           <p className="truncate text-lg font-semibold tracking-[-0.03em] text-foreground">{name}</p>
           <p className={`mt-1 text-sm ${config.text}`}>{detail}</p>
         </div>
-        <Link href={href} className="sm:ml-auto">
-          <Button className={`${config.button} h-10 rounded-xl px-4 text-sm font-semibold`}>{actionLabel}</Button>
-        </Link>
+        {href ? (
+          <Link href={href} className="sm:ml-auto">
+            <Button className={`${config.button} h-10 rounded-xl px-4 text-sm font-semibold`}>{actionLabel}</Button>
+          </Link>
+        ) : (
+          <Button
+            type="button"
+            disabled={disabled}
+            onClick={onAction}
+            className={`${config.button} h-10 rounded-xl px-4 text-sm font-semibold sm:ml-auto`}
+          >
+            {actionLabel}
+          </Button>
+        )}
       </CardContent>
     </Card>
   )

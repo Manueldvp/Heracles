@@ -813,7 +813,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
         <p className="text-zinc-500 text-xs uppercase tracking-widest flex items-center gap-1.5">
           <Dumbbell size={11} className="text-blue-400" /> Mi entrenamiento
         </p>
-        <Link href="/client/routine">
+        <Link href={`/client/routine/${routineId}`}>
           <button className="text-zinc-500 text-xs hover:text-zinc-300 transition flex items-center gap-0.5">
             Ver semana <ChevronRight size={12} />
           </button>

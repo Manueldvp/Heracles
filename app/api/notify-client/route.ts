@@ -6,7 +6,7 @@ import { APP_URL, EMAIL_FROM } from '@/lib/branding'
 import { buildAssignedContentEmail } from '@/lib/email/templates'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const ALLOWED_TYPES = new Set(['routine_assigned', 'nutrition_assigned', 'message'])
+const ALLOWED_TYPES = new Set(['routine_assigned', 'nutrition_assigned', 'message', 'reminder'])
 
 export async function POST(req: NextRequest) {
   try {
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
           routine_assigned: 'Rutina nueva',
           nutrition_assigned: 'Plan nutricional nuevo',
           message: 'Nuevo mensaje',
+          reminder: 'Recordatorio de tu entrenador',
         }
         const subjectPrefix = iconMap[type] ?? 'Actualización'
 

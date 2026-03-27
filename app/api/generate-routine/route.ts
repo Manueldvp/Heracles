@@ -1,4 +1,5 @@
 import { generateContent } from '@/lib/gemini'
+import { consumeAiGeneration } from '@/lib/billing'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -16,6 +17,15 @@ export async function POST(request: Request) {
   ])
 
   if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+
+  const usageResult = await consumeAiGeneration(supabase, user.id)
+  if (!usageResult.ok) {
+    return NextResponse.json({
+      error: usageResult.message,
+      upgradeRequired: true,
+      status: usageResult.status,
+    }, { status: 402 })
+  }
 
   const prompt = `
 Genera una rutina de entrenamiento semanal personalizada para este cliente.
@@ -82,7 +92,7 @@ Genera exactamente 4 días de entrenamiento, no más, con esta estructura:
       .select()
       .single()
 
-    return NextResponse.json({ routine: saved })
+    return NextResponse.json({ routine: saved, status: usageResult.status })
   } catch (error) {
     console.error('Error completo:', error)
     return NextResponse.json({ error: 'Error generando rutina' }, { status: 500 })

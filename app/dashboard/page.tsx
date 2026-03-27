@@ -12,7 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import DashboardInviteButton from './components/DashboardInviteButton'
 import MetricCard from './components/MetricCard'
 import PortfolioClientCard from './components/PortfolioClientCard'
-import PriorityAttentionCard from './components/PriorityAttentionCard'
+import DashboardAttentionCards from './components/DashboardAttentionCards'
+import { Badge } from '@/components/ui/badge'
+import { getTrainerBillingStatus } from '@/lib/billing'
 
 type RoutineSummary = {
   title?: string
@@ -116,10 +118,14 @@ export default async function DashboardPage() {
   const inactiveClients = activeClients.filter((client) => !latestCheckinByClient.has(client.id))
   const missingRoutineClients = activeClients.filter((client) => !clientsWithRoutine.has(client.id))
   const retention = activeClients.length > 0 ? Math.round((checkedInToday.length / activeClients.length) * 1000) / 10 : 0
+  const billing = await getTrainerBillingStatus(supabase, user!.id)
 
   const attentionCards = [
     inactiveClients[0]
       ? {
+          id: `inactive-${inactiveClients[0].id}`,
+          clientId: inactiveClients[0].id,
+          name: inactiveClients[0].full_name,
           client: inactiveClients[0],
           detail: 'Sin actividad registrada en los últimos 5 días',
           action: 'Recordar',
@@ -128,6 +134,9 @@ export default async function DashboardPage() {
       : null,
     missingRoutineClients[0]
       ? {
+          id: `missing-${missingRoutineClients[0].id}`,
+          clientId: missingRoutineClients[0].id,
+          name: missingRoutineClients[0].full_name,
           client: missingRoutineClients[0],
           detail: 'Sin rutina asignada para esta fase',
           action: 'Asignar',
@@ -196,20 +205,16 @@ export default async function DashboardPage() {
                 </Link>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                {attentionCards.map((item) => (
-                  item ? (
-                    <PriorityAttentionCard
-                      key={item.client.id}
-                      href={`/dashboard/clients/${item.client.id}`}
-                      name={item.client.full_name}
-                      detail={item.detail}
-                      actionLabel={item.action}
-                      tone={item.tone}
-                    />
-                  ) : null
-                ))}
-              </div>
+              <DashboardAttentionCards
+                initialCards={attentionCards.filter(Boolean).map(item => ({
+                  id: item!.id,
+                  clientId: item!.clientId,
+                  name: item!.name,
+                  detail: item!.detail,
+                  action: item!.action,
+                  tone: item!.tone,
+                }))}
+              />
             </section>
           )}
 
@@ -273,52 +278,66 @@ export default async function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+          <Card className="rounded-xl border border-border bg-card shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xs uppercase tracking-[0.26em] text-stone-500">Check-ins recientes</CardTitle>
-              <Activity className="h-4 w-4 text-stone-400" />
+              <CardTitle className="text-lg font-semibold text-foreground">Check-ins recientes</CardTitle>
+              <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="space-y-3">
               {(checkins ?? []).slice(0, 3).map((checkin) => {
                 const client = activeClients.find((item) => item.id === checkin.client_id)
                 return (
-                  <Link key={checkin.id} href={`/dashboard/clients/${checkin.client_id}`} className="block rounded-2xl border border-stone-200 bg-stone-50 p-4 transition hover:border-orange-200">
-                    <p className="text-base font-semibold text-stone-950">{client?.full_name ?? 'Cliente'}</p>
-                    <p className="mt-1 text-sm text-stone-500">Registró actividad reciente</p>
-                    <p className="mt-2 text-xs text-stone-400">{formatRelativeActivity(checkin.created_at).replace('Última actividad: ', '')}</p>
+                  <Link key={checkin.id} href={`/dashboard/clients/${checkin.client_id}`} className="block rounded-xl border border-border bg-muted/30 p-4 transition hover:border-primary/20">
+                    <p className="text-base font-semibold text-foreground">{client?.full_name ?? 'Cliente'}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">Registró actividad reciente</p>
+                    <p className="mt-2 text-xs text-muted-foreground">{formatRelativeActivity(checkin.created_at).replace('Última actividad: ', '')}</p>
                   </Link>
                 )
               })}
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-stone-200 bg-white shadow-sm">
+          <Card className="rounded-xl border border-border bg-card shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-xs uppercase tracking-[0.26em] text-stone-500">Rutinas recientes</CardTitle>
-              <BarChart3 className="h-4 w-4 text-stone-400" />
+              <CardTitle className="text-lg font-semibold text-foreground">Rutinas recientes</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="space-y-3">
               {(recentRoutines ?? []).map((routine) => (
-                <Link key={routine.id} href={`/dashboard/clients/${routine.client_id}`} className="block rounded-2xl border border-stone-200 bg-stone-50 p-4 transition hover:border-orange-200">
-                  <p className="text-base font-semibold text-stone-950">
+                <Link key={routine.id} href={`/dashboard/clients/${routine.client_id}`} className="block rounded-xl border border-border bg-muted/30 p-4 transition hover:border-primary/20">
+                  <p className="text-base font-semibold text-foreground">
                     {((routine.content as RoutineSummary | null)?.title) ?? routine.title ?? 'Rutina'}
                   </p>
-                  <p className="mt-1 text-sm text-stone-500">{(routine.clients as { full_name?: string } | null)?.full_name ?? 'Cliente asignado'}</p>
-                  <p className="mt-2 text-xs text-stone-400">{formatRelativeActivity(routine.created_at).replace('Última actividad: ', 'Actualizada ')}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{(routine.clients as { full_name?: string } | null)?.full_name ?? 'Cliente asignado'}</p>
+                  <p className="mt-2 text-xs text-muted-foreground">{formatRelativeActivity(routine.created_at).replace('Última actividad: ', 'Actualizada ')}</p>
                 </Link>
               ))}
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden rounded-3xl border-orange-200 bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_36%),linear-gradient(180deg,#fff7ed_0%,#fffbeb_100%)] shadow-sm">
+          <Card className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <CardContent className="p-6">
-              <p className="text-2xl font-semibold tracking-[-0.04em] text-stone-950">Treinex Pro+</p>
-              <p className="mt-3 text-sm leading-7 text-stone-600">
-                Desbloquea automatizaciones más avanzadas e insights de recuperación para tu cartera.
-              </p>
-              <button className="mt-6 h-11 w-full rounded-xl bg-orange-500 px-4 text-sm font-semibold text-white transition hover:bg-orange-600">
-                Mejorar plan
-              </button>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-lg font-semibold text-foreground">
+                    {billing.subscription.planType === 'premium' ? 'Plan Premium' : 'Plan Free'}
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {billing.subscription.planType === 'premium'
+                      ? 'Clientes e IA sin límites activos.'
+                      : `${billing.clientCount}/${billing.subscription.clientLimit ?? 5} clientes usados · ${billing.aiGenerationsUsed}/3 generaciones IA este mes.`}
+                  </p>
+                </div>
+                <Badge>{billing.subscription.planType === 'premium' ? 'Activo' : 'Upgrade'}</Badge>
+              </div>
+              {billing.subscription.planType !== 'premium' ? (
+                <div className="mt-5 rounded-xl border border-primary/20 bg-primary/10 p-4">
+                  <p className="text-sm font-medium text-primary">Desbloquea Premium al superar 5 clientes</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Mantén control sobre tu crecimiento y evita quedarte sin IA durante el mes.
+                  </p>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </aside>

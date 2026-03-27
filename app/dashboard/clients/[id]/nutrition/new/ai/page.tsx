@@ -26,7 +26,7 @@ export default function AINutritionPage() {
     const data = await res.json()
 
     if (!res.ok) {
-      setError('Error generando el plan, intenta de nuevo.')
+      setError(data.error ?? 'Error generando el plan, intenta de nuevo.')
       setLoading(false)
       return
     }

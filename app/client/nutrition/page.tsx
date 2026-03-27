@@ -25,7 +25,10 @@ export default async function ClientNutritionListPage() {
           <ChevronLeft size={20} />
         </Link>
         <div>
-          <h2 className="text-xl font-bold text-white">Mis planes nutricionales</h2>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Salad size={18} className="text-primary" />
+            Mis planes nutricionales
+          </h2>
           <p className="text-zinc-500 text-xs mt-0.5">{plans?.length ?? 0} planes asignados · toca uno para activarlo</p>
         </div>
       </div>
@@ -48,17 +51,17 @@ export default async function ClientNutritionListPage() {
 
             return (
               <Card key={plan.id}
-                className={`bg-zinc-900 transition ${isActive ? 'border-orange-500/40' : 'border-zinc-800 hover:border-zinc-700'}`}>
+                className={`bg-zinc-900 transition ${isActive ? 'border-primary/30 bg-primary/5' : 'border-zinc-800 hover:border-zinc-700'}`}>
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-orange-500/20' : 'bg-green-500/10'}`}>
-                      <Salad size={16} className={isActive ? 'text-orange-400' : 'text-green-400'} />
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isActive ? 'bg-primary/10' : 'bg-green-500/10'}`}>
+                      <Salad size={16} className={isActive ? 'text-primary' : 'text-green-400'} />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-white font-semibold text-sm truncate">{content.title ?? 'Plan nutricional'}</p>
+                        <p className="text-white font-semibold text-sm break-words">{content.title ?? 'Plan nutricional'}</p>
                         {isActive && (
-                          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30 text-xs shrink-0">Activo</Badge>
+                          <Badge className="text-xs shrink-0">Activo</Badge>
                         )}
                       </div>
                       <p className="text-zinc-500 text-xs mt-0.5">
@@ -75,9 +78,9 @@ export default async function ClientNutritionListPage() {
                     {[
                       { label: 'Proteína', val: proteinG, color: 'text-red-400', bg: 'bg-red-500/10' },
                       { label: 'Carbos', val: carbsG, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-                      { label: 'Grasas', val: fatG, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+                      { label: 'Grasas', val: fatG, color: 'text-primary', bg: 'bg-primary/10' },
                     ].map(({ label, val, color, bg }) => (
-                      <div key={label} className={`${bg} rounded-xl px-3 py-1.5 text-center flex-1`}>
+                      <div key={label} className={`${bg} rounded-xl px-3 py-1.5 text-center flex-1 min-w-0`}>
                         <p className={`${color} font-bold text-sm leading-none`}>{val}g</p>
                         <p className="text-zinc-600 text-xs mt-0.5">{label}</p>
                       </div>

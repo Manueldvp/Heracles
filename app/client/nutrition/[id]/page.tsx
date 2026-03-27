@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Apple, ArrowLeft, Clock3, Leaf, Salad, Sparkles } from 'lucide-react'
 import Link from 'next/link'
 
 type Food = {
@@ -79,44 +80,58 @@ export default async function ClientNutritionDetailPage({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">{content.title ?? 'Plan nutricional'}</h2>
-          <p className="text-zinc-400 text-sm mt-1">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+              <Salad className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="break-words text-2xl font-bold text-foreground">{content.title ?? 'Plan nutricional'}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
             {new Date(plan.created_at).toLocaleDateString('es-CL', {
               weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
             })}
-          </p>
+              </p>
+            </div>
+          </div>
         </div>
         <Link href="/client">
-          <Button variant="outline" className="border-zinc-700 text-zinc-400">
-            ← Volver
+          <Button variant="outline" className="border-border text-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver
           </Button>
         </Link>
       </div>
 
       <div className="grid gap-4 mb-6 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Resumen diario</CardTitle>
+            <CardTitle className="text-base text-foreground">Resumen diario</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-4">
-              <p className="text-zinc-500 text-xs uppercase tracking-[0.18em]">Calorías objetivo</p>
-              <p className="mt-2 text-4xl font-semibold text-white">{content.calories_target ?? 0}</p>
-              <p className="text-sm text-zinc-500">kcal por día</p>
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-[0.18em]">Calorías objetivo</p>
+              </div>
+              <p className="mt-2 text-4xl font-semibold text-foreground">{content.calories_target ?? 0}</p>
+              <p className="text-sm text-muted-foreground">kcal por día</p>
             </div>
             {[
-              { label: 'Proteína', value: proteinG, color: 'bg-blue-400' },
-              { label: 'Carbohidratos', value: carbsG, color: 'bg-amber-400' },
-              { label: 'Grasas', value: fatG, color: 'bg-emerald-400' },
+              { label: 'Proteína', value: proteinG, color: 'bg-primary', icon: Apple },
+              { label: 'Carbohidratos', value: carbsG, color: 'bg-amber-400', icon: Leaf },
+              { label: 'Grasas', value: fatG, color: 'bg-emerald-400', icon: Salad },
             ].map(item => (
               <div key={item.label} className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-300">{item.label}</span>
-                  <span className="font-medium text-white">{item.value}g</span>
+                  <span className="flex items-center gap-2 text-foreground">
+                    <item.icon className="h-4 w-4 text-primary" />
+                    {item.label}
+                  </span>
+                  <span className="font-medium text-foreground">{item.value}g</span>
                 </div>
-                <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
                   <div
                     className={`h-full rounded-full ${item.color}`}
                     style={{ width: `${Math.max(10, (item.value / macroTotal) * 100)}%` }}
@@ -127,25 +142,34 @@ export default async function ClientNutritionDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Estructura del día</CardTitle>
+            <CardTitle className="text-base text-foreground">Estructura del día</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-4">
-              <p className="text-zinc-500 text-xs uppercase tracking-[0.18em]">Comidas</p>
-              <p className="mt-2 text-3xl font-semibold text-white">{content.meals?.length ?? 0}</p>
-              <p className="text-sm text-zinc-500">bloques diarios</p>
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Salad className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-[0.18em]">Comidas</p>
+              </div>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{content.meals?.length ?? 0}</p>
+              <p className="text-sm text-muted-foreground">bloques diarios</p>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-4">
-              <p className="text-zinc-500 text-xs uppercase tracking-[0.18em]">Suplementos</p>
-              <p className="mt-2 text-3xl font-semibold text-white">{content.supplements?.length ?? 0}</p>
-              <p className="text-sm text-zinc-500">indicaciones</p>
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-[0.18em]">Suplementos</p>
+              </div>
+              <p className="mt-2 text-3xl font-semibold text-foreground">{content.supplements?.length ?? 0}</p>
+              <p className="text-sm text-muted-foreground">indicaciones</p>
             </div>
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-950 px-4 py-4">
-              <p className="text-zinc-500 text-xs uppercase tracking-[0.18em]">Enfoque</p>
-              <p className="mt-2 text-xl font-semibold text-white">Legible</p>
-              <p className="text-sm text-zinc-500">por comida y macro</p>
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+              <div className="flex items-center gap-2 text-primary">
+                <Clock3 className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-[0.18em]">Enfoque</p>
+              </div>
+              <p className="mt-2 text-xl font-semibold text-foreground">Legible</p>
+              <p className="text-sm text-muted-foreground">por comida y macro</p>
             </div>
           </CardContent>
         </Card>
@@ -154,19 +178,19 @@ export default async function ClientNutritionDetailPage({
       {/* Comidas */}
       <div className="grid gap-4 mb-6">
         {content.meals?.map((meal, index: number) => (
-          <Card key={index} className="bg-zinc-900 border-zinc-800">
+          <Card key={index} className="border-border bg-card">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3 flex-wrap">
                   {meal.time && (
-                    <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30">
+                    <Badge className="border-primary/20 bg-primary/10 text-primary">
                       {meal.time}
                     </Badge>
                   )}
-                  <CardTitle className="text-white text-base">{meal.name}</CardTitle>
+                  <CardTitle className="break-words text-base text-foreground">{meal.name}</CardTitle>
                 </div>
                 {meal.calories && (
-                  <Badge variant="outline" className="border-zinc-700 text-zinc-400">
+                  <Badge variant="outline" className="border-border text-muted-foreground">
                     {meal.calories} kcal
                   </Badge>
                 )}
@@ -175,30 +199,30 @@ export default async function ClientNutritionDetailPage({
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
                 {meal.foods?.map((food, i: number) => (
-                  <div key={i} className="bg-zinc-950 rounded-2xl border border-zinc-800 p-4 flex flex-col gap-3">
+                  <div key={i} className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4">
                     <div className="min-w-0">
-                      <p className="text-white text-sm font-medium">{food.name}</p>
-                      {food.amount && <p className="text-zinc-500 text-xs mt-1">{food.amount}</p>}
+                      <p className="break-words text-sm font-medium text-foreground">{food.name}</p>
+                      {food.amount && <p className="mt-1 break-words text-xs text-muted-foreground">{food.amount}</p>}
                       {food.notes && (
-                        <p className="text-zinc-400 text-xs mt-2 leading-5">{food.notes}</p>
+                        <p className="mt-2 break-words text-xs leading-5 text-muted-foreground">{food.notes}</p>
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2">
-                        <p className="text-zinc-500 text-[11px] uppercase tracking-[0.16em]">Calorías</p>
-                        <p className="text-sm font-semibold text-white">{food.calories ?? 0} kcal</p>
+                      <div className="rounded-xl border border-border bg-background px-3 py-2">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Calorías</p>
+                        <p className="text-sm font-semibold text-foreground">{food.calories ?? 0} kcal</p>
                       </div>
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2">
-                        <p className="text-zinc-500 text-[11px] uppercase tracking-[0.16em]">Proteína</p>
-                        <p className="text-sm font-semibold text-white">{food.protein_g ?? food.protein ?? 0} g</p>
+                      <div className="rounded-xl border border-border bg-background px-3 py-2">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Proteína</p>
+                        <p className="text-sm font-semibold text-foreground">{food.protein_g ?? food.protein ?? 0} g</p>
                       </div>
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2">
-                        <p className="text-zinc-500 text-[11px] uppercase tracking-[0.16em]">Carbos</p>
-                        <p className="text-sm font-semibold text-white">{food.carbs_g ?? food.carbs ?? 0} g</p>
+                      <div className="rounded-xl border border-border bg-background px-3 py-2">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Carbos</p>
+                        <p className="text-sm font-semibold text-foreground">{food.carbs_g ?? food.carbs ?? 0} g</p>
                       </div>
-                      <div className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-2">
-                        <p className="text-zinc-500 text-[11px] uppercase tracking-[0.16em]">Grasas</p>
-                        <p className="text-sm font-semibold text-white">{food.fat_g ?? food.fat ?? 0} g</p>
+                      <div className="rounded-xl border border-border bg-background px-3 py-2">
+                        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Grasas</p>
+                        <p className="text-sm font-semibold text-foreground">{food.fat_g ?? food.fat ?? 0} g</p>
                       </div>
                     </div>
                   </div>
@@ -211,14 +235,14 @@ export default async function ClientNutritionDetailPage({
 
       {/* Suplementos */}
       {supplements.length > 0 && (
-        <Card className="bg-zinc-900 border-zinc-800 mb-4">
+        <Card className="mb-4 border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Suplementación</CardTitle>
+            <CardTitle className="text-base text-foreground">Suplementación</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {supplements.map((sup: string, i: number) => (
-                <Badge key={i} className="bg-zinc-800 text-zinc-300 border-zinc-700">
+                <Badge key={i} className="border-border bg-muted/40 text-foreground">
                   {sup}
                 </Badge>
               ))}
@@ -228,12 +252,12 @@ export default async function ClientNutritionDetailPage({
       )}
 
       {content.notes && (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Recomendaciones</CardTitle>
+            <CardTitle className="text-base text-foreground">Recomendaciones</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-zinc-400 text-sm leading-relaxed">{content.notes}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">{content.notes}</p>
           </CardContent>
         </Card>
       )}

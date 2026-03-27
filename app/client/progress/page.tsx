@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar
@@ -201,6 +202,8 @@ export default function ClientProgressPage() {
   const supabase = createClient()
   const [summaries, setSummaries] = useState<ExerciseSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [exerciseFilter, setExerciseFilter] = useState('')
+  const [visibleCount, setVisibleCount] = useState(6)
 
   // Stats
   const [totalSessions, setTotalSessions] = useState(0)
@@ -330,6 +333,14 @@ export default function ClientProgressPage() {
     : avgAdherence >= 50 ? { text: 'Regular', color: 'text-yellow-400' }
     : avgAdherence > 0 ? { text: 'Mejorable', color: 'text-red-400' }
     : null
+
+  const filteredSummaries = useMemo(() => {
+    const query = exerciseFilter.trim().toLowerCase()
+    if (!query) return summaries
+    return summaries.filter(summary => summary.name.toLowerCase().includes(query))
+  }, [exerciseFilter, summaries])
+
+  const visibleSummaries = filteredSummaries.slice(0, visibleCount)
 
   return (
     <div className="max-w-lg mx-auto pb-10">
@@ -464,13 +475,33 @@ export default function ClientProgressPage() {
           {/* ── Exercise history ── */}
           {summaries.length > 0 && (
             <div className="flex flex-col gap-3">
-              <p className="text-zinc-500 text-xs uppercase tracking-widest px-1 flex items-center gap-1.5">
-                <BarChart2 size={11} className="text-blue-400" />
-                {summaries.length} ejercicios registrados
-              </p>
-              {summaries.map((s, i) => (
+              <div className="flex flex-col gap-3 px-1 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-zinc-500 text-xs uppercase tracking-widest flex items-center gap-1.5">
+                  <BarChart2 size={11} className="text-blue-400" />
+                  {filteredSummaries.length} ejercicios registrados
+                </p>
+                <Input
+                  value={exerciseFilter}
+                  onChange={(event) => {
+                    setExerciseFilter(event.target.value)
+                    setVisibleCount(6)
+                  }}
+                  placeholder="Filtrar por ejercicio..."
+                  className="sm:max-w-[220px]"
+                />
+              </div>
+              {visibleSummaries.map((s, i) => (
                 <ExerciseProgressCard key={i} summary={s} />
               ))}
+              {filteredSummaries.length > visibleCount ? (
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount(current => current + 6)}
+                  className="rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-300 transition hover:border-zinc-600 hover:text-white"
+                >
+                  Ver más ejercicios
+                </button>
+              ) : null}
             </div>
           )}
 

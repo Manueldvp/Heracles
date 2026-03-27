@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Droplets, Flame, HeartPulse, MoonStar, ShieldAlert, SmilePlus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -39,14 +40,19 @@ function formatCheckinDate(date: string) {
 function MetricTile({
   label,
   value,
+  icon: Icon,
 }: {
   label: string
   value: string | number
+  icon: typeof Droplets
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 px-3 py-3 text-center">
-      <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-white">{value}</p>
+    <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 text-center">
+      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" />
+        <p className="text-[11px] uppercase tracking-[0.18em]">{label}</p>
+      </div>
+      <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
     </div>
   )
 }
@@ -59,21 +65,21 @@ function CheckinDetail({
   onOpenPhoto: (url: string) => void
 }) {
   return (
-    <div className="mt-3 space-y-4 border-t border-zinc-800 pt-4">
+    <div className="mt-3 space-y-4 border-t border-border pt-4">
       <div className="grid gap-2 sm:grid-cols-4">
-        <MetricTile label="Energía" value={checkin.energy_level ? `${checkin.energy_level}/5` : '—'} />
-        <MetricTile label="Sueño" value={checkin.sleep_quality ? `${checkin.sleep_quality}/5` : '—'} />
-        <MetricTile label="Entrenos" value={checkin.completed_workouts ?? '—'} />
-        <MetricTile label="Peso" value={checkin.weight ? `${checkin.weight} kg` : '—'} />
+        <MetricTile icon={HeartPulse} label="Energía" value={checkin.energy_level ? `${checkin.energy_level}/5` : '—'} />
+        <MetricTile icon={MoonStar} label="Sueño" value={checkin.sleep_quality ? `${checkin.sleep_quality}/5` : '—'} />
+        <MetricTile icon={Flame} label="Entrenos" value={checkin.completed_workouts ?? '—'} />
+        <MetricTile icon={SmilePlus} label="Peso" value={checkin.weight ? `${checkin.weight} kg` : '—'} />
       </div>
 
       {(checkin.mood || checkin.stress_level || checkin.water_liters || checkin.nutrition_adherence) && (
         <div className="flex flex-wrap gap-2">
-          {checkin.mood ? <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">Mood {checkin.mood}/5</Badge> : null}
-          {checkin.stress_level ? <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">Estrés {checkin.stress_level}/5</Badge> : null}
-          {checkin.water_liters ? <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">{checkin.water_liters}L agua</Badge> : null}
-          {checkin.nutrition_adherence ? <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">Adherencia {checkin.nutrition_adherence}/5</Badge> : null}
-          {checkin.calories_consumed ? <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">{checkin.calories_consumed} kcal</Badge> : null}
+          {checkin.mood ? <Badge className="border-border bg-muted/40 text-foreground">Mood {checkin.mood}/5</Badge> : null}
+          {checkin.stress_level ? <Badge className="border-red-500/20 bg-red-500/10 text-red-400">Estrés {checkin.stress_level}/5</Badge> : null}
+          {checkin.water_liters ? <Badge className="border-border bg-muted/40 text-foreground">{checkin.water_liters}L agua</Badge> : null}
+          {checkin.nutrition_adherence ? <Badge className="border-primary/20 bg-primary/10 text-primary">Adherencia {checkin.nutrition_adherence}/5</Badge> : null}
+          {checkin.calories_consumed ? <Badge className="border-border bg-muted/40 text-foreground">{checkin.calories_consumed} kcal</Badge> : null}
         </div>
       )}
 
@@ -81,6 +87,7 @@ function CheckinDetail({
         <div className="flex flex-wrap gap-2">
           {checkin.pain_zones.map(zone => (
             <Badge key={zone} className="border-red-500/20 bg-red-500/10 text-red-300 capitalize">
+              <ShieldAlert className="mr-1 h-3 w-3" />
               {zone}
             </Badge>
           ))}
@@ -91,14 +98,14 @@ function CheckinDetail({
         <button
           type="button"
           onClick={() => onOpenPhoto(checkin.photo_url!)}
-          className="block w-full overflow-hidden rounded-2xl border border-zinc-800"
+          className="block w-full overflow-hidden rounded-xl border border-border"
         >
           <img src={checkin.photo_url} alt="Foto check-in" className="max-h-72 w-full object-cover" />
         </button>
       ) : null}
 
       {checkin.notes ? (
-        <p className="rounded-2xl border border-zinc-800 bg-zinc-950/70 px-4 py-3 text-sm text-zinc-300">
+        <p className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
           {checkin.notes}
         </p>
       ) : null}
@@ -118,24 +125,24 @@ export default function CheckinHistory({ checkins }: { checkins: Checkin[] }) {
     <>
       <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader className="pb-3">
-          <CardTitle className="text-white text-sm font-semibold">Historial de check-ins</CardTitle>
+          <CardTitle className="text-sm font-semibold text-foreground">Historial de check-ins</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {latest ? (
-            <div className="rounded-2xl border border-orange-500/20 bg-zinc-800/80 p-4">
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-white">{formatCheckinDate(latest.created_at)}</p>
-                  <p className="mt-1 text-xs text-zinc-500">Último registro</p>
+                  <p className="text-sm font-semibold text-foreground">{formatCheckinDate(latest.created_at)}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Último registro</p>
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
                   {latest.type ? (
-                    <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">
+                    <Badge className="border-border bg-muted/40 text-foreground">
                       {typeLabel[latest.type] ?? latest.type}
                     </Badge>
                   ) : null}
                   {latest.weight ? (
-                    <Badge className="border-orange-500/30 bg-orange-500/10 text-orange-300">
+                    <Badge className="border-primary/20 bg-primary/10 text-primary">
                       {latest.weight} kg
                     </Badge>
                   ) : null}
@@ -144,42 +151,42 @@ export default function CheckinHistory({ checkins }: { checkins: Checkin[] }) {
               <CheckinDetail checkin={latest} onOpenPhoto={setSelectedPhoto} />
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-zinc-700 px-4 py-10 text-center">
-              <p className="text-sm text-zinc-400">Todavía no hay check-ins registrados.</p>
+            <div className="rounded-xl border border-dashed border-border px-4 py-10 text-center">
+              <p className="text-sm text-muted-foreground">Todavía no hay check-ins registrados.</p>
             </div>
           )}
 
           {rest.length > 0 ? (
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">Registros anteriores</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Registros anteriores</p>
               <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {rest.map(checkin => (
                   <button
                     key={checkin.id}
                     type="button"
                     onClick={() => setOpenId(current => current === checkin.id ? null : checkin.id)}
-                    className={`min-w-[132px] rounded-2xl border px-3 py-3 text-left transition ${
+                    className={`min-w-[132px] rounded-xl border px-3 py-3 text-left transition ${
                       openId === checkin.id
-                        ? 'border-orange-500/30 bg-orange-500/10'
-                        : 'border-zinc-800 bg-zinc-950 hover:border-zinc-700'
+                        ? 'border-primary/20 bg-primary/10'
+                        : 'border-border bg-background hover:border-primary/20 hover:bg-muted/30'
                     }`}
                   >
-                    <p className="text-sm font-medium text-white">
+                    <p className="text-sm font-medium text-foreground">
                       {new Date(checkin.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
                     </p>
-                    <p className="mt-2 text-xs text-zinc-500">Energía {checkin.energy_level ?? '—'}/5</p>
-                    <p className="mt-1 text-xs text-zinc-500">Sueño {checkin.sleep_quality ?? '—'}/5</p>
-                    {checkin.weight ? <p className="mt-1 text-xs text-zinc-400">{checkin.weight} kg</p> : null}
+                    <p className="mt-2 text-xs text-muted-foreground">Energía {checkin.energy_level ?? '—'}/5</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Sueño {checkin.sleep_quality ?? '—'}/5</p>
+                    {checkin.weight ? <p className="mt-1 text-xs text-muted-foreground">{checkin.weight} kg</p> : null}
                   </button>
                 ))}
               </div>
 
               {activeCheckin ? (
-                <div className="rounded-2xl border border-zinc-800 bg-zinc-800/60 p-4">
+                <div className="rounded-xl border border-border bg-muted/30 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-semibold text-white">{formatCheckinDate(activeCheckin.created_at)}</p>
+                    <p className="text-sm font-semibold text-foreground">{formatCheckinDate(activeCheckin.created_at)}</p>
                     {activeCheckin.type ? (
-                      <Badge className="border-zinc-700 bg-zinc-950 text-zinc-300">
+                      <Badge className="border-border bg-background text-foreground">
                         {typeLabel[activeCheckin.type] ?? activeCheckin.type}
                       </Badge>
                     ) : null}
@@ -193,7 +200,7 @@ export default function CheckinHistory({ checkins }: { checkins: Checkin[] }) {
       </Card>
 
       <Dialog open={Boolean(selectedPhoto)} onOpenChange={open => !open && setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl border-zinc-800 bg-zinc-950 p-2">
+        <DialogContent className="max-w-4xl border-border bg-card p-2">
           <DialogTitle className="sr-only">Vista completa de la imagen</DialogTitle>
           {selectedPhoto ? (
             <img src={selectedPhoto} alt="Foto check-in ampliada" className="max-h-[85vh] w-full rounded-xl object-contain" />

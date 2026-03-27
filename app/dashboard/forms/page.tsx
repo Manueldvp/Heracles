@@ -358,7 +358,10 @@ function FormsList({ forms, onNew, onEdit, onDelete }: {
 
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-white font-bold text-xl">Formularios de intake</h2>
+          <h2 className="text-white font-bold text-xl flex items-center gap-2">
+            <FileText size={18} className="text-primary" />
+            Formularios de intake
+          </h2>
           <p className="text-zinc-500 text-sm mt-0.5">El cliente lo llena al registrarse con tu invitación</p>
         </div>
         <Button onClick={onNew} className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5">

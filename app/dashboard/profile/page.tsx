@@ -26,6 +26,16 @@ interface Document {
   uploaded_at: string
 }
 
+interface BillingStatus {
+  subscription: {
+    planType: 'free' | 'premium'
+    clientLimit: number | null
+  }
+  clientCount: number
+  aiGenerationsUsed: number
+  aiGenerationsRemaining: number | null
+}
+
 export default function ProfilePage() {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -37,6 +47,7 @@ export default function ProfilePage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [newCert, setNewCert] = useState('')
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null)
 
   const [form, setForm] = useState({
     full_name: '',
@@ -69,6 +80,12 @@ export default function ProfilePage() {
           avatar_url: profile.avatar_url || '',
           documents: profile.documents || [],
         })
+      }
+
+      const billingResponse = await fetch('/api/billing/status')
+      if (billingResponse.ok) {
+        const billingData = await billingResponse.json()
+        setBillingStatus(billingData.status)
       }
       setLoading(false)
     }
@@ -167,6 +184,39 @@ export default function ProfilePage() {
         <h2 className="text-2xl font-bold text-white">Mi perfil</h2>
         <p className="text-zinc-500 text-sm mt-1">Configura tu información y personaliza la IA</p>
       </div>
+
+      {billingStatus ? (
+        <Card className="bg-zinc-900 border-zinc-800 mb-4">
+          <CardContent className="p-5 grid gap-4 sm:grid-cols-3">
+            <div>
+              <p className="text-zinc-500 text-xs uppercase tracking-widest">Plan</p>
+              <p className="mt-2 text-white font-semibold">
+                {billingStatus.subscription.planType === 'premium' ? 'Premium' : 'Free'}
+              </p>
+            </div>
+            <div>
+              <p className="text-zinc-500 text-xs uppercase tracking-widest">Clientes</p>
+              <p className="mt-2 text-white font-semibold">
+                {billingStatus.clientCount}
+                {billingStatus.subscription.clientLimit ? ` / ${billingStatus.subscription.clientLimit}` : ' ilimitados'}
+              </p>
+            </div>
+            <div>
+              <p className="text-zinc-500 text-xs uppercase tracking-widest">IA este mes</p>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                <Badge>
+                  {billingStatus.aiGenerationsUsed} usadas
+                </Badge>
+                <span className="text-zinc-400 text-sm">
+                  {billingStatus.aiGenerationsRemaining === null
+                    ? 'Sin límite'
+                    : `${billingStatus.aiGenerationsRemaining} restantes`}
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Avatar + Info básica */}
       <Card className="bg-zinc-900 border-zinc-800 mb-4">
