@@ -2,7 +2,23 @@
 
 import { Suspense, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Camera, CheckCircle2, ClipboardList, HeartPulse, Sparkles } from 'lucide-react'
+import {
+  BatteryLow,
+  BatteryMedium,
+  BatteryWarning,
+  Camera,
+  CheckCircle2,
+  ClipboardList,
+  Frown,
+  HeartPulse,
+  Laugh,
+  Meh,
+  Moon,
+  MoonStar,
+  Smile,
+  Sparkles,
+  Zap,
+} from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,13 +51,42 @@ function ScaleSelector({
   label,
   helper,
   value,
+  kind = 'default',
   onChange,
 }: {
   label: string
   helper?: string
   value: number
+  kind?: 'default' | 'mood' | 'energy' | 'sleep'
   onChange: (value: number) => void
 }) {
+  const items = {
+    mood: [
+      { icon: Frown, label: 'Muy mal' },
+      { icon: Meh, label: 'Bajo' },
+      { icon: Smile, label: 'Neutral' },
+      { icon: Smile, label: 'Bien' },
+      { icon: Laugh, label: 'Muy bien' },
+    ],
+    energy: [
+      { icon: BatteryWarning, label: 'Vacío' },
+      { icon: BatteryLow, label: 'Bajo' },
+      { icon: BatteryMedium, label: 'Medio' },
+      { icon: Zap, label: 'Activo' },
+      { icon: Zap, label: 'A tope' },
+    ],
+    sleep: [
+      { icon: Moon, label: 'Muy mal' },
+      { icon: Moon, label: 'Bajo' },
+      { icon: MoonStar, label: 'Aceptable' },
+      { icon: MoonStar, label: 'Bien' },
+      { icon: MoonStar, label: 'Muy bien' },
+    ],
+    default: SCALE.map((option) => ({ icon: null, label: `${option}` })),
+  }[kind]
+
+  const current = items[value - 1]
+
   return (
     <div className="space-y-3">
       <div className="flex items-end justify-between gap-3">
@@ -49,10 +94,13 @@ function ScaleSelector({
           <p className="text-sm font-medium text-foreground">{label}</p>
           {helper && <p className="mt-1 text-xs text-muted-foreground">{helper}</p>}
         </div>
-        <span className="text-sm font-semibold text-foreground">{value}/5</span>
+        <span className="text-sm font-semibold text-foreground">{current?.label ?? `${value}/5`}</span>
       </div>
       <div className="grid grid-cols-5 gap-2">
-        {SCALE.map(option => (
+        {items.map((item, index) => {
+          const option = index + 1
+          const Icon = item.icon
+          return (
           <button
             key={option}
             type="button"
@@ -62,10 +110,14 @@ function ScaleSelector({
                 ? 'border-primary/20 bg-primary/10 text-primary'
                 : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:text-foreground'
             }`}
+            aria-label={`${label}: ${item.label}`}
           >
-            {option}
+            <div className="flex flex-col items-center gap-1">
+              {Icon ? <Icon className="h-4 w-4" /> : <span>{option}</span>}
+              <span className="text-[10px] leading-none">{item.label}</span>
+            </div>
           </button>
-        ))}
+        )})}
       </div>
     </div>
   )
@@ -247,14 +299,14 @@ function CheckinForm() {
   const renderDailyStep = () => {
     if (step === 0) {
       return (
-        <Card className="bg-zinc-900 border-zinc-800">
+        <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-white text-base">Cómo te sentiste hoy</CardTitle>
+            <CardTitle className="text-base text-foreground">Cómo te sentiste hoy</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <ScaleSelector label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
-            <ScaleSelector label="Nivel de energía" helper="1 = muy bajo, 5 = muy alto" value={form.energy_level} onChange={value => setForm(current => ({ ...current, energy_level: value }))} />
-            <ScaleSelector label="Calidad del sueño" helper="1 = mala, 5 = excelente" value={form.sleep_quality} onChange={value => setForm(current => ({ ...current, sleep_quality: value }))} />
+            <ScaleSelector kind="mood" label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
+            <ScaleSelector kind="energy" label="Nivel de energía" value={form.energy_level} onChange={value => setForm(current => ({ ...current, energy_level: value }))} />
+            <ScaleSelector kind="sleep" label="Calidad del sueño" value={form.sleep_quality} onChange={value => setForm(current => ({ ...current, sleep_quality: value }))} />
           </CardContent>
         </Card>
       )
@@ -335,9 +387,9 @@ function CheckinForm() {
             <CardTitle className="text-base text-foreground">Resumen de la semana</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <ScaleSelector label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
-            <ScaleSelector label="Energía general" value={form.energy_level} onChange={value => setForm(current => ({ ...current, energy_level: value }))} />
-            <ScaleSelector label="Sueño promedio" value={form.sleep_quality} onChange={value => setForm(current => ({ ...current, sleep_quality: value }))} />
+            <ScaleSelector kind="mood" label="Estado de ánimo" value={form.mood} onChange={value => setForm(current => ({ ...current, mood: value }))} />
+            <ScaleSelector kind="energy" label="Energía general" value={form.energy_level} onChange={value => setForm(current => ({ ...current, energy_level: value }))} />
+            <ScaleSelector kind="sleep" label="Sueño promedio" value={form.sleep_quality} onChange={value => setForm(current => ({ ...current, sleep_quality: value }))} />
           </CardContent>
         </Card>
       )

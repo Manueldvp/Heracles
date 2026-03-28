@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  ClipboardList, Flame, Zap, Moon, Activity, Plus, Scale, ArrowDown, ArrowUp, Dumbbell
+  ClipboardList, Flame, Zap, Moon, Activity, Plus, Scale, ArrowDown, ArrowUp, Dumbbell, Salad
 } from 'lucide-react'
 import ClientHeader from './components/ClientHeader'
 import TodayWorkout from './components/TodayWorkout'
@@ -111,29 +111,35 @@ export default async function ClientHomePage() {
 
         <CheckinReminder clientId={clientData.id} />
 
-        <TodayWorkout
-          routine={routine}
-          routineId={routine?.id ?? ''}
-          clientId={clientData.id}
-        />
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.88fr)] lg:items-start">
+          <div className="min-w-0">
+            <TodayWorkout
+              routine={routine}
+              routineId={routine?.id ?? ''}
+              clientId={clientData.id}
+            />
+          </div>
 
-        {plan ? (
-          <TodayMeal plan={plan} planId={plan.id} />
-        ) : (
-          <Link href="/client/nutrition">
-            <Card className="cursor-pointer border-dashed border-border bg-card transition hover:border-border/80">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-transparent">
-                  <Flame size={18} className="text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Sin plan activo</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">Selecciona un plan nutricional</p>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
+          <div className="min-w-0">
+            {plan ? (
+              <TodayMeal plan={plan} planId={plan.id} />
+            ) : (
+              <Link href="/client/nutrition">
+                <Card className="cursor-pointer border-dashed border-border bg-card transition duration-200 hover:-translate-y-0.5 hover:border-primary/20">
+                  <CardContent className="flex items-center gap-4 p-5">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+                      <Salad size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Sin plan activo</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">Selecciona un plan nutricional</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            )}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Card className="border-border bg-card">

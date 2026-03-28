@@ -379,8 +379,8 @@ export default function ClientProgressPage() {
               <CardContent className="p-3 flex flex-col items-center gap-1">
                 <Trophy size={15} className="text-orange-400" />
                 <span className="text-white font-bold text-2xl">{topExercise ? `${topExercise.kg}` : '—'}</span>
-                <span className="text-zinc-500 text-xs text-center truncate w-full text-center">
-                  {topExercise ? `kg · ${topExercise.name.split(' ')[0]}` : 'Sin datos'}
+                <span className="w-full text-center text-zinc-500 text-xs leading-5">
+                  {topExercise ? `${topExercise.kg}kg en ${topExercise.name}` : 'Sin datos'}
                 </span>
               </CardContent>
             </Card>

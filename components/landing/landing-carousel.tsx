@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -17,6 +17,8 @@ type Props = {
 
 export default function LandingCarousel({ items }: Props) {
   const [current, setCurrent] = useState(0)
+  const touchStartX = useRef<number | null>(null)
+  const touchEndX = useRef<number | null>(null)
 
   useEffect(() => {
     if (items.length <= 1) return
@@ -30,9 +32,36 @@ export default function LandingCarousel({ items }: Props) {
 
   if (items.length === 0) return null
 
+  const handleTouchStart = (clientX: number) => {
+    touchStartX.current = clientX
+    touchEndX.current = clientX
+  }
+
+  const handleTouchMove = (clientX: number) => {
+    touchEndX.current = clientX
+  }
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchEndX.current === null) return
+
+    const delta = touchStartX.current - touchEndX.current
+    if (Math.abs(delta) < 40) return
+
+    if (delta > 0) {
+      setCurrent((value) => (value + 1) % items.length)
+    } else {
+      setCurrent((value) => (value - 1 + items.length) % items.length)
+    }
+  }
+
   return (
     <div className="space-y-5">
-      <div className="overflow-hidden rounded-[28px] border border-border bg-card">
+      <div
+        className="overflow-hidden rounded-[28px] border border-border bg-card touch-pan-y"
+        onTouchStart={(event) => handleTouchStart(event.touches[0].clientX)}
+        onTouchMove={(event) => handleTouchMove(event.touches[0].clientX)}
+        onTouchEnd={handleTouchEnd}
+      >
         <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${current * 100}%)` }}

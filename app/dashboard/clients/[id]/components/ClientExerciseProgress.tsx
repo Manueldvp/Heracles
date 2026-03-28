@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar
@@ -178,6 +179,7 @@ export default function ClientExerciseProgress({ clientId }: { clientId: string 
   const supabase = createClient()
   const [summaries, setSummaries] = useState<ExerciseSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [exerciseFilter, setExerciseFilter] = useState('')
   const [stats, setStats] = useState({
     sessions: 0,
     bestLift: 0,
@@ -237,10 +239,23 @@ export default function ClientExerciseProgress({ clientId }: { clientId: string 
     load()
   }, [clientId])
 
+  const visibleSummaries = useMemo(() => {
+    const normalized = exerciseFilter.trim().toLowerCase()
+    if (!normalized) return summaries
+    return summaries.filter((summary) => summary.name.toLowerCase().includes(normalized))
+  }, [exerciseFilter, summaries])
+
   return (
     <div className="flex flex-col gap-4">
+      <Input
+        value={exerciseFilter}
+        onChange={(event) => setExerciseFilter(event.target.value)}
+        placeholder="Filtrar por ejercicio..."
+        className="h-11 rounded-xl border-border bg-background"
+      />
+
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex flex-col items-center gap-1">
           <Dumbbell size={14} className="text-blue-400" />
           <span className="text-white font-bold text-lg">{stats.sessions}</span>
@@ -268,7 +283,7 @@ export default function ClientExerciseProgress({ clientId }: { clientId: string 
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {summaries.map((s, i) => <ExerciseRow key={i} summary={s} />)}
+          {visibleSummaries.map((s, i) => <ExerciseRow key={i} summary={s} />)}
         </div>
       )}
     </div>

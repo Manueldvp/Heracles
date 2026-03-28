@@ -96,7 +96,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
     <div className="max-w-4xl mx-auto pb-10">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div className="flex items-center gap-4">
           <div className="relative">
             <div className="w-16 h-16 rounded-2xl bg-orange-500/20 border-2 border-orange-500/30 flex items-center justify-center shrink-0 overflow-hidden">
@@ -138,7 +138,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           </div>
         </div>
 
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap gap-2 shrink-0">
           <Link href={`/dashboard/clients/${client.id}/progress`}>
             <Button variant="outline" size="sm" className="border-zinc-700 text-zinc-400 hover:border-orange-500 hover:text-orange-400">
               <TrendingUp size={14} className="mr-1.5" /> Progreso
@@ -166,7 +166,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mb-4">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: 'Edad',   value: client.age ?? '—',                        unit: 'años',    color: 'text-white'      },
           { label: 'Peso',   value: client.weight ? `${client.weight}kg` : '—', unit: 'actual', color: 'text-orange-400' },
@@ -175,9 +175,9 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
         ].map((stat, i) => (
           <Card key={i} className="bg-zinc-900 border-zinc-800">
             <CardContent className="pt-4 pb-4">
-              <p className="text-zinc-600 text-xs mb-2">{stat.label}</p>
-              <p className={`${stat.color} font-bold text-2xl`}>{stat.value}</p>
-              <p className="text-zinc-700 text-xs mt-0.5">{stat.unit}</p>
+              <p className="mb-2 break-words text-zinc-600 text-xs">{stat.label}</p>
+              <p className={`${stat.color} break-words font-bold text-xl sm:text-2xl`}>{stat.value}</p>
+              <p className="mt-0.5 break-words text-zinc-700 text-xs">{stat.unit}</p>
             </CardContent>
           </Card>
         ))}
@@ -257,7 +257,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                         <Dumbbell size={12} className={routine.is_active ? 'text-blue-400' : 'text-zinc-500'} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-xs font-medium truncate group-hover:text-orange-400 transition">
+                        <p className="break-words text-white text-xs font-medium transition group-hover:text-orange-400">
                           {((routine.content as RoutineSummary | null)?.title) ?? routine.title}
                         </p>
                         <p className="text-zinc-600 text-xs">
@@ -305,7 +305,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
                           <Salad size={12} className={plan.is_active ? 'text-green-400' : 'text-zinc-500'} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-xs font-medium group-hover:text-orange-400 transition">
+                          <p className="break-words text-white text-xs font-medium transition group-hover:text-orange-400">
                             {kcal ? `${kcal} kcal/día` : 'Plan nutricional'}
                           </p>
                           <p className="text-zinc-600 text-xs">

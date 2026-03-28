@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRight, BarChart3, BellRing, LayoutDashboard, Menu, Sparkles, UsersRound } from 'lucide-react'
+import { ArrowRight, BarChart3, BellRing, LayoutDashboard, Menu, Salad, ShieldCheck, Sparkles, UsersRound } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,8 +31,10 @@ export default function LandingPage() {
   const snapshotSecondary = getTranslationValue<Array<{ title: string; value: string; copy: string }>>('landing.snapshot.secondary', 'es')
   const featureIcons = [UsersRound, LayoutDashboard, Sparkles, BellRing]
   const mobileLinks = [
-    { href: '#valor', label: 'Coaching' },
-    { href: '#precios', label: 'Precios' },
+    { href: '/coaching', label: 'Coaching' },
+    { href: '/funciones', label: 'Funciones' },
+    { href: '/precios', label: 'Precios' },
+    { href: '/seguridad', label: 'Seguridad' },
     { href: '/login', label: t('common.login') },
     { href: '/register', label: t('common.start_free') },
   ]
@@ -46,10 +48,10 @@ export default function LandingPage() {
               <BrandLockup compact className="min-w-0" />
 
               <nav className="hidden items-center gap-8 md:flex">
-                <span className="text-sm font-medium text-primary">{t('landing.nav.platform')}</span>
-                <span className="text-sm text-muted-foreground">{t('landing.nav.coaching')}</span>
-                <span className="text-sm text-muted-foreground">{t('landing.nav.pricing')}</span>
-                <span className="text-sm text-muted-foreground">{t('landing.nav.about')}</span>
+                <Link href="/funciones" className="text-sm font-medium text-primary transition hover:text-primary-hover">{t('landing.nav.platform')}</Link>
+                <Link href="/coaching" className="text-sm text-muted-foreground transition hover:text-foreground">{t('landing.nav.coaching')}</Link>
+                <Link href="/precios" className="text-sm text-muted-foreground transition hover:text-foreground">{t('landing.nav.pricing')}</Link>
+                <Link href="/nosotros" className="text-sm text-muted-foreground transition hover:text-foreground">{t('landing.nav.about')}</Link>
               </nav>
 
               <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -94,8 +96,8 @@ export default function LandingPage() {
             </div>
           </header>
 
-          <section className="grid gap-12 pb-20 pt-24 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
-            <div className="max-w-4xl">
+          <section className="grid gap-12 pb-20 pt-20 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
+            <div className="mx-auto flex max-w-4xl flex-col items-center text-center lg:mx-0 lg:items-start lg:text-left">
               <Badge className="mb-6 border-primary/20 bg-primary/10 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-primary">
                 {t('landing.hero.badge')}
               </Badge>
@@ -124,17 +126,26 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              <div className="mt-10 grid w-full gap-4 sm:grid-cols-3">
                 <div className="rounded-3xl border border-border bg-card p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Operación</p>
+                  <div className="flex items-center justify-center lg:justify-start">
+                    <LayoutDashboard className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="mt-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">Operación</p>
                   <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-foreground">Más clara</p>
                 </div>
                 <div className="rounded-3xl border border-border bg-card p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Seguimiento</p>
+                  <div className="flex items-center justify-center lg:justify-start">
+                    <BellRing className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="mt-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">Seguimiento</p>
                   <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-foreground">Más visible</p>
                 </div>
                 <div className="rounded-3xl border border-border bg-card p-4">
-                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Escala</p>
+                  <div className="flex items-center justify-center lg:justify-start">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                  </div>
+                  <p className="mt-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">Escala</p>
                   <p className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-foreground">Más control</p>
                 </div>
               </div>
@@ -274,7 +285,7 @@ export default function LandingPage() {
 
       <section id="valor" className="border-b border-border bg-muted/20 px-4 py-24">
         <div className="mx-auto w-full max-w-screen-xl">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.value.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
               {t('landing.value.title')}
@@ -296,7 +307,7 @@ export default function LandingPage() {
 
       <section className="px-4 py-24">
         <div className="mx-auto w-full max-w-screen-xl">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.features.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
               {t('landing.features.title')}
@@ -310,6 +321,12 @@ export default function LandingPage() {
                 title={item.title}
                 copy={item.copy}
                 icon={featureIcons[index] ?? BarChart3}
+                image={
+                  index === 0 ? '/marketing/client-detail.svg' :
+                  index === 1 ? '/marketing/coach-dashboard.svg' :
+                  index === 2 ? '/marketing/followup.svg' :
+                  '/marketing/product-design.svg'
+                }
                 accent={index === 2 ? 'orange' : 'neutral'}
               />
             ))}
@@ -319,7 +336,7 @@ export default function LandingPage() {
 
       <section className="border-y border-border bg-muted/20 px-4 py-24">
         <div className="mx-auto w-full max-w-screen-xl">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs uppercase tracking-[0.24em] text-orange-300">{t('landing.carousel.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl">
               {t('landing.carousel.title')}
@@ -337,7 +354,7 @@ export default function LandingPage() {
 
       <section id="precios" className="px-4 py-24">
         <div className="mx-auto w-full max-w-screen-xl overflow-hidden rounded-[32px] border border-border bg-[radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_24%),linear-gradient(180deg,var(--card)_0%,var(--background)_100%)] p-10 sm:p-14 lg:p-20">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-3xl text-center">
             <p className="text-xs uppercase tracking-[0.24em] text-orange-300">{t('landing.cta.eyebrow')}</p>
             <h2 className="mt-6 text-4xl font-semibold tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl">
               {t('landing.cta.title')}
@@ -345,7 +362,7 @@ export default function LandingPage() {
             <p className="mt-6 text-lg leading-8 text-zinc-300">
               {t('landing.cta.description')}
             </p>
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
               <Link href="/register">
                 <Button size="lg" className="w-full bg-orange-500 px-8 text-white hover:bg-orange-600 sm:w-auto">
                   {t('landing.cta.primary')}
@@ -370,16 +387,16 @@ export default function LandingPage() {
 
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.footer.product')}</p>
-            <p className="text-sm text-zinc-400">{t('landing.footer.links.features')}</p>
-            <p className="text-sm text-zinc-400">{t('landing.footer.links.security')}</p>
-            <p className="text-sm text-zinc-400">{t('landing.footer.links.pricing')}</p>
+            <Link href="/funciones" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('landing.footer.links.features')}</Link>
+            <Link href="/seguridad" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('landing.footer.links.security')}</Link>
+            <Link href="/precios" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('landing.footer.links.pricing')}</Link>
           </div>
 
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-[0.24em] text-zinc-500">{t('landing.footer.company')}</p>
-            <p className="text-sm text-zinc-400">{t('landing.footer.links.about')}</p>
-            <p className="text-sm text-zinc-400">{t('landing.footer.links.legal')}</p>
-            <p className="text-sm text-zinc-400">{t('landing.footer.links.privacy')}</p>
+            <Link href="/nosotros" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('landing.footer.links.about')}</Link>
+            <Link href="/legal" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('landing.footer.links.legal')}</Link>
+            <Link href="/privacidad" className="block text-sm text-zinc-400 transition hover:text-foreground">{t('landing.footer.links.privacy')}</Link>
           </div>
 
           <div className="space-y-4">

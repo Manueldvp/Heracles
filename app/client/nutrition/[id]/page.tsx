@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Apple, ArrowLeft, Clock3, Leaf, Salad, Sparkles } from 'lucide-react'
+import { Apple, ArrowLeft, Clock3, Flame, Leaf, Lightbulb, Salad } from 'lucide-react'
 import Link from 'next/link'
 
 type Food = {
@@ -110,9 +110,9 @@ export default async function ClientNutritionDetailPage({
             <CardTitle className="text-base text-foreground">Resumen diario</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 transition duration-200 hover:border-primary/20 hover:bg-primary/5">
               <div className="flex items-center gap-2 text-primary">
-                <Sparkles className="h-4 w-4" />
+                <Flame className="h-4 w-4" />
                 <p className="text-xs uppercase tracking-[0.18em]">Calorías objetivo</p>
               </div>
               <p className="mt-2 text-4xl font-semibold text-foreground">{content.calories_target ?? 0}</p>
@@ -147,7 +147,7 @@ export default async function ClientNutritionDetailPage({
             <CardTitle className="text-base text-foreground">Estructura del día</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 transition duration-200 hover:border-primary/20 hover:bg-primary/5">
               <div className="flex items-center gap-2 text-primary">
                 <Salad className="h-4 w-4" />
                 <p className="text-xs uppercase tracking-[0.18em]">Comidas</p>
@@ -155,15 +155,15 @@ export default async function ClientNutritionDetailPage({
               <p className="mt-2 text-3xl font-semibold text-foreground">{content.meals?.length ?? 0}</p>
               <p className="text-sm text-muted-foreground">bloques diarios</p>
             </div>
-            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 transition duration-200 hover:border-primary/20 hover:bg-primary/5">
               <div className="flex items-center gap-2 text-primary">
-                <Sparkles className="h-4 w-4" />
+                <Apple className="h-4 w-4" />
                 <p className="text-xs uppercase tracking-[0.18em]">Suplementos</p>
               </div>
               <p className="mt-2 text-3xl font-semibold text-foreground">{content.supplements?.length ?? 0}</p>
               <p className="text-sm text-muted-foreground">indicaciones</p>
             </div>
-            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4">
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-4 transition duration-200 hover:border-primary/20 hover:bg-primary/5">
               <div className="flex items-center gap-2 text-primary">
                 <Clock3 className="h-4 w-4" />
                 <p className="text-xs uppercase tracking-[0.18em]">Enfoque</p>
@@ -178,7 +178,7 @@ export default async function ClientNutritionDetailPage({
       {/* Comidas */}
       <div className="grid gap-4 mb-6">
         {content.meals?.map((meal, index: number) => (
-          <Card key={index} className="border-border bg-card">
+          <Card key={index} className="border-border bg-card transition duration-200 hover:border-primary/20 hover:shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3 flex-wrap">
@@ -199,7 +199,7 @@ export default async function ClientNutritionDetailPage({
             <CardContent>
               <div className="grid gap-3 md:grid-cols-2">
                 {meal.foods?.map((food, i: number) => (
-                  <div key={i} className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4">
+                  <div key={i} className="flex min-w-0 flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4 transition duration-200 hover:bg-muted/40">
                     <div className="min-w-0">
                       <p className="break-words text-sm font-medium text-foreground">{food.name}</p>
                       {food.amount && <p className="mt-1 break-words text-xs text-muted-foreground">{food.amount}</p>}
@@ -254,7 +254,10 @@ export default async function ClientNutritionDetailPage({
       {content.notes && (
         <Card className="border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-base text-foreground">Recomendaciones</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base text-foreground">
+              <Lightbulb className="h-4 w-4 text-primary" />
+              Recomendaciones
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm leading-relaxed text-muted-foreground">{content.notes}</p>
