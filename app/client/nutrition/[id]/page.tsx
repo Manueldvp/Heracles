@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Apple, ArrowLeft, Clock3, Flame, Leaf, Lightbulb, Salad } from 'lucide-react'
+import { Apple, ArrowLeft, Clock3, Flame, Leaf, Lightbulb, Pill, Salad } from 'lucide-react'
 import Link from 'next/link'
 
 type Food = {
@@ -77,6 +77,16 @@ export default async function ClientNutritionDetailPage({
   const carbsG = content.macros?.carbs_g ?? content.carbs_g ?? 0
   const fatG = content.macros?.fat_g ?? content.fat_g ?? 0
   const macroTotal = Math.max(proteinG + carbsG + fatG, 1)
+  const parsedSupplements = supplements.map((item) => {
+    const [namePart, metaPart = ''] = item.split(' - ')
+    const metaPieces = metaPart.split(',').map((piece) => piece.trim()).filter(Boolean)
+
+    return {
+      name: namePart.trim(),
+      dosage: metaPieces[0] ?? 'Dosis a definir',
+      timing: metaPieces[1] ?? 'Según indicación del entrenador',
+    }
+  })
 
   return (
     <div>
@@ -237,14 +247,28 @@ export default async function ClientNutritionDetailPage({
       {supplements.length > 0 && (
         <Card className="mb-4 border-border bg-card">
           <CardHeader>
-            <CardTitle className="text-base text-foreground">Suplementación</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-base text-foreground">
+              <Pill className="h-4 w-4 text-primary" />
+              Suplementación
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {supplements.map((sup: string, i: number) => (
-                <Badge key={i} className="border-border bg-muted/40 text-foreground">
-                  {sup}
-                </Badge>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {parsedSupplements.map((supplement, i: number) => (
+                <div key={`${supplement.name}-${i}`} className="rounded-xl border border-border bg-muted/30 p-4 transition duration-200 hover:border-primary/20 hover:bg-primary/5">
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+                      <Pill className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="break-words text-sm font-semibold text-foreground">{supplement.name}</p>
+                      <p className="mt-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Dosis</p>
+                      <p className="mt-1 text-sm text-foreground">{supplement.dosage}</p>
+                      <p className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">Momento</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{supplement.timing}</p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>

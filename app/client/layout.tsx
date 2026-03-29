@@ -52,7 +52,7 @@ export default async function ClientLayout({ children }: { children: React.React
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto w-full p-4 sm:p-6 flex-1">
+      <main className="mx-auto w-full max-w-6xl p-4 sm:p-6 flex-1">
         {children}
       </main>
     </div>

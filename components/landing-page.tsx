@@ -292,12 +292,24 @@ export default function LandingPage() {
             </h2>
           </div>
           <div className="mt-12 grid gap-4 md:grid-cols-3">
-            {valueItems.map((item) => (
-              <Card key={item.title} className="border-zinc-800 bg-zinc-950/80">
-                <CardContent className="p-6">
+            {valueItems.map((item, index) => (
+              <Card key={item.title} className="overflow-hidden border-zinc-800 bg-zinc-950/80">
+                <CardContent className="p-0">
+                  <div
+                    className="h-44 w-full bg-cover bg-center"
+                    style={{
+                      backgroundImage: `url(${
+                        index === 0 ? '/marketing/client-flow.svg' :
+                        index === 1 ? '/marketing/client-detail.svg' :
+                        '/marketing/followup.svg'
+                      })`,
+                    }}
+                  />
+                  <div className="p-6">
                   <div className="h-1 w-14 rounded-full bg-orange-500" />
                   <h3 className="mt-6 text-xl font-semibold tracking-[-0.03em] text-white">{item.title}</h3>
                   <p className="mt-3 text-sm leading-7 text-zinc-400">{item.copy}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}

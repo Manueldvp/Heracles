@@ -29,11 +29,7 @@ interface Document {
 interface BillingStatus {
   subscription: {
     planType: 'free' | 'premium'
-    clientLimit: number | null
   }
-  clientCount: number
-  aiGenerationsUsed: number
-  aiGenerationsRemaining: number | null
 }
 
 export default function ProfilePage() {
@@ -187,32 +183,12 @@ export default function ProfilePage() {
 
       {billingStatus ? (
         <Card className="bg-zinc-900 border-zinc-800 mb-4">
-          <CardContent className="p-5 grid gap-4 sm:grid-cols-3">
+          <CardContent className="p-5">
             <div>
               <p className="text-zinc-500 text-xs uppercase tracking-widest">Plan</p>
               <p className="mt-2 text-white font-semibold">
                 {billingStatus.subscription.planType === 'premium' ? 'Premium' : 'Free'}
               </p>
-            </div>
-            <div>
-              <p className="text-zinc-500 text-xs uppercase tracking-widest">Clientes</p>
-              <p className="mt-2 text-white font-semibold">
-                {billingStatus.clientCount}
-                {billingStatus.subscription.clientLimit ? ` / ${billingStatus.subscription.clientLimit}` : ' ilimitados'}
-              </p>
-            </div>
-            <div>
-              <p className="text-zinc-500 text-xs uppercase tracking-widest">IA este mes</p>
-              <div className="mt-2 flex items-center gap-2 flex-wrap">
-                <Badge>
-                  {billingStatus.aiGenerationsUsed} usadas
-                </Badge>
-                <span className="text-zinc-400 text-sm">
-                  {billingStatus.aiGenerationsRemaining === null
-                    ? 'Sin límite'
-                    : `${billingStatus.aiGenerationsRemaining} restantes`}
-                </span>
-              </div>
             </div>
           </CardContent>
         </Card>

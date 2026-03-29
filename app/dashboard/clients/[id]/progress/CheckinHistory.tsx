@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Droplets, Flame, HeartPulse, MoonStar, ShieldAlert, SmilePlus } from 'lucide-react'
+import { Droplets, Flame, MoonStar, ShieldAlert, SmilePlus, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -41,20 +41,29 @@ function MetricTile({
   label,
   value,
   icon: Icon,
+  className,
 }: {
   label: string
   value: string | number
   icon: typeof Droplets
+  className: string
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/30 px-3 py-3 text-center">
-      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+    <div className={`rounded-xl border px-3 py-3 text-center ${className}`}>
+      <div className="flex items-center justify-center gap-2">
         <Icon className="h-3.5 w-3.5" />
         <p className="text-[11px] uppercase tracking-[0.18em]">{label}</p>
       </div>
-      <p className="mt-2 text-sm font-semibold text-foreground">{value}</p>
+      <p className="mt-2 text-sm font-semibold">{value}</p>
     </div>
   )
+}
+
+function moodLabel(value?: number) {
+  if (!value) return 'Sin registro'
+  if (value <= 2) return 'Bajo'
+  if (value === 3) return 'Estable'
+  return 'Muy bien'
 }
 
 function CheckinDetail({
@@ -67,17 +76,33 @@ function CheckinDetail({
   return (
     <div className="mt-3 space-y-4 border-t border-border pt-4">
       <div className="grid gap-2 sm:grid-cols-4">
-        <MetricTile icon={HeartPulse} label="Energía" value={checkin.energy_level ? `${checkin.energy_level}/5` : '—'} />
-        <MetricTile icon={MoonStar} label="Sueño" value={checkin.sleep_quality ? `${checkin.sleep_quality}/5` : '—'} />
-        <MetricTile icon={Flame} label="Entrenos" value={checkin.completed_workouts ?? '—'} />
-        <MetricTile icon={SmilePlus} label="Peso" value={checkin.weight ? `${checkin.weight} kg` : '—'} />
+        <MetricTile className="border-orange-500/20 bg-orange-500/10 text-orange-300" icon={Zap} label="Energía" value={checkin.energy_level ? `${checkin.energy_level}/5` : '—'} />
+        <MetricTile className="border-indigo-500/20 bg-indigo-500/10 text-indigo-300" icon={MoonStar} label="Sueño" value={checkin.sleep_quality ? `${checkin.sleep_quality}/5` : '—'} />
+        <MetricTile className="border-primary/20 bg-primary/10 text-primary" icon={Flame} label="Entrenos" value={checkin.completed_workouts ?? '—'} />
+        <MetricTile className="border-border bg-muted/30 text-foreground" icon={SmilePlus} label="Peso" value={checkin.weight ? `${checkin.weight} kg` : '—'} />
       </div>
 
       {(checkin.mood || checkin.stress_level || checkin.water_liters || checkin.nutrition_adherence) && (
-        <div className="flex flex-wrap gap-2">
-          {checkin.mood ? <Badge className="border-border bg-muted/40 text-foreground">Mood {checkin.mood}/5</Badge> : null}
+        <div className="grid gap-2 sm:grid-cols-2">
+          {checkin.mood ? (
+            <div className="rounded-xl border border-pink-500/20 bg-[linear-gradient(135deg,rgba(244,114,182,0.18),rgba(249,115,22,0.14))] px-3 py-3">
+              <div className="flex items-center gap-2 text-pink-200">
+                <SmilePlus className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-[0.16em]">Estado de ánimo</p>
+              </div>
+              <p className="mt-2 text-sm font-semibold text-white">{moodLabel(checkin.mood)} · {checkin.mood}/5</p>
+            </div>
+          ) : null}
+          {checkin.water_liters ? (
+            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3">
+              <div className="flex items-center gap-2 text-cyan-300">
+                <Droplets className="h-4 w-4" />
+                <p className="text-xs uppercase tracking-[0.16em]">Agua</p>
+              </div>
+              <p className="mt-2 text-sm font-semibold text-white">{checkin.water_liters}L registrados</p>
+            </div>
+          ) : null}
           {checkin.stress_level ? <Badge className="border-red-500/20 bg-red-500/10 text-red-400">Estrés {checkin.stress_level}/5</Badge> : null}
-          {checkin.water_liters ? <Badge className="border-border bg-muted/40 text-foreground">{checkin.water_liters}L agua</Badge> : null}
           {checkin.nutrition_adherence ? <Badge className="border-primary/20 bg-primary/10 text-primary">Adherencia {checkin.nutrition_adherence}/5</Badge> : null}
           {checkin.calories_consumed ? <Badge className="border-border bg-muted/40 text-foreground">{checkin.calories_consumed} kcal</Badge> : null}
         </div>
@@ -105,9 +130,10 @@ function CheckinDetail({
       ) : null}
 
       {checkin.notes ? (
-        <p className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          {checkin.notes}
-        </p>
+        <div className="rounded-xl border border-border bg-muted/30 px-4 py-3">
+          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Notas</p>
+          <p className="mt-2 text-sm text-muted-foreground">{checkin.notes}</p>
+        </div>
       ) : null}
     </div>
   )

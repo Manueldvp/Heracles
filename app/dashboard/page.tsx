@@ -13,7 +13,6 @@ import DashboardInviteButton from './components/DashboardInviteButton'
 import MetricCard from './components/MetricCard'
 import PortfolioClientCard from './components/PortfolioClientCard'
 import DashboardAttentionCards from './components/DashboardAttentionCards'
-import DashboardSearchPanel from './components/DashboardSearchPanel'
 import { Badge } from '@/components/ui/badge'
 import { getTrainerBillingStatus } from '@/lib/billing'
 
@@ -218,20 +217,6 @@ export default async function DashboardPage() {
               />
             </section>
           )}
-
-          <DashboardSearchPanel
-            clients={allClients.map((client) => ({
-              id: client.id,
-              full_name: client.full_name,
-              email: client.email,
-            }))}
-            routines={(recentRoutines ?? []).map((routine) => ({
-              id: routine.id,
-              client_id: routine.client_id,
-              title: ((routine.content as RoutineSummary | null)?.title) ?? routine.title ?? 'Rutina',
-              clientName: (routine.clients as { full_name?: string } | null)?.full_name ?? 'Cliente asignado',
-            }))}
-          />
 
           <section className="space-y-4">
             <div className="flex items-end justify-between gap-4">
