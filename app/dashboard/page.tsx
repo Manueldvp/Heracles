@@ -13,8 +13,10 @@ import DashboardInviteButton from './components/DashboardInviteButton'
 import MetricCard from './components/MetricCard'
 import PortfolioClientCard from './components/PortfolioClientCard'
 import DashboardAttentionCards from './components/DashboardAttentionCards'
+import OnboardingCard from './components/OnboardingCard'
 import { Badge } from '@/components/ui/badge'
 import { getPlanLabel, getTrainerBillingStatus } from '@/lib/billing'
+import { getOnboardingProgress, updateOnboardingProgress } from '@/lib/onboarding'
 
 type RoutineSummary = {
   title?: string
@@ -119,6 +121,25 @@ export default async function DashboardPage() {
   const missingRoutineClients = activeClients.filter((client) => !clientsWithRoutine.has(client.id))
   const retention = activeClients.length > 0 ? Math.round((checkedInToday.length / activeClients.length) * 1000) / 10 : 0
   const billing = await getTrainerBillingStatus(supabase, user!.id)
+  const rawOnboarding = await getOnboardingProgress(supabase, user!.id)
+  const derivedOnboarding = {
+    created_client: rawOnboarding.created_client || allClients.length > 0,
+    created_routine: rawOnboarding.created_routine || (recentRoutines?.length ?? 0) > 0,
+    assigned_routine: rawOnboarding.assigned_routine || (activeRoutines?.length ?? 0) > 0,
+  }
+  const onboardingCompleted = derivedOnboarding.created_client && derivedOnboarding.created_routine && derivedOnboarding.assigned_routine
+
+  if (
+    derivedOnboarding.created_client !== rawOnboarding.created_client ||
+    derivedOnboarding.created_routine !== rawOnboarding.created_routine ||
+    derivedOnboarding.assigned_routine !== rawOnboarding.assigned_routine ||
+    onboardingCompleted !== rawOnboarding.completed
+  ) {
+    await updateOnboardingProgress(supabase, user!.id, {
+      ...derivedOnboarding,
+      completed: onboardingCompleted,
+    })
+  }
 
   const attentionCards = [
     inactiveClients[0]
@@ -170,6 +191,16 @@ export default async function DashboardPage() {
 
       <div className="grid max-w-full gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-6 lg:space-y-8">
+          {!onboardingCompleted ? (
+            <OnboardingCard
+              progress={{
+                ...derivedOnboarding,
+                completed: onboardingCompleted,
+              }}
+              firstClientId={allClients[0]?.id ?? null}
+            />
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <MetricCard
               label="Clientes activos"

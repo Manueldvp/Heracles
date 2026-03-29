@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
 import { APP_URL, EMAIL_FROM } from '@/lib/branding'
 import { buildAssignedContentEmail } from '@/lib/email/templates'
+import { updateOnboardingProgress } from '@/lib/onboarding'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const ALLOWED_TYPES = new Set(['routine_assigned', 'nutrition_assigned', 'message', 'reminder'])
@@ -47,6 +48,10 @@ export async function POST(req: NextRequest) {
       message,
       target_role: 'client',
     })
+
+    if (type === 'routine_assigned') {
+      await updateOnboardingProgress(supabaseAdmin, user.id, { assigned_routine: true })
+    }
 
     if (client.user_id) {
       const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(client.user_id)

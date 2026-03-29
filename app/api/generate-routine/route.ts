@@ -1,5 +1,6 @@
 import { generateContent } from '@/lib/gemini'
 import { consumeAiGeneration } from '@/lib/billing'
+import { updateOnboardingProgress } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -91,6 +92,8 @@ Genera exactamente 4 días de entrenamiento, no más, con esta estructura:
       })
       .select()
       .single()
+
+    await updateOnboardingProgress(supabase, user.id, { created_routine: true })
 
     return NextResponse.json({ routine: saved, status: usageResult.status })
   } catch (error) {

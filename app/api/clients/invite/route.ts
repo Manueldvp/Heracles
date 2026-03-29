@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { APP_NAME, EMAIL_FROM } from '@/lib/branding'
 import { buildInviteEmail } from '@/lib/email/templates'
 import { getTrainerBillingStatus } from '@/lib/billing'
+import { updateOnboardingProgress } from '@/lib/onboarding'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -59,6 +60,8 @@ export async function POST(req: Request) {
     if (clientError) {
       return NextResponse.json({ error: clientError.message }, { status: 400 })
     }
+
+    await updateOnboardingProgress(supabase, user.id, { created_client: true })
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
     const inviteUrl = `${appUrl}/invite/${token}`

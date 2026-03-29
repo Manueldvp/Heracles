@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { updateOnboardingProgress } from '@/lib/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -62,6 +63,10 @@ export default function RoutineTemplatePage() {
       }).select().single()
 
       if (routine) {
+        await updateOnboardingProgress(supabase, user!.id, {
+          created_routine: true,
+          assigned_routine: true,
+        })
         router.push(`/dashboard/clients/${clientId}/routines/${routine.id}`)
       }
     } catch (e) {
