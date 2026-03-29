@@ -28,7 +28,7 @@ interface Document {
 
 interface BillingStatus {
   subscription: {
-    planType: 'free' | 'premium'
+    planType: 'free' | 'pro' | 'studio'
   }
 }
 
@@ -187,7 +187,11 @@ export default function ProfilePage() {
             <div>
               <p className="text-zinc-500 text-xs uppercase tracking-widest">Plan</p>
               <p className="mt-2 text-white font-semibold">
-                {billingStatus.subscription.planType === 'premium' ? 'Premium' : 'Free'}
+                {billingStatus.subscription.planType === 'studio'
+                  ? 'Studio'
+                  : billingStatus.subscription.planType === 'pro'
+                    ? 'Pro'
+                    : 'Free'}
               </p>
             </div>
           </CardContent>

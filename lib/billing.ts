@@ -1,5 +1,10 @@
-export const FREE_CLIENT_LIMIT = 5
-export const FREE_AI_LIMIT = 3
+export const PLAN_CONFIG = {
+  free: { clientLimit: 5, aiLimit: 3 },
+  pro: { clientLimit: 20, aiLimit: 50 },
+  studio: { clientLimit: 50, aiLimit: null },
+} as const
+
+export type PlanType = keyof typeof PLAN_CONFIG
 
 type SupabaseLike = {
   from: (table: string) => {
@@ -12,9 +17,12 @@ type SupabaseLike = {
 
 export type BillingStatus = {
   subscription: {
-    planType: 'free' | 'premium'
+    planType: PlanType
     active: boolean
     clientLimit: number | null
+    aiLimit: number | null
+    stripeCustomerId: string | null
+    stripeSubscriptionId: string | null
   }
   clientCount: number
   remainingClientSlots: number | null
@@ -30,18 +38,37 @@ export function getUsageMonth(date = new Date()) {
   return `${year}-${month}`
 }
 
+export function normalizePlanType(planType?: string | null): PlanType {
+  if (planType === 'studio') return 'studio'
+  if (planType === 'pro' || planType === 'premium') return 'pro'
+  return 'free'
+}
+
+export function getPlanConfig(planType: PlanType) {
+  return PLAN_CONFIG[planType]
+}
+
+export function getPlanLabel(planType: PlanType) {
+  return planType === 'studio' ? 'Studio' : planType === 'pro' ? 'Pro' : 'Free'
+}
+
 export async function ensureSubscriptionRecord(supabase: SupabaseLike, userId: string) {
   const { data: existing } = await supabase
     .from('subscriptions')
-    .select('user_id, plan_type, active, client_limit')
+    .select('user_id, plan_type, active, client_limit, ai_limit, stripe_customer_id, stripe_subscription_id')
     .eq('user_id', userId)
     .maybeSingle()
 
   if (existing) {
+    const planType = normalizePlanType(existing.plan_type)
+    const config = getPlanConfig(planType)
     return {
-      planType: (existing.plan_type === 'premium' ? 'premium' : 'free') as 'premium' | 'free',
+      planType,
       active: existing.active !== false,
-      clientLimit: existing.plan_type === 'premium' ? null : Number(existing.client_limit ?? FREE_CLIENT_LIMIT),
+      clientLimit: Number(existing.client_limit ?? config.clientLimit),
+      aiLimit: existing.ai_limit === null ? config.aiLimit : Number(existing.ai_limit ?? config.aiLimit),
+      stripeCustomerId: existing.stripe_customer_id ?? null,
+      stripeSubscriptionId: existing.stripe_subscription_id ?? null,
     }
   }
 
@@ -49,7 +76,8 @@ export async function ensureSubscriptionRecord(supabase: SupabaseLike, userId: s
     user_id: userId,
     plan_type: 'free',
     active: true,
-    client_limit: FREE_CLIENT_LIMIT,
+    client_limit: PLAN_CONFIG.free.clientLimit,
+    ai_limit: PLAN_CONFIG.free.aiLimit,
   }
 
   await supabase.from('subscriptions').insert(defaultRow)
@@ -57,8 +85,15 @@ export async function ensureSubscriptionRecord(supabase: SupabaseLike, userId: s
   return {
     planType: 'free' as const,
     active: true,
-    clientLimit: FREE_CLIENT_LIMIT,
+    clientLimit: PLAN_CONFIG.free.clientLimit,
+    aiLimit: PLAN_CONFIG.free.aiLimit,
+    stripeCustomerId: null,
+    stripeSubscriptionId: null,
   }
+}
+
+export async function getUserPlan(supabase: SupabaseLike, userId: string) {
+  return ensureSubscriptionRecord(supabase, userId)
 }
 
 export async function ensureAiUsageRow(supabase: SupabaseLike, userId: string, month = getUsageMonth()) {
@@ -99,13 +134,13 @@ export async function getTrainerBillingStatus(supabase: SupabaseLike, userId: st
   ])
 
   const clientCount = Number(clientCountResult.count ?? 0)
-  const remainingClientSlots = subscription.planType === 'premium'
+  const remainingClientSlots = subscription.clientLimit === null
     ? null
-    : Math.max(0, Number(subscription.clientLimit ?? FREE_CLIENT_LIMIT) - clientCount)
+    : Math.max(0, subscription.clientLimit - clientCount)
 
-  const aiGenerationsRemaining = subscription.planType === 'premium'
+  const aiGenerationsRemaining = subscription.aiLimit === null
     ? null
-    : Math.max(0, FREE_AI_LIMIT - usage.generationsUsed)
+    : Math.max(0, subscription.aiLimit - usage.generationsUsed)
 
   return {
     subscription,
@@ -113,8 +148,8 @@ export async function getTrainerBillingStatus(supabase: SupabaseLike, userId: st
     remainingClientSlots,
     aiGenerationsUsed: usage.generationsUsed,
     aiGenerationsRemaining,
-    canUseAi: subscription.planType === 'premium' || usage.generationsUsed < FREE_AI_LIMIT,
-    canAddClient: subscription.planType === 'premium' || clientCount < Number(subscription.clientLimit ?? FREE_CLIENT_LIMIT),
+    canUseAi: subscription.aiLimit === null || usage.generationsUsed < subscription.aiLimit,
+    canAddClient: subscription.clientLimit === null || clientCount < subscription.clientLimit,
   }
 }
 
@@ -129,7 +164,7 @@ export async function consumeAiGeneration(supabase: SupabaseLike, userId: string
     }
   }
 
-  if (status.subscription.planType === 'premium') {
+  if (status.subscription.aiLimit === null) {
     return {
       ok: true as const,
       status,
@@ -150,8 +185,8 @@ export async function consumeAiGeneration(supabase: SupabaseLike, userId: string
     status: {
       ...status,
       aiGenerationsUsed: nextUsed,
-      aiGenerationsRemaining: Math.max(0, FREE_AI_LIMIT - nextUsed),
-      canUseAi: nextUsed < FREE_AI_LIMIT,
+      aiGenerationsRemaining: Math.max(0, (status.subscription.aiLimit ?? 0) - nextUsed),
+      canUseAi: nextUsed < (status.subscription.aiLimit ?? 0),
     },
   }
 }

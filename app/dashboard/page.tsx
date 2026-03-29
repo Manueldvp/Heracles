@@ -14,7 +14,7 @@ import MetricCard from './components/MetricCard'
 import PortfolioClientCard from './components/PortfolioClientCard'
 import DashboardAttentionCards from './components/DashboardAttentionCards'
 import { Badge } from '@/components/ui/badge'
-import { getTrainerBillingStatus } from '@/lib/billing'
+import { getPlanLabel, getTrainerBillingStatus } from '@/lib/billing'
 
 type RoutineSummary = {
   title?: string
@@ -320,22 +320,25 @@ export default async function DashboardPage() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-lg font-semibold text-foreground">
-                    {billing.subscription.planType === 'premium' ? 'Plan Premium' : 'Plan Free'}
+                    {`Plan ${getPlanLabel(billing.subscription.planType)}`}
                   </p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    {billing.subscription.planType === 'premium'
-                      ? 'Clientes e IA sin límites activos.'
-                      : `${billing.clientCount}/${billing.subscription.clientLimit ?? 5} clientes usados · ${billing.aiGenerationsUsed}/3 generaciones IA este mes.`}
+                    {billing.subscription.planType === 'studio'
+                      ? 'Hasta 50 clientes y IA ilimitada para equipos que operan a escala.'
+                      : `${billing.clientCount}/${billing.subscription.clientLimit ?? 5} clientes usados · ${billing.aiGenerationsUsed}/${billing.subscription.aiLimit ?? '∞'} usos IA este mes.`}
                   </p>
                 </div>
-                <Badge>{billing.subscription.planType === 'premium' ? 'Activo' : 'Upgrade'}</Badge>
+                <Badge>{billing.subscription.planType === 'free' ? 'Upgrade' : 'Activo'}</Badge>
               </div>
-              {billing.subscription.planType !== 'premium' ? (
+              {billing.subscription.planType === 'free' ? (
                 <div className="mt-5 rounded-xl border border-primary/20 bg-primary/10 p-4">
-                  <p className="text-sm font-medium text-primary">Desbloquea Premium al superar 5 clientes</p>
+                  <p className="text-sm font-medium text-primary">Pasa a Pro o Studio para escalar tu cartera</p>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Mantén control sobre tu crecimiento y evita quedarte sin IA durante el mes.
+                    Desbloquea más clientes y más generaciones de IA sin romper tu flujo actual.
                   </p>
+                  <Link href="/precios" className="mt-3 inline-flex text-sm font-medium text-primary transition hover:text-primary-hover">
+                    Ver planes
+                  </Link>
                 </div>
               ) : null}
             </CardContent>

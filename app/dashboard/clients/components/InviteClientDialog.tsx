@@ -7,7 +7,8 @@ import { Badge } from '@/components/ui/badge'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger
 } from '@/components/ui/dialog'
-import { UserPlus, Mail, FileText, Check, Loader2, AlertCircle } from 'lucide-react'
+import Link from 'next/link'
+import { UserPlus, Mail, FileText, Check, Loader2, AlertCircle, ArrowRight } from 'lucide-react'
 
 interface Form {
   id: string
@@ -195,12 +196,21 @@ export default function InviteClientDialog({ onInvited }: Props) {
                   <p className="text-red-400 text-sm">{error}</p>
                   {upgradeRequired ? (
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Pásate a Premium para invitar más de 5 clientes y desbloquear IA ilimitada.
+                      Pásate a Pro o Studio para ampliar tu límite de clientes y aumentar el uso de IA.
                     </p>
                   ) : null}
                 </div>
               </div>
             )}
+
+            {upgradeRequired ? (
+              <Link href="/precios" className="block">
+                <Button variant="outline" className="w-full border-primary/20 bg-primary/10 text-primary hover:bg-primary/15">
+                  Ver planes
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            ) : null}
 
             {/* Submit */}
             <Button

@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         ...billing,
         clientCount: billing.clientCount + 1,
         remainingClientSlots: billing.remainingClientSlots === null ? null : Math.max(0, billing.remainingClientSlots - 1),
-        canAddClient: billing.subscription.planType === 'premium' || (billing.clientCount + 1) < (billing.subscription.clientLimit ?? 5),
+        canAddClient: billing.subscription.clientLimit === null || (billing.clientCount + 1) < (billing.subscription.clientLimit ?? 5),
       },
     })
   } catch (error) {
