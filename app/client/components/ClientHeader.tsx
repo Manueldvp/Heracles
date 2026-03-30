@@ -1,8 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
-import HerculesMascot from './HerculesMascot'
 import ChatAssistant from './HerculesChat'
 
 const goalLabel: Record<string, string> = {
@@ -34,47 +32,15 @@ interface Props {
   level: string
   clientName: string
   assistantName: string
+  personality: string
+  methodology: string
   trainerName?: string
   trainerAvatar?: string
 }
 
 export default function ClientHeader({
-  firstName, greeting, goal, level, clientName, assistantName, trainerName, trainerAvatar
+  firstName, greeting, goal, level, clientName, assistantName, personality, methodology, trainerName, trainerAvatar
 }: Props) {
-  const [mascotState, setMascotState] = useState<'excited' | 'idle'>('idle')
-  const [showBubble, setShowBubble] = useState(false)
-  const [showMascot, setShowMascot] = useState(false)
-  const [showChat, setShowChat] = useState(false)
-  const [fadeOut, setFadeOut] = useState(false)
-
-  useEffect(() => {
-    const key = 'heracles_last_greeting'
-    const last = localStorage.getItem(key)
-    const today = new Date().toDateString()
-
-    if (last !== today) {
-      localStorage.setItem(key, today)
-      setShowMascot(true)
-      setShowBubble(true)
-
-      const timers = [
-        setTimeout(() => setMascotState('excited'), 50),
-        setTimeout(() => setMascotState('idle'), 2000),
-        setTimeout(() => setShowBubble(false), 3000),
-        setTimeout(() => setFadeOut(true), 3500),
-        setTimeout(() => {
-          setShowMascot(false)
-          setFadeOut(false)
-          setShowChat(true)
-        }, 4200),
-      ]
-
-      return () => timers.forEach(clearTimeout)
-    } else {
-      setShowChat(true)
-    }
-  }, [])
-
   return (
     <>
       <div className="flex items-center justify-between mb-2">
@@ -93,55 +59,26 @@ export default function ClientHeader({
         </div>
 
         {/* Right */}
-        {showMascot ? (
-          <div
-            className="flex flex-col items-end gap-1 shrink-0 transition-opacity duration-500"
-            style={{ opacity: fadeOut ? 0 : 1 }}
-          >
-            {showBubble && (
-              <div className="relative bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs px-3 py-2 rounded-xl rounded-br-none shadow-lg max-w-[140px] text-center msg-animate">
-                ¡Hola {firstName}! 💪 ¿Listo para entrenar?
-                <div className="absolute -bottom-2 right-3 w-3 h-3 bg-zinc-900 border-r border-b border-zinc-700 rotate-45" />
-              </div>
-            )}
-            <div className="flex items-end gap-2">
-              {trainerName && (
-                <div className="flex flex-col items-center gap-1 mb-1">
-                  <div className="w-8 h-8 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center overflow-hidden">
-                    {trainerAvatar ? (
-                      <img src={trainerAvatar} alt={trainerName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-orange-400 font-bold text-xs">{trainerName.charAt(0)}</span>
-                    )}
-                  </div>
-                  <p className="text-zinc-600 text-xs">{trainerName}</p>
-                </div>
+        {trainerName ? (
+          <div className="flex flex-col items-center gap-1 shrink-0">
+            <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center overflow-hidden">
+              {trainerAvatar ? (
+                <img src={trainerAvatar} alt={trainerName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-orange-400 font-bold text-sm">{trainerName.charAt(0)}</span>
               )}
-              <HerculesMascot state={mascotState} size={64} showBadge={false} />
             </div>
+            <p className="text-zinc-600 text-xs">{trainerName}</p>
           </div>
-        ) : (
-          trainerName && (
-            <div className="flex flex-col items-center gap-1 shrink-0">
-              <div className="w-9 h-9 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center overflow-hidden">
-                {trainerAvatar ? (
-                  <img src={trainerAvatar} alt={trainerName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-orange-400 font-bold text-sm">{trainerName.charAt(0)}</span>
-                )}
-              </div>
-              <p className="text-zinc-600 text-xs">{trainerName}</p>
-            </div>
-          )
-        )}
+        ) : null}
       </div>
 
-      {showChat && (
-        <ChatAssistant
-          clientName={clientName}
-          assistantName={assistantName}
-        />
-      )}
+      <ChatAssistant
+        clientName={clientName}
+        assistantName={assistantName}
+        personality={personality}
+        methodology={methodology}
+      />
     </>
   )
 }

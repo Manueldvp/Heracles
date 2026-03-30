@@ -746,6 +746,10 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
     setResting(false)
     setCompletedAt(timeStr)
     setAllDone(true)
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('treinex:workout-complete'))
+    }
   }
 
   // ── Reset — wipe session + all exercise logs for today ─────────────────────

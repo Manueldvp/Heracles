@@ -2,28 +2,38 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, ChevronDown, Mic, MicOff } from 'lucide-react'
-import HerculesMascot, { HerculesStyles } from './HerculesMascot'
+import AICharacter from '@/components/ai/AICharacter'
+import { buildAssistantMessage, getMethodologySummary, type AssistantEvent, type AssistantVisualState } from '@/lib/ai-assistant'
 
 interface Message {
   role: 'user' | 'assistant'
   content: string
 }
 
-type MascotState = 'idle' | 'speaking' | 'thinking' | 'excited'
-
 export default function ChatAssistant({
   clientName,
   assistantName,
+  personality,
+  methodology,
 }: {
   clientName: string
   assistantName: string
+  personality: string
+  methodology: string
 }) {
   const [open, setOpen] = useState(false)
-  const [mascotState, setMascotState] = useState<MascotState>('idle')
+  const [characterState, setCharacterState] = useState<AssistantVisualState>('idle')
+  const [characterEvent, setCharacterEvent] = useState<AssistantEvent>('idle')
+  const [ambientMessage, setAmbientMessage] = useState<string>()
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: `¡Ey ${clientName.split(' ')[0]}! 💪 Soy ${assistantName}, tu entrenador virtual. Tu entrenador me configuró con todo tu perfil. ¿Qué necesitas hoy?`,
+      content: buildAssistantMessage({
+        assistantName,
+        personality,
+        event: 'login',
+        clientName,
+      }),
     },
   ])
   const [input, setInput] = useState('')
@@ -38,15 +48,68 @@ export default function ChatAssistant({
   }, [messages])
 
   useEffect(() => {
+    const greetingKey = `treinex-ai-greeting-${new Date().toDateString()}`
+
+    if (localStorage.getItem(greetingKey) !== 'seen') {
+      localStorage.setItem(greetingKey, 'seen')
+      setCharacterEvent('login')
+      setCharacterState('celebrate')
+      setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'login', clientName }))
+      const timer = window.setTimeout(() => setCharacterState('idle'), 3600)
+      return () => window.clearTimeout(timer)
+    }
+
+    setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'idle', clientName }))
+  }, [assistantName, personality, clientName])
+
+  useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
   }, [open])
+
+  useEffect(() => {
+    const handleWorkoutComplete = () => {
+      setCharacterEvent('workout-complete')
+      setCharacterState('celebrate')
+      setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'workout-complete', clientName }))
+      window.setTimeout(() => setCharacterState('idle'), 4200)
+    }
+
+    window.addEventListener('treinex:workout-complete', handleWorkoutComplete)
+    return () => window.removeEventListener('treinex:workout-complete', handleWorkoutComplete)
+  }, [assistantName, personality, clientName])
+
+  useEffect(() => {
+    let timeoutId: number | undefined
+
+    const resetInactivityTimer = () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+      timeoutId = window.setTimeout(() => {
+        if (open || loading) return
+        setCharacterEvent('inactivity')
+        setCharacterState('thinking')
+        setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'inactivity', clientName }))
+        window.setTimeout(() => setCharacterState('idle'), 3000)
+      }, 45000)
+    }
+
+    const events: Array<keyof WindowEventMap> = ['mousemove', 'keydown', 'click', 'touchstart']
+    events.forEach((eventName) => window.addEventListener(eventName, resetInactivityTimer))
+    resetInactivityTimer()
+
+    return () => {
+      if (timeoutId) window.clearTimeout(timeoutId)
+      events.forEach((eventName) => window.removeEventListener(eventName, resetInactivityTimer))
+    }
+  }, [assistantName, personality, clientName, open, loading])
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return
     setMessages(prev => [...prev, { role: 'user', content: text }])
     setInput('')
     setLoading(true)
-    setMascotState('thinking')
+    setCharacterEvent('ai-interaction')
+    setCharacterState('thinking')
+    setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'ai-interaction', clientName }))
 
     try {
       const res = await fetch('/api/chat', {
@@ -55,15 +118,17 @@ export default function ChatAssistant({
         body: JSON.stringify({ message: text }),
       })
       const data = await res.json()
-      setMascotState('speaking')
+      setCharacterState('celebrate')
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.message || 'Lo siento, no pude procesar tu mensaje.',
       }])
-      setTimeout(() => setMascotState('idle'), 3000)
+      setAmbientMessage(data.message || buildAssistantMessage({ assistantName, personality, event: 'ai-interaction', clientName }))
+      setTimeout(() => setCharacterState('idle'), 3000)
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Hubo un error, intenta de nuevo.' }])
-      setMascotState('idle')
+      setAmbientMessage(`${assistantName} dice: hubo un problema, pero sigo aquí contigo.`)
+      setCharacterState('idle')
     }
     setLoading(false)
   }
@@ -86,26 +151,30 @@ export default function ChatAssistant({
 
   return (
     <>
-      <HerculesStyles />
+      <style>{`
+        @keyframes msg-in {
+          from { opacity: 0; transform: translateY(8px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .msg-animate { animation: msg-in 0.25s ease-out forwards; }
+        @keyframes chat-open {
+          from { opacity: 0; transform: scale(0.85) translateY(20px); transform-origin: bottom right; }
+          to { opacity: 1; transform: scale(1) translateY(0); transform-origin: bottom right; }
+        }
+        .chat-open { animation: chat-open 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+      `}</style>
 
-      {/* Floating mascot */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-
-        {/* Speech bubble when idle */}
-        {!open && mascotState === 'idle' && (
-          <div className="relative bg-zinc-900 border border-zinc-700 text-zinc-300 text-xs px-3 py-2 rounded-xl rounded-br-none shadow-lg max-w-[160px] text-center msg-animate">
-            ¡Pregúntame lo que quieras! 💪
-            <div className="absolute -bottom-2 right-3 w-3 h-3 bg-zinc-900 border-r border-b border-zinc-700 rotate-45" />
-          </div>
-        )}
-
-        <HerculesMascot
-          state={mascotState}
-          onClick={() => setOpen(o => !o)}
-          size={72}
-          showBadge={true}
-        />
-      </div>
+      <AICharacter
+        assistantName={assistantName}
+        personality={personality}
+        methodology={methodology}
+        state={characterState}
+        event={characterEvent}
+        clientName={clientName}
+        open={open}
+        onClick={() => setOpen((value) => !value)}
+        message={ambientMessage}
+      />
 
       {/* Chat window */}
       {open && (
@@ -118,26 +187,14 @@ export default function ChatAssistant({
             className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/80"
             style={{ background: 'linear-gradient(135deg, #7c2d12 0%, #1c1917 100%)' }}
           >
-            <div className="relative shrink-0">
-              <svg width="40" height="44" viewBox="0 0 72 80" fill="none">
-                <circle cx="36" cy="24" r="16" fill="#FBBF24" />
-                <path d="M20 22 Q20 8 36 8 Q52 8 52 22" fill="#DC2626" />
-                <rect x="20" y="20" width="32" height="5" rx="2" fill="#B91C1C" />
-                <rect x="34" y="2" width="4" height="8" rx="2" fill="#EF4444" />
-                <ellipse cx="29" cy="23" rx="3.5" ry="3.5" fill="white" />
-                <ellipse cx="43" cy="23" rx="3.5" ry="3.5" fill="white" />
-                <circle cx="29.5" cy="23.5" r="2" fill="#1C1917" />
-                <circle cx="43.5" cy="23.5" r="2" fill="#1C1917" />
-                <circle cx="30" cy="22.5" r="0.7" fill="white" />
-                <circle cx="44" cy="22.5" r="0.7" fill="white" />
-                <path d="M31 29 Q36 33 41 29" stroke="#92400E" strokeWidth="1.5" strokeLinecap="round" fill="none" />
-                <rect x="20" y="38" width="32" height="20" rx="8" fill="#C2410C" />
-              </svg>
-              <div className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-zinc-900 ${loading ? 'bg-yellow-400 animate-pulse' : 'bg-green-400'}`} />
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${loading ? 'border-yellow-400/30 bg-yellow-400/10' : 'border-primary/20 bg-primary/10'}`}>
+              <span className="text-lg">{loading ? '...' : 'AI'}</span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-white font-bold text-sm">{assistantName}</p>
-              <p className="text-orange-300/70 text-xs">{loading ? 'Pensando...' : 'Listo para ayudarte'}</p>
+              <p className="text-orange-300/70 text-xs">
+                {loading ? 'Pensando...' : getMethodologySummary(methodology)}
+              </p>
             </div>
             <button
               onClick={() => setOpen(false)}
@@ -152,8 +209,8 @@ export default function ChatAssistant({
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 msg-animate ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-orange-600 flex items-center justify-center shrink-0 mt-1">
-                    <span className="text-xs">⚡</span>
+                  <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 mt-1">
+                    <span className="text-[10px] font-semibold text-primary">{assistantName.charAt(0)}</span>
                   </div>
                 )}
                 <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
@@ -168,8 +225,8 @@ export default function ChatAssistant({
 
             {loading && (
               <div className="flex gap-2 justify-start msg-animate">
-                <div className="w-6 h-6 rounded-full bg-orange-600 flex items-center justify-center shrink-0">
-                  <span className="text-xs">⚡</span>
+                <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-[10px] font-semibold text-primary">{assistantName.charAt(0)}</span>
                 </div>
                 <div className="bg-zinc-800 border border-zinc-700/50 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center">
                   <span className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />

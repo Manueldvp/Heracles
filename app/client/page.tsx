@@ -9,9 +9,9 @@ import {
 import ClientHeader from './components/ClientHeader'
 import TodayWorkout from './components/TodayWorkout'
 import TodayMeal from './components/TodayMeal'
-import { HerculesStyles } from './components/HerculesMascot'
 import CheckinReminder from './components/CheckinReminder'
 import Link from 'next/link'
+import { extractAssistantConfig } from '@/lib/ai-assistant'
 
 export default async function ClientHomePage() {
   const supabase = await createClient()
@@ -63,8 +63,13 @@ export default async function ClientHomePage() {
   }
 
   const { data: trainerProfile } = await supabase
-    .from('profiles').select('ai_trainer_name, full_name, avatar_url')
+    .from('profiles').select('ai_trainer_name, ai_system_prompt, full_name, avatar_url')
     .eq('id', clientData.trainer_id).single()
+
+  const assistantConfig = extractAssistantConfig(
+    trainerProfile?.ai_trainer_name,
+    trainerProfile?.ai_system_prompt
+  )
 
   const [routineRes, planRes, { data: checkins }] = await Promise.all([
     supabase.from('routines').select('*').eq('client_id', clientData.id).eq('is_active', true).limit(1).maybeSingle(),
@@ -88,7 +93,6 @@ export default async function ClientHomePage() {
 
   return (
     <>
-      <HerculesStyles />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
         .font-display { font-family: 'Bebas Neue', sans-serif; }
@@ -104,7 +108,9 @@ export default async function ClientHomePage() {
           goal={clientData.goal}
           level={clientData.level}
           clientName={clientData.full_name}
-          assistantName={trainerProfile?.ai_trainer_name || 'Treinex'}
+          assistantName={assistantConfig.assistantName}
+          personality={assistantConfig.personality}
+          methodology={assistantConfig.methodology}
           trainerName={trainerProfile?.full_name?.split(' ')[0]}
           trainerAvatar={trainerProfile?.avatar_url}
         />
