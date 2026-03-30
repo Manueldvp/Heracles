@@ -3,7 +3,6 @@ import { Check, CreditCard, Sparkles, Zap } from 'lucide-react'
 import BrandLockup from '@/components/brand-lockup'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import WebpayUpgradeButton from '@/components/pricing/webpay-upgrade-button'
 import { formatClp, getWebpayPlanSummary } from '@/lib/webpay'
 
 const plans = [
@@ -102,10 +101,11 @@ export default function PreciosPage() {
                       <Button variant="outline" className="w-full rounded-xl border-border">Empezar con Free</Button>
                     </Link>
                   ) : (
-                    <WebpayUpgradeButton
-                      planType={plan.planType}
-                      label={plan.planType === 'studio' ? 'Pagar Studio con Webpay' : 'Pagar Pro con Webpay'}
-                    />
+                    <Link href="/login?redirect=%2Fdashboard%2Fbilling" className="block">
+                      <Button className="w-full rounded-xl">
+                        {plan.planType === 'studio' ? 'Inicia sesión para contratar Studio' : 'Inicia sesión para contratar Pro'}
+                      </Button>
+                    </Link>
                   )}
                 </CardContent>
               </Card>

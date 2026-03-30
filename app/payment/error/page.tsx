@@ -36,10 +36,10 @@ export default async function PaymentErrorPage({
               {message}
             </p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/precios">
+              <Link href="/dashboard/billing">
                 <Button className="rounded-xl">
                   <RotateCcw className="mr-2 h-4 w-4" />
-                  Intentar nuevamente
+                  Volver a billing
                 </Button>
               </Link>
               <Link href="/dashboard">

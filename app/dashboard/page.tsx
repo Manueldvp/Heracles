@@ -367,7 +367,7 @@ export default async function DashboardPage() {
                   <p className="mt-1 text-sm text-muted-foreground">
                     Desbloquea más clientes y más generaciones de IA sin romper tu flujo actual.
                   </p>
-                  <Link href="/precios" className="mt-3 inline-flex text-sm font-medium text-primary transition hover:text-primary-hover">
+                  <Link href="/dashboard/billing" className="mt-3 inline-flex text-sm font-medium text-primary transition hover:text-primary-hover">
                     Ver planes
                   </Link>
                 </div>

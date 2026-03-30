@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, LockKeyhole, Mail } from 'lucide-react'
@@ -19,6 +19,10 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const supabase = createClient()
   const token = searchParams.get('token')
+  const redirectPath = (() => {
+    const value = searchParams.get('redirect')
+    return value && value.startsWith('/') ? value : null
+  })()
   const t = createTranslator('es')
   const benefits = getTranslationValue<string[]>('auth.login.benefits', 'es')
   const metrics = getTranslationValue<Array<{ label: string; value: string }>>('auth.login.metrics', 'es')
@@ -29,6 +33,47 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+
+  const resolveUserTarget = async (userId: string) => {
+    if (redirectPath) return redirectPath
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (profile?.role === 'trainer') return '/dashboard'
+    if (profile?.role === 'client') return token ? `/onboarding/${token}` : '/client'
+
+    const { data: clientRow } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle()
+
+    return clientRow ? (token ? `/onboarding/${token}` : '/client') : '/dashboard'
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    const redirectIfSessionExists = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || cancelled) return
+
+      const target = await resolveUserTarget(user.id)
+      if (!cancelled) {
+        router.replace(target)
+      }
+    }
+
+    redirectIfSessionExists()
+
+    return () => {
+      cancelled = true
+    }
+  }, [router, redirectPath, token])
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -55,34 +100,8 @@ function LoginForm() {
       return
     }
 
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (profile?.role === 'trainer') {
-      router.push('/dashboard')
-      return
-    }
-
-    if (profile?.role === 'client') {
-      router.push(token ? `/onboarding/${token}` : '/client')
-      return
-    }
-
-    const { data: clientRow } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    if (clientRow) {
-      router.push(token ? `/onboarding/${token}` : '/client')
-      return
-    }
-
-    router.push('/dashboard')
+    const target = await resolveUserTarget(user.id)
+    router.push(target)
   }
 
   const handleForgotPassword = async () => {
@@ -219,7 +238,7 @@ function LoginForm() {
                     {t('auth.login.forgot_password')}
                   </button>
                   <Link
-                    href={token ? `/register?token=${token}` : '/register'}
+                    href={token ? `/register?token=${token}` : redirectPath ? `/register?redirect=${encodeURIComponent(redirectPath)}` : '/register'}
                     className="text-xs text-primary transition hover:text-primary-hover"
                   >
                     {t('auth.login.create_account')}

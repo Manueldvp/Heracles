@@ -204,7 +204,7 @@ export default function InviteClientDialog({ onInvited }: Props) {
             )}
 
             {upgradeRequired ? (
-              <Link href="/precios" className="block">
+              <Link href="/dashboard/billing" className="block">
                 <Button variant="outline" className="w-full border-primary/20 bg-primary/10 text-primary hover:bg-primary/15">
                   Ver planes
                   <ArrowRight className="ml-2 h-4 w-4" />
