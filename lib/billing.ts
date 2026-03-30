@@ -21,8 +21,6 @@ export type BillingStatus = {
     active: boolean
     clientLimit: number | null
     aiLimit: number | null
-    stripeCustomerId: string | null
-    stripeSubscriptionId: string | null
   }
   clientCount: number
   remainingClientSlots: number | null
@@ -55,7 +53,7 @@ export function getPlanLabel(planType: PlanType) {
 export async function ensureSubscriptionRecord(supabase: SupabaseLike, userId: string) {
   const { data: existing } = await supabase
     .from('subscriptions')
-    .select('user_id, plan_type, active, client_limit, ai_limit, stripe_customer_id, stripe_subscription_id')
+    .select('user_id, plan_type, active, client_limit, ai_limit')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -67,8 +65,6 @@ export async function ensureSubscriptionRecord(supabase: SupabaseLike, userId: s
       active: existing.active !== false,
       clientLimit: Number(existing.client_limit ?? config.clientLimit),
       aiLimit: existing.ai_limit === null ? config.aiLimit : Number(existing.ai_limit ?? config.aiLimit),
-      stripeCustomerId: existing.stripe_customer_id ?? null,
-      stripeSubscriptionId: existing.stripe_subscription_id ?? null,
     }
   }
 
@@ -87,8 +83,6 @@ export async function ensureSubscriptionRecord(supabase: SupabaseLike, userId: s
     active: true,
     clientLimit: PLAN_CONFIG.free.clientLimit,
     aiLimit: PLAN_CONFIG.free.aiLimit,
-    stripeCustomerId: null,
-    stripeSubscriptionId: null,
   }
 }
 

@@ -3,7 +3,8 @@ import { Check, CreditCard, Sparkles, Zap } from 'lucide-react'
 import BrandLockup from '@/components/brand-lockup'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import UpgradeButton from '@/components/pricing/upgrade-button'
+import WebpayUpgradeButton from '@/components/pricing/webpay-upgrade-button'
+import { formatClp, getWebpayPlanSummary } from '@/lib/webpay'
 
 const plans = [
   {
@@ -19,18 +20,18 @@ const plans = [
   {
     name: 'Pro',
     description: 'Para entrenadores que ya tienen una cartera activa.',
-    price: 'Configura en Stripe',
-    cadence: '',
+    price: formatClp(getWebpayPlanSummary('pro').amount),
+    cadence: '/mes',
     planType: 'pro' as const,
     clients: '20 clientes',
     ai: '50 usos IA',
-    features: ['Checkout por suscripción', 'Más capacidad operativa', 'Límites pensados para crecer'],
+    features: ['Pago rápido por Webpay', 'Más capacidad operativa', 'Límites pensados para crecer'],
   },
   {
     name: 'Studio',
     description: 'Para equipos o coaches con más volumen.',
-    price: 'Configura en Stripe',
-    cadence: '',
+    price: formatClp(getWebpayPlanSummary('studio').amount),
+    cadence: '/mes',
     planType: 'studio' as const,
     clients: '50 clientes',
     ai: 'IA ilimitada',
@@ -101,9 +102,9 @@ export default function PreciosPage() {
                       <Button variant="outline" className="w-full rounded-xl border-border">Empezar con Free</Button>
                     </Link>
                   ) : (
-                    <UpgradeButton
+                    <WebpayUpgradeButton
                       planType={plan.planType}
-                      label={plan.planType === 'studio' ? 'Actualizar a Studio' : 'Actualizar a Pro'}
+                      label={plan.planType === 'studio' ? 'Pagar Studio con Webpay' : 'Pagar Pro con Webpay'}
                     />
                   )}
                 </CardContent>
