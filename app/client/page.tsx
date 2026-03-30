@@ -107,10 +107,6 @@ export default async function ClientHomePage() {
           greeting={greeting}
           goal={clientData.goal}
           level={clientData.level}
-          clientName={clientData.full_name}
-          assistantName={assistantConfig.assistantName}
-          personality={assistantConfig.personality}
-          methodology={assistantConfig.methodology}
           trainerName={trainerProfile?.full_name?.split(' ')[0]}
           trainerAvatar={trainerProfile?.avatar_url}
         />

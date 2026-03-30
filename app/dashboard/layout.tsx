@@ -62,7 +62,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <AICharacter
           assistantName={assistantConfig.assistantName}
           personality={assistantConfig.personality}
-          methodology={assistantConfig.methodology}
         />
       </div>
     </div>

@@ -3,16 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bot, Minimize2, Sparkles, Volume2 } from 'lucide-react'
-import { buildAssistantMessage, getAssistantTone, getMethodologySummary, type AssistantEvent, type AssistantVisualState } from '@/lib/ai-assistant'
+import { Bot, Minimize2, Volume2 } from 'lucide-react'
+import { buildAssistantMessage, getAssistantTone, type AssistantEvent, type AssistantVisualState } from '@/lib/ai-assistant'
 
 type AssistantStateEvent = CustomEvent<{
   state?: AssistantVisualState
   event?: AssistantEvent
   message?: string
 }>
-
-type AssistantChatEvent = CustomEvent<{ open?: boolean }>
 
 const STORAGE_KEYS = {
   minimized: 'treinex-assistant-minimized',
@@ -22,25 +20,21 @@ const STORAGE_KEYS = {
 export default function AICharacter({
   assistantName,
   personality = 'Profesional, cercano y claro.',
-  methodology = 'Acompañamiento adaptado a tu progreso.',
-  hasChat = false,
 }: {
   assistantName: string
   personality?: string
-  methodology?: string
-  hasChat?: boolean
 }) {
   const lottieRef = useRef<LottieRefCurrentProps | null>(null)
   const [animationData, setAnimationData] = useState<unknown>(null)
   const [state, setState] = useState<AssistantVisualState>('idle')
   const [event, setEvent] = useState<AssistantEvent>('idle')
   const [message, setMessage] = useState('')
-  const [chatOpen, setChatOpen] = useState(false)
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [showBubble, setShowBubble] = useState(false)
   const [minimized, setMinimized] = useState(false)
   const [animationsEnabled, setAnimationsEnabled] = useState(true)
   const [hydrated, setHydrated] = useState(false)
   const tone = useMemo(() => getAssistantTone(personality), [personality])
-  const methodologySummary = useMemo(() => getMethodologySummary(methodology), [methodology])
 
   useEffect(() => {
     let mounted = true
@@ -97,6 +91,13 @@ export default function AICharacter({
   }, [assistantName, personality])
 
   useEffect(() => {
+    if (!message || minimized) return
+    setShowBubble(true)
+    const timeout = window.setTimeout(() => setShowBubble(false), event === 'assistant-open' ? 2200 : 3600)
+    return () => window.clearTimeout(timeout)
+  }, [message, event, minimized])
+
+  useEffect(() => {
     const handleState = (event: Event) => {
       const detail = (event as AssistantStateEvent).detail
       const nextState = detail?.state ?? 'idle'
@@ -108,24 +109,6 @@ export default function AICharacter({
 
     window.addEventListener('treinex:ai-state', handleState as EventListener)
     return () => window.removeEventListener('treinex:ai-state', handleState as EventListener)
-  }, [assistantName, personality])
-
-  useEffect(() => {
-    const handleChatState = (event: Event) => {
-      const detail = (event as AssistantChatEvent).detail
-      const isOpen = Boolean(detail?.open)
-      setChatOpen(isOpen)
-      if (isOpen) {
-        setEvent('assistant-open')
-        setState('focus')
-        setMessage(buildAssistantMessage({ assistantName, personality, event: 'assistant-open' }))
-      } else {
-        setState('idle')
-      }
-    }
-
-    window.addEventListener('treinex:ai-chat-state', handleChatState as EventListener)
-    return () => window.removeEventListener('treinex:ai-chat-state', handleChatState as EventListener)
   }, [assistantName, personality])
 
   useEffect(() => {
@@ -145,12 +128,12 @@ export default function AICharacter({
 
     const resetInactivity = () => {
       if (timeoutId) window.clearTimeout(timeoutId)
-      if (state === 'warning' && !chatOpen) {
+      if (state === 'warning' && !panelOpen) {
         setState('idle')
         setEvent('idle')
       }
       timeoutId = window.setTimeout(() => {
-        if (chatOpen) return
+        if (panelOpen) return
         setEvent('inactivity')
         setState('warning')
         setMessage(buildAssistantMessage({ assistantName, personality, event: 'inactivity' }))
@@ -165,7 +148,7 @@ export default function AICharacter({
       if (timeoutId) window.clearTimeout(timeoutId)
       events.forEach((name) => window.removeEventListener(name, resetInactivity))
     }
-  }, [assistantName, personality, chatOpen, state])
+  }, [assistantName, personality, panelOpen, state])
 
   useEffect(() => {
     if (!lottieRef.current) return
@@ -190,14 +173,7 @@ export default function AICharacter({
   }, [state, animationData, tone.animationSpeed, animationsEnabled])
 
   const handleClick = () => {
-    if (hasChat) {
-      window.dispatchEvent(new CustomEvent('treinex:toggle-ai-chat', {
-        detail: { open: !chatOpen },
-      }))
-    } else {
-      setChatOpen((value) => !value)
-    }
-
+    setPanelOpen((value) => !value)
     setEvent('assistant-open')
     setState('focus')
     setMessage(buildAssistantMessage({ assistantName, personality, event: 'assistant-open' }))
@@ -230,63 +206,18 @@ export default function AICharacter({
   }[state]
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex max-w-[320px] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       <AnimatePresence>
-        {!minimized ? (
+        {showBubble && !minimized ? (
           <motion.div
             key="assistant-bubble"
             initial={{ opacity: 0, y: 12, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.96 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}
-            className="w-[min(300px,calc(100vw-2.5rem))] overflow-hidden rounded-[24px] border border-white/8 bg-[rgba(22,22,22,0.88)] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.38)] backdrop-blur-xl"
+            className="max-w-[190px] rounded-2xl bg-[rgba(22,22,22,0.92)] px-3.5 py-2.5 text-right shadow-[0_14px_40px_rgba(0,0,0,0.32)] backdrop-blur-xl"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-semibold text-foreground">{assistantName}</p>
-                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
-                    {tone.statusLabel}
-                  </span>
-                </div>
-                <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                  {methodologySummary}
-                </p>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => setAnimationsEnabled((value) => !value)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
-                  aria-label={animationsEnabled ? 'Desactivar animaciones' : 'Activar animaciones'}
-                >
-                  <Volume2 className={`h-3.5 w-3.5 ${animationsEnabled ? 'text-primary' : ''}`} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMinimized(true)}
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
-                  aria-label="Minimizar asistente"
-                >
-                  <Minimize2 className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-[20px] bg-white/[0.03] px-4 py-3">
-              <p className="text-sm leading-6 text-foreground">{message}</p>
-              <p className={`mt-2 text-[11px] uppercase tracking-[0.18em] ${tone.accentClass}`}>
-                {state === 'thinking'
-                  ? 'Procesando'
-                  : state === 'celebrating'
-                    ? 'Celebrando'
-                    : state === 'warning'
-                      ? 'Atento'
-                      : event === 'assistant-open'
-                        ? 'En foco'
-                        : 'Disponible'}
-              </p>
-            </div>
+            <p className="text-sm font-semibold text-foreground">{message}</p>
           </motion.div>
         ) : null}
       </AnimatePresence>
@@ -302,23 +233,55 @@ export default function AICharacter({
           </button>
         ) : null}
 
+        <AnimatePresence>
+          {panelOpen && !minimized ? (
+            <motion.div
+              initial={{ opacity: 0, x: 10, scale: 0.96 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 10, scale: 0.96 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              className="flex items-center gap-2 rounded-full bg-[rgba(22,22,22,0.92)] px-2.5 py-2 shadow-[0_12px_30px_rgba(0,0,0,0.28)] backdrop-blur-xl"
+            >
+              <span className="px-2 text-[11px] font-medium uppercase tracking-[0.16em] text-primary">
+                {tone.statusLabel}
+              </span>
+              <button
+                type="button"
+                onClick={() => setAnimationsEnabled((value) => !value)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
+                aria-label={animationsEnabled ? 'Desactivar animaciones' : 'Activar animaciones'}
+              >
+                <Volume2 className={`h-3.5 w-3.5 ${animationsEnabled ? 'text-primary' : ''}`} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setMinimized(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
+                aria-label="Minimizar asistente"
+              >
+                <Minimize2 className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
         <motion.button
           type="button"
           onClick={handleClick}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.98 }}
-          className="group relative flex h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-[30px] border border-white/10 bg-[rgba(18,18,18,0.92)] shadow-[0_22px_70px_rgba(0,0,0,0.42)] backdrop-blur-xl"
+          className="group relative flex h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-full bg-transparent"
           aria-label={`Abrir asistente ${assistantName}`}
         >
           <motion.div
             animate={ringAnimate}
             transition={orbTransition}
-            className={`absolute inset-2 rounded-[24px] bg-gradient-to-br ${tone.orbClass}`}
+            className={`absolute inset-1 rounded-full bg-gradient-to-br ${tone.orbClass}`}
           />
           <motion.div
             animate={orbAnimate}
             transition={orbTransition}
-            className="relative z-10 flex h-[62px] w-[62px] items-center justify-center rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.01))] shadow-inner"
+            className="relative z-10 flex h-[68px] w-[68px] items-center justify-center rounded-full bg-[rgba(24,24,24,0.18)]"
           >
             {animationData && animationsEnabled ? (
               <Lottie
@@ -332,20 +295,20 @@ export default function AICharacter({
               <motion.div
                 animate={orbAnimate}
                 transition={orbTransition}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30"
+                className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/20"
               >
                 <Bot className="h-5 w-5 text-primary" />
               </motion.div>
             )}
           </motion.div>
-          <div className="absolute bottom-2 right-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/45 px-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
-            AI
+          <div className="absolute bottom-1 right-1 flex h-6 min-w-6 items-center justify-center rounded-full bg-black/45 px-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white">
+            {assistantName.charAt(0)}
           </div>
           {state === 'greeting' || state === 'celebrating' || state === 'motivating' ? (
             <motion.div
               animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.45, 0.2] }}
               transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute inset-0 rounded-[30px] bg-primary/10"
+              className="absolute inset-0 rounded-full bg-primary/10"
             />
           ) : null}
         </motion.button>

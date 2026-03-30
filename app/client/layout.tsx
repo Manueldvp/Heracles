@@ -64,8 +64,6 @@ export default async function ClientLayout({ children }: { children: React.React
       <AICharacter
         assistantName={assistantConfig.assistantName}
         personality={assistantConfig.personality}
-        methodology={assistantConfig.methodology}
-        hasChat
       />
     </div>
   )
