@@ -1,157 +1,110 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react'
-import { Eye, EyeOff, Sparkles, Wand2 } from 'lucide-react'
-import idleAnimation from '@/components/ai/animations/idle.json'
-import thinkingAnimation from '@/components/ai/animations/thinking.json'
-import celebrateAnimation from '@/components/ai/animations/celebrate.json'
-import { buildAssistantMessage, getAssistantTone, getMethodologySummary, type AssistantEvent, type AssistantVisualState } from '@/lib/ai-assistant'
+import { motion } from 'framer-motion'
+import { Bot } from 'lucide-react'
 
-const STORAGE_KEYS = {
-  visible: 'treinex_ai_character_visible',
-  animations: 'treinex_ai_character_animations',
-} as const
+type VisualState = 'idle' | 'thinking'
+
+type AssistantStateEvent = CustomEvent<{ state?: VisualState }>
 
 export default function AICharacter({
   assistantName,
-  personality,
-  methodology,
-  state,
-  event,
-  clientName,
-  open,
-  onClick,
-  message,
 }: {
   assistantName: string
-  personality: string
-  methodology: string
-  state: AssistantVisualState
-  event: AssistantEvent
-  clientName?: string
-  open: boolean
-  onClick: () => void
-  message?: string
 }) {
   const lottieRef = useRef<LottieRefCurrentProps | null>(null)
-  const [isVisible, setIsVisible] = useState(true)
-  const [animationsEnabled, setAnimationsEnabled] = useState(true)
-  const [hydrated, setHydrated] = useState(false)
-  const tone = useMemo(() => getAssistantTone(personality), [personality])
-  const methodologySummary = useMemo(() => getMethodologySummary(methodology), [methodology])
+  const [animationData, setAnimationData] = useState<unknown>(null)
+  const [state, setState] = useState<VisualState>('idle')
 
   useEffect(() => {
-    const savedVisible = localStorage.getItem(STORAGE_KEYS.visible)
-    const savedAnimations = localStorage.getItem(STORAGE_KEYS.animations)
-    setIsVisible(savedVisible !== 'false')
-    setAnimationsEnabled(savedAnimations !== 'false')
-    setHydrated(true)
+    let mounted = true
+
+    const loadAnimation = async () => {
+      try {
+        const response = await fetch('/animations/idle.json')
+        if (!response.ok) throw new Error('Animation not found')
+        const data = await response.json()
+        if (mounted) setAnimationData(data)
+      } catch {
+        if (mounted) setAnimationData(null)
+      }
+    }
+
+    loadAnimation()
+    return () => {
+      mounted = false
+    }
   }, [])
 
   useEffect(() => {
-    if (!hydrated) return
-    localStorage.setItem(STORAGE_KEYS.visible, String(isVisible))
-  }, [hydrated, isVisible])
+    const handleState = (event: Event) => {
+      const detail = (event as AssistantStateEvent).detail
+      setState(detail?.state === 'thinking' ? 'thinking' : 'idle')
+    }
 
-  useEffect(() => {
-    if (!hydrated) return
-    localStorage.setItem(STORAGE_KEYS.animations, String(animationsEnabled))
-  }, [hydrated, animationsEnabled])
+    window.addEventListener('treinex:ai-state', handleState as EventListener)
+    return () => window.removeEventListener('treinex:ai-state', handleState as EventListener)
+  }, [])
 
   useEffect(() => {
     if (!lottieRef.current) return
-
-    if (!animationsEnabled) {
-      lottieRef.current.pause()
-      return
-    }
-
     lottieRef.current.play()
-    const stateMultiplier = state === 'celebrate' ? 1.1 : state === 'thinking' ? 0.95 : 1
-    lottieRef.current.setSpeed(tone.animationSpeed * stateMultiplier)
-  }, [animationsEnabled, state, tone.animationSpeed])
+    lottieRef.current.setSpeed(state === 'thinking' ? 1.2 : 0.9)
+  }, [state, animationData])
 
-  const animationData = state === 'thinking'
-    ? thinkingAnimation
-    : state === 'celebrate'
-      ? celebrateAnimation
-      : idleAnimation
-
-  const bubbleMessage = message || buildAssistantMessage({
-    assistantName,
-    personality,
-    event,
-    clientName,
-  })
-
-  if (hydrated && !isVisible) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setAnimationsEnabled((value) => !value)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:border-primary/20 hover:text-foreground"
-          aria-label={animationsEnabled ? 'Desactivar animaciones del asistente' : 'Activar animaciones del asistente'}
-        >
-          <Wand2 className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsVisible(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground shadow-lg transition hover:border-primary/20 hover:text-primary"
-        >
-          <Eye className="h-4 w-4" />
-          Mostrar {assistantName}
-        </button>
-      </div>
-    )
+  const handleClick = () => {
+    window.dispatchEvent(new CustomEvent('treinex:toggle-ai-chat'))
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex max-w-[220px] flex-col items-end gap-3">
-      {!open ? (
-        <div className={`rounded-2xl border px-4 py-3 shadow-xl backdrop-blur-sm ${tone.bubbleClass}`}>
-          <p className="text-sm font-semibold">{bubbleMessage}</p>
-          <p className={`mt-1 text-xs ${tone.accentClass}`}>
-            Método: {methodologySummary}
-          </p>
-        </div>
-      ) : null}
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <div className="rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-xl backdrop-blur-sm">
+        <p className="text-sm font-semibold text-foreground">
+          {state === 'thinking' ? `${assistantName} está pensando...` : assistantName}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {state === 'thinking' ? 'Preparando una respuesta' : 'Asistente activo'}
+        </p>
+      </div>
 
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => setAnimationsEnabled((value) => !value)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/95 text-muted-foreground transition hover:border-primary/20 hover:text-foreground"
-          aria-label={animationsEnabled ? 'Desactivar animaciones del asistente' : 'Activar animaciones del asistente'}
-        >
-          <Sparkles className={`h-4 w-4 ${animationsEnabled ? 'text-primary' : ''}`} />
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsVisible(false)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/95 text-muted-foreground transition hover:border-primary/20 hover:text-foreground"
-          aria-label="Ocultar asistente"
-        >
-          <EyeOff className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={onClick}
-          className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-[28px] border border-primary/20 bg-card/95 shadow-2xl transition duration-300 hover:-translate-y-1 hover:border-primary/40"
-          aria-label={open ? `Cerrar chat de ${assistantName}` : `Abrir chat de ${assistantName}`}
-        >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_35%),linear-gradient(180deg,rgba(249,115,22,0.18),rgba(15,15,15,0.2))]" />
+      <button
+        type="button"
+        onClick={handleClick}
+        className="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-[28px] border border-primary/20 bg-card/95 shadow-2xl transition duration-300 hover:-translate-y-1 hover:border-primary/40"
+        aria-label={`Abrir asistente ${assistantName}`}
+      >
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.16),transparent_35%),linear-gradient(180deg,rgba(249,115,22,0.18),rgba(15,15,15,0.2))]" />
+
+        {animationData ? (
           <Lottie
             lottieRef={lottieRef}
             animationData={animationData}
-            loop={animationsEnabled}
-            autoplay={animationsEnabled}
+            loop
+            autoplay
             className="relative z-10 h-20 w-20"
           />
-        </button>
-      </div>
+        ) : (
+          <motion.div
+            animate={state === 'thinking'
+              ? { scale: [1, 1.08, 1], opacity: [0.8, 1, 0.8] }
+              : { scale: [1, 1.03, 1], opacity: [0.9, 1, 0.9] }}
+            transition={{ duration: state === 'thinking' ? 0.9 : 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 ring-1 ring-primary/30"
+          >
+            <motion.div
+              animate={state === 'thinking'
+                ? { rotate: [0, -8, 8, 0] }
+                : { y: [0, -3, 0] }}
+              transition={{ duration: state === 'thinking' ? 0.8 : 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20"
+            >
+              <Bot className="h-5 w-5 text-primary" />
+            </motion.div>
+          </motion.div>
+        )}
+      </button>
     </div>
   )
 }

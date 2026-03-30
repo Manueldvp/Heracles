@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DashboardTopbar from './components/DashboardTopbar'
+import AICharacter from '@/components/ai/AICharacter'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -9,7 +10,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, avatar_url')
+    .select('full_name, role, avatar_url, ai_trainer_name')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -52,6 +53,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </main>
+        <AICharacter assistantName={profile?.ai_trainer_name || 'Treinex'} />
       </div>
     </div>
   )

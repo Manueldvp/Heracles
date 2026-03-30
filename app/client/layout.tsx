@@ -4,6 +4,7 @@ import ClientDrawerWrapper from './components/LogoutAction'
 import Link from 'next/link'
 import { Zap } from 'lucide-react'
 import ThemeToggle from '@/components/theme-toggle'
+import AICharacter from '@/components/ai/AICharacter'
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -55,6 +56,7 @@ export default async function ClientLayout({ children }: { children: React.React
       <main className="mx-auto w-full max-w-6xl p-4 sm:p-6 flex-1">
         {children}
       </main>
+      <AICharacter assistantName={appName} />
     </div>
   )
 }

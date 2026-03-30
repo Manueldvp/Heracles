@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Send, ChevronDown, Mic, MicOff } from 'lucide-react'
-import AICharacter from '@/components/ai/AICharacter'
-import { buildAssistantMessage, getMethodologySummary, type AssistantEvent, type AssistantVisualState } from '@/lib/ai-assistant'
+import { buildAssistantMessage, getMethodologySummary } from '@/lib/ai-assistant'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -22,9 +21,6 @@ export default function ChatAssistant({
   methodology: string
 }) {
   const [open, setOpen] = useState(false)
-  const [characterState, setCharacterState] = useState<AssistantVisualState>('idle')
-  const [characterEvent, setCharacterEvent] = useState<AssistantEvent>('idle')
-  const [ambientMessage, setAmbientMessage] = useState<string>()
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -48,68 +44,26 @@ export default function ChatAssistant({
   }, [messages])
 
   useEffect(() => {
-    const greetingKey = `treinex-ai-greeting-${new Date().toDateString()}`
-
-    if (localStorage.getItem(greetingKey) !== 'seen') {
-      localStorage.setItem(greetingKey, 'seen')
-      setCharacterEvent('login')
-      setCharacterState('celebrate')
-      setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'login', clientName }))
-      const timer = window.setTimeout(() => setCharacterState('idle'), 3600)
-      return () => window.clearTimeout(timer)
-    }
-
-    setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'idle', clientName }))
-  }, [assistantName, personality, clientName])
-
-  useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
   }, [open])
 
   useEffect(() => {
-    const handleWorkoutComplete = () => {
-      setCharacterEvent('workout-complete')
-      setCharacterState('celebrate')
-      setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'workout-complete', clientName }))
-      window.setTimeout(() => setCharacterState('idle'), 4200)
+    const handleToggle = () => {
+      setOpen((value) => !value)
     }
 
-    window.addEventListener('treinex:workout-complete', handleWorkoutComplete)
-    return () => window.removeEventListener('treinex:workout-complete', handleWorkoutComplete)
-  }, [assistantName, personality, clientName])
-
-  useEffect(() => {
-    let timeoutId: number | undefined
-
-    const resetInactivityTimer = () => {
-      if (timeoutId) window.clearTimeout(timeoutId)
-      timeoutId = window.setTimeout(() => {
-        if (open || loading) return
-        setCharacterEvent('inactivity')
-        setCharacterState('thinking')
-        setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'inactivity', clientName }))
-        window.setTimeout(() => setCharacterState('idle'), 3000)
-      }, 45000)
-    }
-
-    const events: Array<keyof WindowEventMap> = ['mousemove', 'keydown', 'click', 'touchstart']
-    events.forEach((eventName) => window.addEventListener(eventName, resetInactivityTimer))
-    resetInactivityTimer()
-
+    window.addEventListener('treinex:toggle-ai-chat', handleToggle)
     return () => {
-      if (timeoutId) window.clearTimeout(timeoutId)
-      events.forEach((eventName) => window.removeEventListener(eventName, resetInactivityTimer))
+      window.removeEventListener('treinex:toggle-ai-chat', handleToggle)
     }
-  }, [assistantName, personality, clientName, open, loading])
+  }, [])
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return
     setMessages(prev => [...prev, { role: 'user', content: text }])
     setInput('')
     setLoading(true)
-    setCharacterEvent('ai-interaction')
-    setCharacterState('thinking')
-    setAmbientMessage(buildAssistantMessage({ assistantName, personality, event: 'ai-interaction', clientName }))
+    window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'thinking' } }))
 
     try {
       const res = await fetch('/api/chat', {
@@ -118,17 +72,14 @@ export default function ChatAssistant({
         body: JSON.stringify({ message: text }),
       })
       const data = await res.json()
-      setCharacterState('celebrate')
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: data.message || 'Lo siento, no pude procesar tu mensaje.',
       }])
-      setAmbientMessage(data.message || buildAssistantMessage({ assistantName, personality, event: 'ai-interaction', clientName }))
-      setTimeout(() => setCharacterState('idle'), 3000)
+      window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'idle' } }))
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Hubo un error, intenta de nuevo.' }])
-      setAmbientMessage(`${assistantName} dice: hubo un problema, pero sigo aquí contigo.`)
-      setCharacterState('idle')
+      window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'idle' } }))
     }
     setLoading(false)
   }
@@ -163,18 +114,6 @@ export default function ChatAssistant({
         }
         .chat-open { animation: chat-open 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
       `}</style>
-
-      <AICharacter
-        assistantName={assistantName}
-        personality={personality}
-        methodology={methodology}
-        state={characterState}
-        event={characterEvent}
-        clientName={clientName}
-        open={open}
-        onClick={() => setOpen((value) => !value)}
-        message={ambientMessage}
-      />
 
       {/* Chat window */}
       {open && (
