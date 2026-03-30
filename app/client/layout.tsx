@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Zap } from 'lucide-react'
 import ThemeToggle from '@/components/theme-toggle'
 import AICharacter from '@/components/ai/AICharacter'
+import { extractAssistantConfig } from '@/lib/ai-assistant'
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -23,11 +24,15 @@ export default async function ClientLayout({ children }: { children: React.React
 
   const { data: trainerProfile } = await supabase
     .from('profiles')
-    .select('ai_trainer_name')
+    .select('ai_trainer_name, ai_system_prompt')
     .eq('id', clientData.trainer_id)
     .single()
 
-  const appName = trainerProfile?.ai_trainer_name || 'Treinex'
+  const assistantConfig = extractAssistantConfig(
+    trainerProfile?.ai_trainer_name,
+    trainerProfile?.ai_system_prompt
+  )
+  const appName = assistantConfig.assistantName
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -56,7 +61,12 @@ export default async function ClientLayout({ children }: { children: React.React
       <main className="mx-auto w-full max-w-6xl p-4 sm:p-6 flex-1">
         {children}
       </main>
-      <AICharacter assistantName={appName} />
+      <AICharacter
+        assistantName={assistantConfig.assistantName}
+        personality={assistantConfig.personality}
+        methodology={assistantConfig.methodology}
+        hasChat
+      />
     </div>
   )
 }

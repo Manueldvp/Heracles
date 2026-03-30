@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, ChevronDown, Mic, MicOff } from 'lucide-react'
-import { buildAssistantMessage, getMethodologySummary } from '@/lib/ai-assistant'
+import { AnimatePresence, motion } from 'framer-motion'
+import { Send, Mic, MicOff, Sparkles, Minimize2 } from 'lucide-react'
+import { buildAssistantMessage, getAssistantTone, getMethodologySummary } from '@/lib/ai-assistant'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -38,6 +39,7 @@ export default function ChatAssistant({
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const tone = getAssistantTone(personality)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -48,8 +50,9 @@ export default function ChatAssistant({
   }, [open])
 
   useEffect(() => {
-    const handleToggle = () => {
-      setOpen((value) => !value)
+    const handleToggle = (event: Event) => {
+      const detail = (event as CustomEvent<{ open?: boolean }>).detail
+      setOpen((value) => typeof detail?.open === 'boolean' ? detail.open : !value)
     }
 
     window.addEventListener('treinex:toggle-ai-chat', handleToggle)
@@ -58,12 +61,22 @@ export default function ChatAssistant({
     }
   }, [])
 
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('treinex:ai-chat-state', { detail: { open } }))
+  }, [open])
+
   const sendMessage = async (text: string) => {
     if (!text.trim()) return
     setMessages(prev => [...prev, { role: 'user', content: text }])
     setInput('')
     setLoading(true)
-    window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'thinking' } }))
+    window.dispatchEvent(new CustomEvent('treinex:ai-state', {
+      detail: {
+        state: 'thinking',
+        event: 'ai-interaction',
+        message: buildAssistantMessage({ assistantName, personality, event: 'ai-interaction', clientName }),
+      },
+    }))
 
     try {
       const res = await fetch('/api/chat', {
@@ -76,10 +89,25 @@ export default function ChatAssistant({
         role: 'assistant',
         content: data.message || 'Lo siento, no pude procesar tu mensaje.',
       }])
-      window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'idle' } }))
+      window.dispatchEvent(new CustomEvent('treinex:ai-state', {
+        detail: {
+          state: 'motivating',
+          event: 'ai-interaction',
+          message: data.message || buildAssistantMessage({ assistantName, personality, event: 'ai-interaction', clientName }),
+        },
+      }))
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'idle', event: 'idle' } }))
+      }, 2200)
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Hubo un error, intenta de nuevo.' }])
-      window.dispatchEvent(new CustomEvent('treinex:ai-state', { detail: { state: 'idle' } }))
+      window.dispatchEvent(new CustomEvent('treinex:ai-state', {
+        detail: {
+          state: 'warning',
+          event: 'inactivity',
+          message: `${assistantName} dice: hubo un problema, pero seguimos contigo.`,
+        },
+      }))
     }
     setLoading(false)
   }
@@ -116,95 +144,119 @@ export default function ChatAssistant({
       `}</style>
 
       {/* Chat window */}
-      {open && (
-        <div
-          className="fixed bottom-24 right-6 z-50 w-80 sm:w-96 flex flex-col rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 chat-open"
-          style={{ maxHeight: '520px', background: 'linear-gradient(180deg, #18181b 0%, #09090b 100%)' }}
-        >
-          {/* Header */}
-          <div
-            className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/80"
-            style={{ background: 'linear-gradient(135deg, #7c2d12 0%, #1c1917 100%)' }}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 14, scale: 0.96 }}
+            transition={{ duration: 0.26, ease: 'easeOut' }}
+            className="fixed bottom-24 right-5 z-50 flex w-[min(400px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[28px] border border-white/8 bg-[rgba(18,18,18,0.88)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl sm:right-6"
           >
-            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${loading ? 'border-yellow-400/30 bg-yellow-400/10' : 'border-primary/20 bg-primary/10'}`}>
-              <span className="text-lg">{loading ? '...' : 'AI'}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-white font-bold text-sm">{assistantName}</p>
-              <p className="text-orange-300/70 text-xs">
-                {loading ? 'Pensando...' : getMethodologySummary(methodology)}
-              </p>
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-zinc-500 hover:text-white transition p-1 rounded-lg hover:bg-zinc-800"
-            >
-              <ChevronDown size={18} />
-            </button>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3" style={{ maxHeight: '340px' }}>
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex gap-2 msg-animate ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {msg.role === 'assistant' && (
-                  <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0 mt-1">
-                    <span className="text-[10px] font-semibold text-primary">{assistantName.charAt(0)}</span>
+            <div className="border-b border-white/8 px-4 py-4 sm:px-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.05]">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary shadow-inner">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
                   </div>
-                )}
-                <div className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                  msg.role === 'user'
-                    ? 'bg-orange-500 text-white rounded-tr-none'
-                    : 'bg-zinc-800 text-zinc-200 rounded-tl-none border border-zinc-700/50'
-                }`}>
-                  {msg.content}
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-semibold text-foreground">{assistantName}</p>
+                      <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-primary">
+                        Activo
+                      </span>
+                    </div>
+                    <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                      {getMethodologySummary(methodology)}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
 
-            {loading && (
-              <div className="flex gap-2 justify-start msg-animate">
-                <div className="w-6 h-6 rounded-full bg-primary/15 border border-primary/20 flex items-center justify-center shrink-0">
-                  <span className="text-[10px] font-semibold text-primary">{assistantName.charAt(0)}</span>
-                </div>
-                <div className="bg-zinc-800 border border-zinc-700/50 px-4 py-3 rounded-2xl rounded-tl-none flex gap-1.5 items-center">
-                  <span className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </div>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.04] text-muted-foreground transition hover:bg-white/[0.08] hover:text-foreground"
+                  aria-label="Minimizar asistente"
+                >
+                  <Minimize2 className="h-3.5 w-3.5" />
+                </button>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
+            </div>
 
-          {/* Input */}
-          <div className="p-3 border-t border-zinc-800/80 flex gap-2 bg-zinc-950/50">
-            <input
-              ref={inputRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
-              placeholder="Escribe tu pregunta..."
-              className="flex-1 px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:border-orange-500 transition placeholder:text-zinc-600"
-            />
-            <button
-              onClick={listening ? stopListening : startListening}
-              className={`w-9 h-9 rounded-xl flex items-center justify-center transition shrink-0 ${
-                listening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-zinc-800 hover:bg-zinc-700 border border-zinc-700'
-              }`}
-            >
-              {listening ? <MicOff size={15} className="text-white" /> : <Mic size={15} className="text-zinc-400" />}
-            </button>
-            <button
-              onClick={() => sendMessage(input)}
-              disabled={loading || !input.trim()}
-              className="w-9 h-9 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition shrink-0"
-            >
-              <Send size={15} className="text-white" />
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5" style={{ maxHeight: '360px' }}>
+              <div className="flex flex-col gap-4">
+                {messages.map((msg, i) => (
+                  <div key={i} className={`flex items-end gap-2 msg-animate ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    {msg.role === 'assistant' ? (
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] text-[11px] font-semibold text-primary">
+                        {assistantName.charAt(0)}
+                      </div>
+                    ) : null}
+
+                    <div
+                      className={`max-w-[82%] rounded-[22px] px-4 py-3 text-sm leading-6 shadow-sm ${
+                        msg.role === 'user'
+                          ? 'rounded-br-md bg-primary text-primary-foreground'
+                          : 'rounded-bl-md bg-white/[0.05] text-foreground'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+
+                {loading ? (
+                  <div className="flex items-end gap-2 msg-animate">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.05] text-[11px] font-semibold text-primary">
+                      {assistantName.charAt(0)}
+                    </div>
+                    <div className={`rounded-[22px] rounded-bl-md px-4 py-3 ${tone.bubbleClass}`}>
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-current opacity-70 animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="h-2 w-2 rounded-full bg-current opacity-70 animate-bounce" style={{ animationDelay: '120ms' }} />
+                        <span className="h-2 w-2 rounded-full bg-current opacity-70 animate-bounce" style={{ animationDelay: '240ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            <div className="border-t border-white/8 bg-white/[0.02] px-4 py-4 sm:px-5">
+              <div className="flex items-center gap-2 rounded-[22px] bg-white/[0.04] p-2">
+                <input
+                  ref={inputRef}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
+                  placeholder="Escribe tu pregunta..."
+                  className="h-11 flex-1 bg-transparent px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+                <button
+                  onClick={listening ? stopListening : startListening}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                    listening
+                      ? 'bg-red-500 text-white'
+                      : 'bg-white/[0.05] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground'
+                  }`}
+                >
+                  {listening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </button>
+                <button
+                  onClick={() => sendMessage(input)}
+                  disabled={loading || !input.trim()}
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Send className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   )
 }

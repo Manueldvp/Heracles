@@ -1,11 +1,13 @@
-export type AssistantVisualState = 'idle' | 'thinking' | 'celebrate'
-export type AssistantEvent = 'idle' | 'login' | 'workout-complete' | 'inactivity' | 'ai-interaction'
+export type AssistantVisualState = 'idle' | 'greeting' | 'thinking' | 'focus' | 'motivating' | 'celebrating' | 'warning'
+export type AssistantEvent = 'idle' | 'login' | 'workout-complete' | 'inactivity' | 'ai-interaction' | 'assistant-open'
 
 export type AssistantTone = {
   variant: 'aggressive' | 'calm' | 'energetic' | 'neutral'
   animationSpeed: number
   accentClass: string
   bubbleClass: string
+  orbClass: string
+  statusLabel: string
 }
 
 export type AssistantConfig = {
@@ -93,6 +95,8 @@ export function getAssistantTone(personality: string): AssistantTone {
       animationSpeed: 1.3,
       accentClass: 'text-orange-300',
       bubbleClass: 'border-orange-500/25 bg-orange-500/10 text-orange-50',
+      orbClass: 'from-orange-500/30 via-orange-400/10 to-transparent',
+      statusLabel: 'Activo',
     }
   }
 
@@ -102,6 +106,8 @@ export function getAssistantTone(personality: string): AssistantTone {
       animationSpeed: 0.8,
       accentClass: 'text-sky-200',
       bubbleClass: 'border-sky-500/20 bg-sky-500/10 text-sky-50',
+      orbClass: 'from-sky-500/25 via-sky-400/10 to-transparent',
+      statusLabel: 'Sereno',
     }
   }
 
@@ -111,6 +117,8 @@ export function getAssistantTone(personality: string): AssistantTone {
       animationSpeed: 1.15,
       accentClass: 'text-emerald-200',
       bubbleClass: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-50',
+      orbClass: 'from-emerald-500/25 via-orange-400/10 to-transparent',
+      statusLabel: 'Activo',
     }
   }
 
@@ -119,6 +127,8 @@ export function getAssistantTone(personality: string): AssistantTone {
     animationSpeed: 1,
     accentClass: 'text-zinc-200',
     bubbleClass: 'border-border bg-card/95 text-foreground',
+    orbClass: 'from-primary/20 via-primary/5 to-transparent',
+    statusLabel: 'Activo',
   }
 }
 
@@ -173,6 +183,13 @@ export function buildAssistantMessage({
     if (tone.variant === 'calm') return `${assistantName} dice: Te respondo con claridad.`
     if (tone.variant === 'energetic') return `${assistantName} dice: Vamos a resolverlo.`
     return `${assistantName} dice: Te ayudo con eso.`
+  }
+
+  if (event === 'assistant-open') {
+    if (tone.variant === 'aggressive') return `${assistantName} dice: Bien. Dime qué resolvemos.`
+    if (tone.variant === 'calm') return `${assistantName} dice: Estoy aquí, vamos con calma.`
+    if (tone.variant === 'energetic') return `${assistantName} dice: Perfecto, activemos esto.`
+    return `${assistantName} dice: Te escucho.`
   }
 
   return `${assistantName} está contigo.`
