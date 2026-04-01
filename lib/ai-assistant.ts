@@ -1,9 +1,12 @@
-export type AssistantVisualState = 'idle' | 'greeting' | 'thinking' | 'focus' | 'motivating' | 'celebrating' | 'warning'
+export type AssistantVisualState = 'idle' | 'greeting' | 'thinking' | 'talking' | 'focus' | 'motivating' | 'celebrating' | 'warning'
 export type AssistantEvent = 'idle' | 'login' | 'workout-complete' | 'inactivity' | 'ai-interaction' | 'assistant-open'
 
 export type AssistantTone = {
   variant: 'aggressive' | 'calm' | 'energetic' | 'neutral'
   animationSpeed: number
+  bounceScale: number
+  hoverScale: number
+  glowClass: string
   accentClass: string
   bubbleClass: string
   orbClass: string
@@ -15,6 +18,13 @@ export type AssistantConfig = {
   personality: string
   methodology: string
 }
+
+const SURFACE_PREFIXES = [
+  /^treinex dice:\s*/i,
+  /^[^:]{1,32}\sdice:\s*/i,
+  /^assistant:\s*/i,
+  /^ai:\s*/i,
+]
 
 function cleanSection(text: string) {
   return text
@@ -93,6 +103,9 @@ export function getAssistantTone(personality: string): AssistantTone {
     return {
       variant: 'aggressive',
       animationSpeed: 1.3,
+      bounceScale: 1.12,
+      hoverScale: 1.06,
+      glowClass: 'shadow-[0_0_36px_rgba(249,115,22,0.45)]',
       accentClass: 'text-orange-300',
       bubbleClass: 'border-orange-500/25 bg-orange-500/10 text-orange-50',
       orbClass: 'from-orange-500/30 via-orange-400/10 to-transparent',
@@ -104,6 +117,9 @@ export function getAssistantTone(personality: string): AssistantTone {
     return {
       variant: 'calm',
       animationSpeed: 0.8,
+      bounceScale: 1.05,
+      hoverScale: 1.04,
+      glowClass: 'shadow-[0_0_28px_rgba(56,189,248,0.28)]',
       accentClass: 'text-sky-200',
       bubbleClass: 'border-sky-500/20 bg-sky-500/10 text-sky-50',
       orbClass: 'from-sky-500/25 via-sky-400/10 to-transparent',
@@ -115,6 +131,9 @@ export function getAssistantTone(personality: string): AssistantTone {
     return {
       variant: 'energetic',
       animationSpeed: 1.15,
+      bounceScale: 1.1,
+      hoverScale: 1.05,
+      glowClass: 'shadow-[0_0_34px_rgba(251,146,60,0.38)]',
       accentClass: 'text-emerald-200',
       bubbleClass: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-50',
       orbClass: 'from-emerald-500/25 via-orange-400/10 to-transparent',
@@ -125,6 +144,9 @@ export function getAssistantTone(personality: string): AssistantTone {
   return {
     variant: 'neutral',
     animationSpeed: 1,
+    bounceScale: 1.08,
+    hoverScale: 1.045,
+    glowClass: 'shadow-[0_0_32px_rgba(251,146,60,0.3)]',
     accentClass: 'text-zinc-200',
     bubbleClass: 'border-border bg-card/95 text-foreground',
     orbClass: 'from-primary/20 via-primary/5 to-transparent',
@@ -143,6 +165,50 @@ export function getMethodologySummary(methodology: string) {
   return summary || 'Acompañamiento adaptado a tu progreso.'
 }
 
+export function sanitizeAssistantSurfaceText(message: string) {
+  let next = message.trim()
+
+  SURFACE_PREFIXES.forEach((pattern) => {
+    next = next.replace(pattern, '')
+  })
+
+  return next.replace(/\s+/g, ' ').trim()
+}
+
+export function getAutonomousAssistantMessages(personality: string) {
+  const tone = getAssistantTone(personality)
+
+  if (tone.variant === 'aggressive') {
+    return [
+      'Vamos. No rompas la racha ahora.',
+      'Todavia hay trabajo por hacer.',
+      'La disciplina se nota en los dias flojos.',
+    ]
+  }
+
+  if (tone.variant === 'calm') {
+    return [
+      'Sigo aqui cuando quieras retomar.',
+      'Un paso pequeño tambien cuenta hoy.',
+      'La constancia tranquila tambien construye mucho.',
+    ]
+  }
+
+  if (tone.variant === 'energetic') {
+    return [
+      'Vamos, que hoy tambien suma.',
+      'Sigo por aqui. Listo para activar el siguiente paso.',
+      'La consistencia lo cambia todo.',
+    ]
+  }
+
+  return [
+    'Sigo aqui. Cuando quieras, seguimos.',
+    'Hoy tambien cuenta, aunque sea poco.',
+    'La constancia termina marcando la diferencia.',
+  ]
+}
+
 export function buildAssistantMessage({
   assistantName,
   personality,
@@ -158,39 +224,39 @@ export function buildAssistantMessage({
   const firstName = clientName?.split(' ')[0] || 'equipo'
 
   if (event === 'login') {
-    if (tone.variant === 'aggressive') return `${assistantName} dice: ${firstName}, hoy venimos a empujar en serio.`
-    if (tone.variant === 'calm') return `${assistantName} dice: Hola ${firstName}, vamos paso a paso y con buena técnica.`
-    if (tone.variant === 'energetic') return `${assistantName} dice: ${firstName}, vamos con todo hoy.`
-    return `${assistantName} dice: ${firstName}, listo para acompañarte hoy.`
+    if (tone.variant === 'aggressive') return `${firstName}, hoy venimos a empujar en serio.`
+    if (tone.variant === 'calm') return `Hola ${firstName}, vamos paso a paso y con buena tecnica.`
+    if (tone.variant === 'energetic') return `${firstName}, vamos con todo hoy.`
+    return `${firstName}, listo para acompanarte hoy.`
   }
 
   if (event === 'workout-complete') {
-    if (tone.variant === 'aggressive') return `${assistantName} dice: Trabajo hecho. No aflojes ahora.`
-    if (tone.variant === 'calm') return `${assistantName} dice: Buen cierre. Suma constancia y recupera bien.`
-    if (tone.variant === 'energetic') return `${assistantName} dice: Tremenda sesión. Seguimos construyendo.`
-    return `${assistantName} dice: Muy buena sesión. Seguimos así.`
+    if (tone.variant === 'aggressive') return 'Trabajo hecho. No aflojes ahora.'
+    if (tone.variant === 'calm') return 'Buen cierre. Suma constancia y recupera bien.'
+    if (tone.variant === 'energetic') return 'Tremenda sesion. Seguimos construyendo.'
+    return 'Muy buena sesion. Seguimos asi.'
   }
 
   if (event === 'inactivity') {
-    if (tone.variant === 'aggressive') return `${assistantName} dice: No te me desconectes, todavía queda trabajo.`
-    if (tone.variant === 'calm') return `${assistantName} dice: Cuando quieras, retomamos con calma.`
-    if (tone.variant === 'energetic') return `${assistantName} dice: Vuelvo por aquí cuando quieras seguir.`
-    return `${assistantName} dice: Sigo aquí por si quieres revisar algo.`
+    if (tone.variant === 'aggressive') return 'No te me desconectes, todavia queda trabajo.'
+    if (tone.variant === 'calm') return 'Cuando quieras, retomamos con calma.'
+    if (tone.variant === 'energetic') return 'Vuelvo por aqui cuando quieras seguir.'
+    return 'Sigo aqui por si quieres revisar algo.'
   }
 
   if (event === 'ai-interaction') {
-    if (tone.variant === 'aggressive') return `${assistantName} dice: Voy al grano.`
-    if (tone.variant === 'calm') return `${assistantName} dice: Te respondo con claridad.`
-    if (tone.variant === 'energetic') return `${assistantName} dice: Vamos a resolverlo.`
-    return `${assistantName} dice: Te ayudo con eso.`
+    if (tone.variant === 'aggressive') return 'Voy al grano.'
+    if (tone.variant === 'calm') return 'Te respondo con claridad.'
+    if (tone.variant === 'energetic') return 'Vamos a resolverlo.'
+    return 'Te ayudo con eso.'
   }
 
   if (event === 'assistant-open') {
-    if (tone.variant === 'aggressive') return `${assistantName} dice: Bien. Dime qué resolvemos.`
-    if (tone.variant === 'calm') return `${assistantName} dice: Estoy aquí, vamos con calma.`
-    if (tone.variant === 'energetic') return `${assistantName} dice: Perfecto, activemos esto.`
-    return `${assistantName} dice: Te escucho.`
+    if (tone.variant === 'aggressive') return 'Bien. Dime que resolvemos.'
+    if (tone.variant === 'calm') return 'Estoy aqui, vamos con calma.'
+    if (tone.variant === 'energetic') return 'Perfecto, activemos esto.'
+    return 'Te escucho.'
   }
 
-  return `${assistantName} está contigo.`
+  return sanitizeAssistantSurfaceText(`${assistantName} esta contigo.`)
 }

@@ -11,7 +11,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role, avatar_url, ai_trainer_name, ai_system_prompt')
+    .select('*')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -62,6 +62,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <AICharacter
           assistantName={assistantConfig.assistantName}
           personality={assistantConfig.personality}
+          canAsk
+          characterPreference={profile?.assistant_character === 'female' ? 'female' : 'male'}
         />
       </div>
     </div>

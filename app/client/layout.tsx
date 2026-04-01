@@ -6,6 +6,7 @@ import { Zap } from 'lucide-react'
 import ThemeToggle from '@/components/theme-toggle'
 import AICharacter from '@/components/ai/AICharacter'
 import { extractAssistantConfig } from '@/lib/ai-assistant'
+import { validateConnection } from '@/lib/ai/validateConnection'
 
 export default async function ClientLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -13,7 +14,7 @@ export default async function ClientLayout({ children }: { children: React.React
   if (!user) redirect('/login')
 
   const [{ data: profile }, { data: clientData }] = await Promise.all([
-    supabase.from('profiles').select('role').eq('id', user.id).maybeSingle(),
+    supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
     supabase.from('clients').select('id, full_name, trainer_id, avatar_url').eq('user_id', user.id).maybeSingle(),
   ])
 
@@ -32,6 +33,7 @@ export default async function ClientLayout({ children }: { children: React.React
     trainerProfile?.ai_trainer_name,
     trainerProfile?.ai_system_prompt
   )
+  const hasValidAIConnection = await validateConnection(user.id)
   const appName = assistantConfig.assistantName
 
   return (
@@ -64,6 +66,9 @@ export default async function ClientLayout({ children }: { children: React.React
       <AICharacter
         assistantName={assistantConfig.assistantName}
         personality={assistantConfig.personality}
+        canAsk
+        connectionValid={hasValidAIConnection}
+        characterPreference={profile?.assistant_character === 'female' ? 'female' : 'male'}
       />
     </div>
   )
