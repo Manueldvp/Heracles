@@ -3,10 +3,16 @@ import 'server-only'
 import { extractAssistantConfig } from '@/lib/ai-assistant'
 import { createClient } from '@/lib/supabase/server'
 
-function hasConfiguredAI(trainer: { ai_trainer_name?: string | null; ai_system_prompt?: string | null } | null) {
+function hasConfiguredAI(trainer: {
+  assistant_name?: string | null
+  assistant_personality?: string | null
+  assistant_methodology?: string | null
+  ai_trainer_name?: string | null
+  ai_system_prompt?: string | null
+} | null) {
   if (!trainer) return false
 
-  const config = extractAssistantConfig(trainer.ai_trainer_name, trainer.ai_system_prompt)
+  const config = extractAssistantConfig(trainer)
 
   return Boolean(
     config.assistantName.trim() &&
@@ -35,7 +41,7 @@ export async function validateConnection(userId: string) {
 
   const { data: trainer } = await supabase
     .from('profiles')
-    .select('id, ai_trainer_name, ai_system_prompt')
+    .select('id, assistant_name, assistant_personality, assistant_methodology, ai_trainer_name, ai_system_prompt')
     .eq('id', client.trainer_id)
     .maybeSingle()
 
@@ -62,7 +68,9 @@ export async function validateConnection(userId: string) {
     userId,
     trainerId: client.trainer_id,
     valid,
-    hasTrainerName: Boolean(trainer.ai_trainer_name?.trim()),
+    hasTrainerName: Boolean(trainer.assistant_name?.trim() || trainer.ai_trainer_name?.trim()),
+    hasPersonality: Boolean(trainer.assistant_personality?.trim()),
+    hasMethodology: Boolean(trainer.assistant_methodology?.trim()),
     hasSystemPrompt: Boolean(trainer.ai_system_prompt?.trim()),
   })
 

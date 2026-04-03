@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getClientByInviteToken } from '@/lib/supabase/rpc'
 import { redirect } from 'next/navigation'
 import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle, Clock, UserPlus } from 'lucide-react'
@@ -8,21 +9,23 @@ import Link from 'next/link'
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
 
-  // Usar admin client para bypassear RLS — página pública sin sesión
-  const { data: client } = await supabaseAdmin
-    .from('clients')
-    .select('id, email, trainer_id, form_id, onboarding_completed, invite_token_expires_at, status')
-    .eq('invite_token', token)
-    .single()
+  const supabase = await createClient()
+  const { data: client } = await getClientByInviteToken<{
+    id: string
+    email: string | null
+    trainer_id: string | null
+    form_id: string | null
+    onboarding_completed: boolean | null
+    invite_token_expires_at: string | null
+    status: string | null
+  }>(supabase, token)
 
-  // Token no existe
   if (!client) {
     return <InvalidInvite reason="not_found" />
   }
 
   // Ya completó el registro
   if (client.status === 'active' || client.onboarding_completed) {
-    const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (user) redirect('/client')
     return <InvalidInvite reason="used" />
@@ -34,7 +37,6 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
   }
 
   // Si ya está logueado, ir directo al onboarding
-  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (user) redirect(`/onboarding/${token}`)
 

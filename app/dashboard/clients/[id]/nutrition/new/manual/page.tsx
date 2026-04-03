@@ -131,8 +131,6 @@ export default function ManualNutritionPage() {
     setSaving(true)
     setError('')
 
-    const { data: { user } } = await supabase.auth.getUser()
-
     const content = {
       calories_target: parseInt(calories),
       protein_g: parseInt(protein) || 0,
@@ -145,13 +143,22 @@ export default function ManualNutritionPage() {
       }))
     }
 
-    const { data, error } = await supabase.from('nutrition_plans').insert({
-      client_id: clientId,
-      trainer_id: user!.id,
-      content,
-    }).select().single()
+    const { data: { user } } = await supabase.auth.getUser()
+    const response = await fetch('/api/nutrition/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, content }),
+    })
+    const payload = await response.json()
 
-    if (error) { setError(error.message); setSaving(false); return }
+    if (!response.ok) {
+      setError(payload.error ?? 'No fue posible guardar el plan')
+      setSaving(false)
+      return
+    }
+
+    const plan = payload.plan as { id: string }
+
     // Notificar al cliente
     await fetch('/api/notify-client', {
       method: 'POST',
@@ -165,7 +172,7 @@ export default function ManualNutritionPage() {
       })
     })
 
-    router.push(`/dashboard/clients/${clientId}/nutrition/${data.id}`)
+    router.push(`/dashboard/clients/${clientId}/nutrition/${plan.id}`)
   }
 
   return (

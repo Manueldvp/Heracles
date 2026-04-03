@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { updateOnboardingProgress } from '@/lib/onboarding'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -109,8 +108,6 @@ export default function ManualRoutinePage() {
     setSaving(true)
     setError('')
 
-    const { data: { user } } = await supabase.auth.getUser()
-
     const content = {
       title,
       days: days.map(d => ({
@@ -128,30 +125,37 @@ export default function ManualRoutinePage() {
       }))
     }
 
-    const { data, error } = await supabase.from('routines').insert({
-      client_id: clientId,
-      trainer_id: user!.id,
-      title,
-      content,
-    }).select().single()
+    const { data: { user } } = await supabase.auth.getUser()
+    const response = await fetch('/api/routines/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId, title, content }),
+    })
+    const payload = await response.json()
 
-    if (error) { setError(error.message); setSaving(false); return }
-    await updateOnboardingProgress(supabase, user!.id, { created_routine: true })
-        // Notificar al cliente
+    if (!response.ok) {
+      setError(payload.error ?? 'No fue posible guardar la rutina')
+      setSaving(false)
+      return
+    }
+
+    const routine = payload.routine as { id: string; title?: string }
+
+    // Notificar al cliente
    
       await fetch('/api/notify-client', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: clientId,
-          clientName: data.title ?? '',
-          trainerId: user!.id,
+          clientName: routine.title ?? '',
+          trainerId: user?.id ?? '',
           type: 'routine_assigned',
           message: 'Tu entrenador te asignó una nueva rutina',
         })
       })
 
-    router.push(`/dashboard/clients/${clientId}/routines/${data.id}`)
+    router.push(`/dashboard/clients/${clientId}/routines/${routine.id}`)
   }
 
   return (

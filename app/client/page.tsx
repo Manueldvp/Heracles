@@ -11,7 +11,6 @@ import TodayWorkout from './components/TodayWorkout'
 import TodayMeal from './components/TodayMeal'
 import CheckinReminder from './components/CheckinReminder'
 import Link from 'next/link'
-import { extractAssistantConfig } from '@/lib/ai-assistant'
 
 export default async function ClientHomePage() {
   const supabase = await createClient()
@@ -63,13 +62,8 @@ export default async function ClientHomePage() {
   }
 
   const { data: trainerProfile } = await supabase
-    .from('profiles').select('ai_trainer_name, ai_system_prompt, full_name, avatar_url')
+    .from('profiles').select('*')
     .eq('id', clientData.trainer_id).single()
-
-  const assistantConfig = extractAssistantConfig(
-    trainerProfile?.ai_trainer_name,
-    trainerProfile?.ai_system_prompt
-  )
 
   const [routineRes, planRes, { data: checkins }] = await Promise.all([
     supabase.from('routines').select('*').eq('client_id', clientData.id).eq('is_active', true).limit(1).maybeSingle(),

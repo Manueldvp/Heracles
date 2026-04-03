@@ -4,13 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { setActiveRoutine } from '@/lib/supabase/rpc'
 
 export default function SetActiveRoutineButton({
   routineId,
-  clientId,
 }: {
   routineId: string
-  clientId: string
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -18,19 +17,12 @@ export default function SetActiveRoutineButton({
 
   const handleSetActive = async () => {
     setLoading(true)
-
-    // Desactivar todas las rutinas del cliente
-    await supabase
-      .from('routines')
-      .update({ is_active: false })
-      .eq('client_id', clientId)
-
-    // Activar la seleccionada
-    await supabase
-      .from('routines')
-      .update({ is_active: true })
-      .eq('id', routineId)
-
+    const { error } = await setActiveRoutine(supabase, routineId)
+    if (error) {
+      console.error('set_active_routine failed', error)
+      setLoading(false)
+      return
+    }
     router.refresh()
     setLoading(false)
   }

@@ -4,13 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { setActiveNutrition } from '@/lib/supabase/rpc'
 
 export default function SetActiveNutritionButton({
   planId,
-  clientId,
 }: {
   planId: string
-  clientId: string
 }) {
   const router = useRouter()
   const supabase = createClient()
@@ -18,16 +17,12 @@ export default function SetActiveNutritionButton({
 
   const handleSetActive = async () => {
     setLoading(true)
-    await supabase
-      .from('nutrition_plans')
-      .update({ is_active: false })
-      .eq('client_id', clientId)
-
-    await supabase
-      .from('nutrition_plans')
-      .update({ is_active: true })
-      .eq('id', planId)
-
+    const { error } = await setActiveNutrition(supabase, planId)
+    if (error) {
+      console.error('set_active_nutrition failed', error)
+      setLoading(false)
+      return
+    }
     router.refresh()
     setLoading(false)
   }

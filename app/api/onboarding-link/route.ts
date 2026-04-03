@@ -1,6 +1,11 @@
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getClientByInviteToken } from '@/lib/supabase/rpc'
 import { NextResponse } from 'next/server'
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unexpected error'
+}
 
 export async function POST(req: Request) {
   try {
@@ -17,13 +22,39 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Falta token' }, { status: 400 })
     }
 
-    const { data: client, error } = await supabaseAdmin
+    let client: {
+      id: string
+      email: string | null
+      form_id: string | null
+      onboarding_completed: boolean | null
+      user_id: string | null
+      status: string | null
+      invite_token_expires_at: string | null
+    } | null = null
+
+    const { data: linkedClient } = await supabaseAdmin
       .from('clients')
       .select('id, email, form_id, onboarding_completed, user_id, status, invite_token_expires_at')
-      .eq('invite_token', token)
-      .single()
+      .eq('user_id', user.id)
+      .maybeSingle()
 
-    if (error || !client) {
+    client = linkedClient ?? null
+
+    if (!client) {
+      const tokenLookup = await getClientByInviteToken<{
+        id: string
+        email: string | null
+        form_id: string | null
+        onboarding_completed: boolean | null
+        user_id: string | null
+        status: string | null
+        invite_token_expires_at: string | null
+      }>(supabase, token)
+
+      client = tokenLookup.data
+    }
+
+    if (!client) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 404 })
     }
 
@@ -76,9 +107,9 @@ export async function POST(req: Request) {
       onboardingCompleted: client.onboarding_completed,
     })
 
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('onboarding-link POST error:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ error: getErrorMessage(e) }, { status: 500 })
   }
 }
 
@@ -111,7 +142,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 403 })
     }
 
-    const safeUpdates: Record<string, any> = {}
+    const safeUpdates: Record<string, string | number> = {}
     if (updates && typeof updates === 'object') {
       const allowed = ['full_name', 'weight', 'height', 'age', 'goal', 'level', 'restrictions']
       for (const key of allowed) {
@@ -149,7 +180,7 @@ export async function PATCH(req: Request) {
     }
 
     return NextResponse.json({ ok: true })
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+  } catch (e: unknown) {
+    return NextResponse.json({ error: getErrorMessage(e) }, { status: 500 })
   }
 }

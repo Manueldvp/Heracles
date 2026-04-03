@@ -19,6 +19,14 @@ export type AssistantConfig = {
   methodology: string
 }
 
+type AssistantProfileConfig = {
+  assistant_name?: string | null
+  assistant_personality?: string | null
+  assistant_methodology?: string | null
+  ai_trainer_name?: string | null
+  ai_system_prompt?: string | null
+}
+
 const SURFACE_PREFIXES = [
   /^treinex dice:\s*/i,
   /^[^:]{1,32}\sdice:\s*/i,
@@ -84,13 +92,26 @@ function inferPersonality(prompt: string) {
   return cleanSection(fragments.join(' ')) || 'Motivador, cercano y profesional.'
 }
 
-export function extractAssistantConfig(aiTrainerName?: string | null, aiSystemPrompt?: string | null): AssistantConfig {
-  const prompt = aiSystemPrompt?.trim() || ''
-  const personality = extractSection(prompt, ['tu personalidad', 'personalidad']) || inferPersonality(prompt)
-  const methodology = extractSection(prompt, ['metodología', 'metodologia', 'metodo', 'método', 'enfoque']) || inferMethodology(prompt)
+export function extractAssistantConfig(
+  configOrName?: AssistantProfileConfig | string | null,
+  aiSystemPrompt?: string | null
+): AssistantConfig {
+  const config = typeof configOrName === 'object' && configOrName !== null
+    ? configOrName
+    : {
+        ai_trainer_name: configOrName,
+        ai_system_prompt: aiSystemPrompt,
+      }
+  const prompt = config.ai_system_prompt?.trim() || ''
+  const personality = config.assistant_personality?.trim()
+    || extractSection(prompt, ['tu personalidad', 'personalidad'])
+    || inferPersonality(prompt)
+  const methodology = config.assistant_methodology?.trim()
+    || extractSection(prompt, ['metodología', 'metodologia', 'metodo', 'método', 'enfoque'])
+    || inferMethodology(prompt)
 
   return {
-    assistantName: aiTrainerName?.trim() || 'Treinex',
+    assistantName: config.assistant_name?.trim() || config.ai_trainer_name?.trim() || 'Coach',
     personality,
     methodology,
   }

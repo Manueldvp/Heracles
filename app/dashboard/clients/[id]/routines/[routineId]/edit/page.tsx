@@ -38,6 +38,7 @@ export default function EditRoutinePage() {
   const supabase = createClient()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [routine, setRoutine] = useState<RoutineContent | null>(null)
   const [exercises, setExercises] = useState<{ id: string; name: string }[]>([])
   const [search, setSearch] = useState('')
@@ -108,10 +109,18 @@ export default function EditRoutinePage() {
 
   const handleSave = async () => {
     setSaving(true)
-    await supabase
-      .from('routines')
-      .update({ content: routine })
-      .eq('id', routineId)
+    setSaveError('')
+    const response = await fetch('/api/routines/update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ routineId, content: routine }),
+    })
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({ error: 'No fue posible guardar la rutina' }))
+      setSaveError(payload.error ?? 'No fue posible guardar la rutina')
+      setSaving(false)
+      return
+    }
     setSaving(false)
     router.push(`/dashboard/clients/${id}/routines/${routineId}`)
   }
@@ -132,6 +141,12 @@ export default function EditRoutinePage() {
           </Button>
         </div>
       </div>
+
+      {saveError ? (
+        <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+          {saveError}
+        </p>
+      ) : null}
 
       {/* Título */}
       <div className="mb-6">

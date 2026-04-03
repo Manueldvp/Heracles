@@ -6,6 +6,20 @@ import { Salad, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import SetActiveNutritionButton from './SetActiveNutritionButton'
 
+type NutritionPlanContent = {
+  title?: string
+  calories_target?: number
+  protein_g?: number
+  carbs_g?: number
+  fat_g?: number
+  macros?: {
+    protein_g?: number
+    carbs_g?: number
+    fat_g?: number
+  }
+  meals?: Array<unknown>
+}
+
 export default async function ClientNutritionListPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -43,7 +57,7 @@ export default async function ClientNutritionListPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {plans.map((plan) => {
-            const content = plan.content as any
+            const content = (plan.content ?? {}) as NutritionPlanContent
             const isActive = plan.is_active
             const proteinG = content.macros?.protein_g ?? content.protein_g ?? 0
             const carbsG = content.macros?.carbs_g ?? content.carbs_g ?? 0
@@ -88,7 +102,7 @@ export default async function ClientNutritionListPage() {
                   </div>
 
                   {!isActive && (
-                    <SetActiveNutritionButton planId={plan.id} clientId={client.id} />
+                    <SetActiveNutritionButton planId={plan.id} />
                   )}
                 </CardContent>
               </Card>

@@ -8,6 +8,7 @@ import { Home, Dumbbell, Salad, ClipboardList, LogOut, Camera, User, Bell, Check
 import { createClient } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import { useRealtimeNotifications } from '@/lib/notifications/useRealtimeNotifications'
+import { updateClientProfile } from '@/lib/supabase/rpc'
 
 interface Props {
   email: string
@@ -75,13 +76,10 @@ export default function ClientDrawer({ email, clientName, clientId, avatarUrl: i
       )
       const data = await res.json()
       const url = data.secure_url
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { error } = await supabase.from('clients').update({ avatar_url: url }).eq('user_id', user.id)
-        if (!error) {
-          setAvatar(url)
-          window.location.reload()
-        }
+      const { error } = await updateClientProfile(supabase, { avatar_url: url })
+      if (!error) {
+        setAvatar(url)
+        window.location.reload()
       }
     } catch {
       alert('Error subiendo imagen')

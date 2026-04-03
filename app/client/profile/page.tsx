@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { updateClientProfile } from '@/lib/supabase/rpc'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -91,9 +92,7 @@ export default function ClientProfilePage() {
 
   const handleSave = async () => {
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    await supabase.from('clients').update({
+    const { error } = await updateClientProfile(supabase, {
       full_name: form.full_name,
       age: form.age ? parseInt(form.age) : null,
       weight: form.weight ? parseFloat(form.weight) : null,
@@ -102,7 +101,12 @@ export default function ClientProfilePage() {
       level: form.level,
       restrictions: form.restrictions,
       avatar_url: form.avatar_url,
-    }).eq('user_id', user.id)
+    })
+    if (error) {
+      alert(error.message ?? 'No fue posible actualizar tu perfil')
+      setSaving(false)
+      return
+    }
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)

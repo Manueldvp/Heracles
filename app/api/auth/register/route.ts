@@ -20,9 +20,13 @@ export async function POST(req: Request) {
 
     const normalizedEmail = String(email).trim().toLowerCase()
     const normalizedRole = role === 'client' ? 'client' : 'trainer'
-    const redirectTo = normalizedRole === 'client' && token
-      ? `${APP_URL}/onboarding/${token}`
-      : `${APP_URL}/dashboard`
+    const callbackParams = new URLSearchParams()
+    if (normalizedRole === 'client' && token) {
+      callbackParams.set('token', String(token))
+    } else {
+      callbackParams.set('redirect', '/dashboard')
+    }
+    const redirectTo = `${APP_URL}/auth/callback?${callbackParams.toString()}`
 
     const { data, error } = await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',

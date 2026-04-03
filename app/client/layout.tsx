@@ -25,14 +25,11 @@ export default async function ClientLayout({ children }: { children: React.React
 
   const { data: trainerProfile } = await supabase
     .from('profiles')
-    .select('ai_trainer_name, ai_system_prompt')
+    .select('*')
     .eq('id', clientData.trainer_id)
     .single()
 
-  const assistantConfig = extractAssistantConfig(
-    trainerProfile?.ai_trainer_name,
-    trainerProfile?.ai_system_prompt
-  )
+  const assistantConfig = extractAssistantConfig(trainerProfile)
   const hasValidAIConnection = await validateConnection(user.id)
   const appName = assistantConfig.assistantName
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, LockKeyhole, Mail, UserRound } from 'lucide-react'
@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import PageLoader from '@/components/ui/page-loader'
+import { persistInviteToken } from '@/lib/auth/client-routing'
 import { createTranslator, getTranslationValue } from '@/lib/i18n'
 import ThemeToggle from '@/components/theme-toggle'
 
@@ -32,6 +33,10 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [registered, setRegistered] = useState(false)
+
+  useEffect(() => {
+    persistInviteToken(token)
+  }, [token])
 
   const handleRegister = async () => {
     if (!name || !email || !password) {

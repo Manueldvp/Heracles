@@ -6,6 +6,16 @@ import { Dumbbell, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import SetActiveRoutineButton from './SetActiveRoutineButton'
 
+type RoutineDayPreview = {
+  day?: string
+  focus?: string
+}
+
+type RoutineContent = {
+  title?: string
+  days?: RoutineDayPreview[]
+}
+
 export default async function ClientRoutineListPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -17,8 +27,6 @@ export default async function ClientRoutineListPage() {
 
   const { data: routines } = await supabase
     .from('routines').select('*').eq('client_id', client.id).order('created_at', { ascending: false })
-
-  const activeRoutine = routines?.find(r => r.is_active)
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -42,7 +50,7 @@ export default async function ClientRoutineListPage() {
       ) : (
         <div className="flex flex-col gap-3">
           {routines.map((routine) => {
-            const content = routine.content as any
+            const content = (routine.content ?? {}) as RoutineContent
             const dayCount = content.days?.length ?? 0
             const isActive = routine.is_active
 
@@ -72,7 +80,7 @@ export default async function ClientRoutineListPage() {
 
                   {/* Preview días */}
                   <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide mb-3">
-                    {content.days?.map((day: any, i: number) => (
+                    {content.days?.map((day, i: number) => (
                       <div key={i} className="flex-shrink-0 bg-zinc-800 rounded-lg px-2.5 py-1.5 text-center min-w-[64px]">
                         <p className="text-zinc-400 text-xs font-medium">{day.day}</p>
                         {day.focus && <p className="text-zinc-600 text-xs truncate max-w-[56px]">{day.focus}</p>}
@@ -81,7 +89,7 @@ export default async function ClientRoutineListPage() {
                   </div>
 
                   {!isActive && (
-                    <SetActiveRoutineButton routineId={routine.id} clientId={client.id} />
+                    <SetActiveRoutineButton routineId={routine.id} />
                   )}
                 </CardContent>
               </Card>

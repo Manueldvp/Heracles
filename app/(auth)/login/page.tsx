@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import PageLoader from '@/components/ui/page-loader'
 import { createClient } from '@/lib/supabase/client'
+import { persistInviteToken, resolveAuthenticatedPath } from '@/lib/auth/client-routing'
 import { createTranslator, getTranslationValue } from '@/lib/i18n'
 import ThemeToggle from '@/components/theme-toggle'
 
@@ -34,26 +35,9 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [resetSent, setResetSent] = useState(false)
 
-  const resolveUserTarget = async (userId: string) => {
-    if (redirectPath) return redirectPath
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .maybeSingle()
-
-    if (profile?.role === 'trainer') return '/dashboard'
-    if (profile?.role === 'client') return token ? `/onboarding/${token}` : '/client'
-
-    const { data: clientRow } = await supabase
-      .from('clients')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle()
-
-    return clientRow ? (token ? `/onboarding/${token}` : '/client') : '/dashboard'
-  }
+  useEffect(() => {
+    persistInviteToken(token)
+  }, [token])
 
   useEffect(() => {
     let cancelled = false
@@ -62,9 +46,14 @@ function LoginForm() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user || cancelled) return
 
-      const target = await resolveUserTarget(user.id)
+      const target = await resolveAuthenticatedPath(supabase, {
+        userId: user.id,
+        inviteToken: token,
+        redirectPath,
+      })
       if (!cancelled) {
-        router.replace(target)
+        if (target.error) setError(target.error)
+        router.replace(target.path)
       }
     }
 
@@ -73,7 +62,7 @@ function LoginForm() {
     return () => {
       cancelled = true
     }
-  }, [router, redirectPath, token])
+  }, [router, redirectPath, supabase, token])
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -100,8 +89,18 @@ function LoginForm() {
       return
     }
 
-    const target = await resolveUserTarget(user.id)
-    router.push(target)
+    const target = await resolveAuthenticatedPath(supabase, {
+      userId: user.id,
+      inviteToken: token,
+      redirectPath,
+    })
+    if (target.error) {
+      setError(target.error)
+      setLoading(false)
+      return
+    }
+
+    router.push(target.path)
   }
 
   const handleForgotPassword = async () => {

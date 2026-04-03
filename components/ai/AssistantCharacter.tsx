@@ -4,11 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { LoaderCircle, Send, Sparkles } from 'lucide-react'
-import AssistantBubble from '@/components/ai/AssistantBubble'
 import {
-  buildAssistantMessage,
   getAssistantTone,
-  getAutonomousAssistantMessages,
   sanitizeAssistantSurfaceText,
   type AssistantEvent,
   type AssistantVisualState,
@@ -78,43 +75,20 @@ export default function AssistantCharacter({
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
-  const [bubbleMessage, setBubbleMessage] = useState('')
-  const [bubbleVisible, setBubbleVisible] = useState(false)
   const [selectedCharacter, setSelectedCharacter] = useState<CharacterPreference>(characterPreference)
   const [savingCharacter, setSavingCharacter] = useState(false)
   const tone = useMemo(() => getAssistantTone(personality), [personality])
-  const autonomousMessages = useMemo(() => getAutonomousAssistantMessages(personality), [personality])
-  const autonomousIntervalMs = useMemo(
-    () => (8 + Math.floor(Math.random() * 5)) * 60 * 1000,
-    []
-  )
-  const dismissTimeoutRef = useRef<number | null>(null)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const characterButtonRef = useRef<HTMLButtonElement | null>(null)
 
-  const showBubble = useCallback((message: string) => {
-    const cleanMessage = sanitizeAssistantSurfaceText(message)
-    setBubbleMessage(cleanMessage)
-    setBubbleVisible(true)
-
-    if (dismissTimeoutRef.current) {
-      window.clearTimeout(dismissTimeoutRef.current)
-    }
-
-    dismissTimeoutRef.current = window.setTimeout(() => {
-      setBubbleVisible(false)
-    }, 4800)
-  }, [])
-
-  const setSurfaceReaction = useCallback((nextState: AssistantState, nextMessage?: string) => {
+  const setSurfaceReaction = useCallback((nextState: AssistantState) => {
     setAssistantState(nextState)
-    if (nextMessage) showBubble(nextMessage)
 
     if (nextState !== 'idle') {
       window.setTimeout(() => setAssistantState('idle'), nextState === 'celebrating' ? 3200 : 2200)
     }
-  }, [showBubble])
+  }, [])
 
   const appendChatMessage = useCallback((role: ChatMessage['role'], content: string) => {
     const cleanContent = sanitizeAssistantSurfaceText(content)
@@ -157,36 +131,15 @@ export default function AssistantCharacter({
   useEffect(() => {
     if (!connectionValid) return
 
-    const greetingKey = `treinex-assistant-greeting-${new Date().toDateString()}`
-    const hasSeenGreeting = localStorage.getItem(greetingKey) === 'seen'
-
-    if (hasSeenGreeting) return
-
-    const timer = window.setTimeout(() => {
-      localStorage.setItem(greetingKey, 'seen')
-      setSurfaceReaction('talking', buildAssistantMessage({ assistantName, personality, event: 'login' }))
-    }, 600)
-
-    return () => window.clearTimeout(timer)
-  }, [assistantName, connectionValid, personality, setSurfaceReaction])
-
-  useEffect(() => {
-    if (!connectionValid) return
-
     const handleState = (eventData: Event) => {
       const detail = (eventData as AssistantStateEvent).detail
       const nextEvent = detail?.event ?? 'idle'
       const nextState = toAssistantState(detail?.state, nextEvent)
-      const nextMessage = detail?.message || buildAssistantMessage({ assistantName, personality, event: nextEvent })
-      setSurfaceReaction(nextState, nextMessage)
+      setSurfaceReaction(nextState)
     }
 
     const handleWorkout = () => {
-      setSurfaceReaction('celebrating', buildAssistantMessage({
-        assistantName,
-        personality,
-        event: 'workout-complete',
-      }))
+      setSurfaceReaction('celebrating')
     }
 
     window.addEventListener('treinex:ai-state', handleState as EventListener)
@@ -196,52 +149,7 @@ export default function AssistantCharacter({
       window.removeEventListener('treinex:ai-state', handleState as EventListener)
       window.removeEventListener('treinex:workout-complete', handleWorkout)
     }
-  }, [assistantName, connectionValid, personality, setSurfaceReaction])
-
-  useEffect(() => {
-    if (!connectionValid || panelOpen) return
-
-    let inactivityTimeout: number | undefined
-
-    const resetInactivity = () => {
-      if (inactivityTimeout) window.clearTimeout(inactivityTimeout)
-      inactivityTimeout = window.setTimeout(() => {
-        setSurfaceReaction('motivating', buildAssistantMessage({
-          assistantName,
-          personality,
-          event: 'inactivity',
-        }))
-      }, 50000)
-    }
-
-    const events: Array<keyof WindowEventMap> = ['mousemove', 'keydown', 'click', 'touchstart']
-    events.forEach((name) => window.addEventListener(name, resetInactivity))
-    resetInactivity()
-
-    return () => {
-      if (inactivityTimeout) window.clearTimeout(inactivityTimeout)
-      events.forEach((name) => window.removeEventListener(name, resetInactivity))
-    }
-  }, [assistantName, connectionValid, panelOpen, personality, setSurfaceReaction])
-
-  useEffect(() => {
-    if (!connectionValid || panelOpen) return
-
-    const interval = window.setInterval(() => {
-      const randomMessage = autonomousMessages[Math.floor(Math.random() * autonomousMessages.length)]
-      setSurfaceReaction('motivating', randomMessage)
-    }, autonomousIntervalMs)
-
-    return () => window.clearInterval(interval)
-  }, [autonomousIntervalMs, autonomousMessages, connectionValid, panelOpen, setSurfaceReaction])
-
-  useEffect(() => {
-    return () => {
-      if (dismissTimeoutRef.current) {
-        window.clearTimeout(dismissTimeoutRef.current)
-      }
-    }
-  }, [])
+  }, [connectionValid, setSurfaceReaction])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -276,7 +184,6 @@ export default function AssistantCharacter({
     setAsking(true)
     appendChatMessage('user', userQuestion)
     setQuestion('')
-    setBubbleVisible(false)
     setAssistantState('thinking')
 
     try {
@@ -388,8 +295,6 @@ export default function AssistantCharacter({
 
   return (
     <div className="pointer-events-none fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
-      <AssistantBubble message={bubbleMessage} visible={bubbleVisible} />
-
       <div className="flex items-end gap-3">
         <AnimatePresence>
           {panelOpen ? (
@@ -419,8 +324,7 @@ export default function AssistantCharacter({
               {canAsk ? (
                 <>
                   <div
-                    className="flex-1 overflow-y-auto px-3 py-3 [scrollbar-color:rgba(255,255,255,0.14)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/12 [&::-webkit-scrollbar-track]:bg-transparent"
-                    style={{ scrollbarGutter: 'stable' }}
+                    className="max-h-[400px] flex-1 overflow-y-auto px-3 py-3 pr-2 [scrollbar-color:rgba(255,255,255,0.14)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/12 [&::-webkit-scrollbar-track]:bg-transparent"
                   >
                     <div
                       className="flex min-h-full flex-col justify-end gap-2 pr-1"

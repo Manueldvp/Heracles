@@ -26,7 +26,8 @@ export async function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/invite') ||
     pathname.startsWith('/onboarding') ||
-    pathname.startsWith('/register')
+    pathname.startsWith('/register') ||
+    pathname.startsWith('/auth/callback')
   ) {
     return supabaseResponse
   }
@@ -73,6 +74,16 @@ export async function proxy(request: NextRequest) {
 
   if (pathname === '/login') {
     if (role === 'client') {
+      const { data: clientRow } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!clientRow) {
+        return supabaseResponse
+      }
+
       return NextResponse.redirect(new URL('/client', request.url))
     }
     return NextResponse.redirect(new URL('/dashboard', request.url))
@@ -90,5 +101,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/client/:path*', '/login', '/onboarding/:path*', '/invite/:path*'],
+  matcher: ['/dashboard/:path*', '/client/:path*', '/login', '/onboarding/:path*', '/invite/:path*', '/auth/callback'],
 }

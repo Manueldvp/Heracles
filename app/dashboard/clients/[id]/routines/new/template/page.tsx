@@ -3,20 +3,25 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { updateOnboardingProgress } from '@/lib/onboarding'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  LayoutTemplate, Dumbbell, ChevronRight, Loader2,
-  Plus, ArrowLeft, Check, Trash2
-} from 'lucide-react'
+import { LayoutTemplate, Loader2, ArrowLeft, Check, Trash2 } from 'lucide-react'
+
+type TemplateDay = {
+  day?: string
+  exercises?: unknown[]
+}
+
+type TemplateContent = {
+  days?: TemplateDay[]
+}
 
 interface Template {
   id: string
   title: string
   description?: string
-  content: any
+  content: TemplateContent
   created_at: string
 }
 
@@ -31,7 +36,7 @@ export default function RoutineTemplatePage() {
   const [applying, setApplying] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
 
-  useEffect(() => { loadTemplates() }, [])
+  useEffect(() => { void loadTemplates() }, [])
 
   const loadTemplates = async () => {
     const { data } = await supabase
@@ -45,30 +50,19 @@ export default function RoutineTemplatePage() {
   const applyTemplate = async (template: Template) => {
     setApplying(template.id)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const response = await fetch('/api/routines/apply-template', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, templateId: template.id }),
+      })
+      const payload = await response.json()
 
-      // Deactivate existing routines
-      await supabase.from('routines')
-        .update({ is_active: false })
-        .eq('client_id', clientId)
-
-      // Create new routine from template
-      const { data: routine } = await supabase.from('routines').insert({
-        client_id: clientId,
-        trainer_id: user!.id,
-        title: template.title,
-        content: template.content,
-        is_active: true,
-        type: 'manual',
-      }).select().single()
-
-      if (routine) {
-        await updateOnboardingProgress(supabase, user!.id, {
-          created_routine: true,
-          assigned_routine: true,
-        })
-        router.push(`/dashboard/clients/${clientId}/routines/${routine.id}`)
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'No fue posible aplicar la plantilla')
       }
+
+      const routine = payload.routine as { id: string }
+      router.push(`/dashboard/clients/${clientId}/routines/${routine.id}`)
     } catch (e) {
       console.error(e)
     }
@@ -83,9 +77,9 @@ export default function RoutineTemplatePage() {
     setDeleting(null)
   }
 
-  const getDayCount = (content: any) => content?.days?.length ?? 0
-  const getExerciseCount = (content: any) =>
-    content?.days?.reduce((acc: number, d: any) => acc + (d.exercises?.length ?? 0), 0) ?? 0
+  const getDayCount = (content: TemplateContent) => content.days?.length ?? 0
+  const getExerciseCount = (content: TemplateContent) =>
+    content.days?.reduce((acc: number, day) => acc + (day.exercises?.length ?? 0), 0) ?? 0
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -120,7 +114,7 @@ export default function RoutineTemplatePage() {
             </div>
             <div className="bg-blue-500/5 border border-blue-500/15 rounded-xl px-4 py-3 max-w-sm">
               <p className="text-blue-400 text-xs text-center">
-                Abre cualquier rutina existente → menú → "Guardar como plantilla"
+                Abre cualquier rutina existente → menú → &quot;Guardar como plantilla&quot;
               </p>
             </div>
             <Button
@@ -167,7 +161,7 @@ export default function RoutineTemplatePage() {
                       {/* Days preview */}
                       {template.content?.days && (
                         <div className="flex gap-1.5 mt-2 flex-wrap">
-                          {template.content.days.map((d: any, i: number) => (
+                          {template.content.days.map((d, i: number) => (
                             <span key={i} className="text-xs bg-zinc-800 text-zinc-500 rounded-lg px-2 py-0.5 border border-zinc-700/50">
                               {d.day}
                             </span>
