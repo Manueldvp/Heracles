@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import PageLoader from '@/components/ui/page-loader'
 import { persistInviteToken, resolveAuthenticatedPath } from '@/lib/auth/client-routing'
 
+export const dynamic = 'force-dynamic'
+
 export default function AuthCallbackPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
   const [error, setError] = useState('')
 
@@ -16,9 +17,10 @@ export default function AuthCallbackPage() {
     let cancelled = false
 
     const finishAuth = async () => {
-      const inviteToken = searchParams.get('token')
-      const redirectPath = searchParams.get('redirect')
-      const code = searchParams.get('code')
+      const url = new URL(window.location.href)
+      const inviteToken = url.searchParams.get('token')
+      const redirectPath = url.searchParams.get('redirect')
+      const code = url.searchParams.get('code')
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
       const accessToken = hashParams.get('access_token')
       const refreshToken = hashParams.get('refresh_token')
@@ -65,7 +67,7 @@ export default function AuthCallbackPage() {
     return () => {
       cancelled = true
     }
-  }, [router, searchParams, supabase])
+  }, [router, supabase])
 
   if (error) {
     return (
