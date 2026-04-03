@@ -41,6 +41,18 @@ async function acceptInviteIfNeeded(supabase: BrowserSupabase, inviteToken?: str
   return { accepted: true, error: null as string | null }
 }
 
+async function recoverPendingInviteToken() {
+  const response = await fetch('/api/invite/recover', {
+    method: 'GET',
+    cache: 'no-store',
+  })
+
+  if (!response.ok) return null
+
+  const payload = await response.json().catch(() => ({ token: null }))
+  return typeof payload.token === 'string' && payload.token ? payload.token : null
+}
+
 export async function resolveAuthenticatedPath(
   supabase: BrowserSupabase,
   {
@@ -54,7 +66,7 @@ export async function resolveAuthenticatedPath(
   }
 ) {
   const safeRedirect = redirectPath && redirectPath.startsWith('/') ? redirectPath : null
-  const pendingInviteToken = inviteToken || readPendingInviteToken()
+  let pendingInviteToken = inviteToken || readPendingInviteToken()
 
   const [{ data: profile }, { data: existingClientRow }] = await Promise.all([
     supabase
@@ -86,6 +98,27 @@ export async function resolveAuthenticatedPath(
       .maybeSingle<ClientRow>()
 
     clientRow = linkedClientRow
+  }
+
+  if (!clientRow && !pendingInviteToken) {
+    pendingInviteToken = await recoverPendingInviteToken()
+
+    if (pendingInviteToken) {
+      persistInviteToken(pendingInviteToken)
+
+      const inviteResult = await acceptInviteIfNeeded(supabase, pendingInviteToken)
+      if (inviteResult.error) {
+        return { path: `/login?token=${encodeURIComponent(pendingInviteToken)}`, error: inviteResult.error }
+      }
+
+      const { data: linkedClientRow } = await supabase
+        .from('clients')
+        .select('id, onboarding_completed, invite_token')
+        .eq('user_id', userId)
+        .maybeSingle<ClientRow>()
+
+      clientRow = linkedClientRow
+    }
   }
 
   if (clientRow) {
