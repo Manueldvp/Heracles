@@ -3,12 +3,14 @@
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
+import { clearAssistantChatStorage } from '@/lib/ai-assistant'
 
 export default function LogoutButton() {
   const supabase = createClient()
   const router = useRouter()
 
   const handleLogout = async () => {
+    clearAssistantChatStorage()
     await supabase.auth.signOut()
     router.push('/login')
   }

@@ -37,6 +37,38 @@ export async function setActiveNutrition(client: RpcCapableClient, planId: strin
   return client.rpc('set_active_nutrition', { p_plan_id: planId })
 }
 
+export async function activateClientSubscription(client: RpcCapableClient, clientId: string, days: number) {
+  return client.rpc('activate_client_subscription', {
+    p_client_id: clientId,
+    p_days: days,
+  })
+}
+
+export async function renewClientSubscription(client: RpcCapableClient, clientId: string, days: number) {
+  return client.rpc('renew_client_subscription', {
+    p_client_id: clientId,
+    p_days: days,
+  })
+}
+
+export async function cancelClientSubscription(client: RpcCapableClient, clientId: string) {
+  return client.rpc('cancel_client_subscription', {
+    p_client_id: clientId,
+  })
+}
+
+export async function getUserIdByEmail(client: RpcCapableClient, email: string) {
+  const result = await client.rpc('get_user_id_by_email', { p_email: email })
+
+  if (result.error) return { data: null as string | null, error: result.error }
+
+  const value = Array.isArray(result.data)
+    ? (result.data[0] as string | undefined) ?? null
+    : (result.data as string | null)
+
+  return { data: value, error: null }
+}
+
 export async function getClientByInviteToken<T>(client: RpcCapableClient, token: string) {
   const result = await client.rpc('get_client_by_invite_token', { token })
 

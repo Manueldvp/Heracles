@@ -37,30 +37,33 @@ export default function ClientHeader({
   firstName, greeting, goal, level, trainerName, trainerAvatar
 }: Props) {
   return (
-    <div className="mb-2 flex items-center justify-between">
-      <div>
-        <p className="text-zinc-500 text-xs uppercase tracking-widest">{greeting}</p>
-        <h2 className="mt-0.5 font-display text-4xl leading-none tracking-wide text-white">{firstName}</h2>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <Badge className={`border px-2 py-0.5 text-xs ${goalColor[goal] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+    <div className="mb-3 flex items-start justify-between gap-4">
+      <div className="min-w-0">
+        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{greeting}</p>
+        <h2 className="mt-1 font-display text-4xl leading-none tracking-[0.04em] text-foreground sm:text-5xl">{firstName}</h2>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Badge className={`rounded-full border px-3 py-1 text-xs ${goalColor[goal] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
             {goalLabel[goal]}
           </Badge>
-          <Badge className="border-zinc-700 bg-zinc-800 px-2 py-0.5 text-xs text-zinc-500">
+          <Badge className="rounded-full border-border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">
             {levelLabel[level] ?? level}
           </Badge>
         </div>
       </div>
 
       {trainerName ? (
-        <div className="flex shrink-0 flex-col items-center gap-1">
-          <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-orange-500/30 bg-orange-500/20">
+        <div className="flex shrink-0 items-center gap-3 rounded-2xl bg-card/80 px-3 py-2 shadow-sm">
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-primary/20 bg-primary/10">
             {trainerAvatar ? (
               <img src={trainerAvatar} alt={trainerName} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-orange-400">{trainerName.charAt(0)}</span>
+              <span className="text-sm font-bold text-primary">{trainerName.charAt(0)}</span>
             )}
           </div>
-          <p className="text-xs text-zinc-600">{trainerName}</p>
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Tu coach</p>
+            <p className="truncate text-sm font-medium text-foreground">{trainerName}</p>
+          </div>
         </div>
       ) : null}
     </div>

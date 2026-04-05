@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   BatteryLow,
@@ -26,6 +26,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import PageLoader from '@/components/ui/page-loader'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import {
+  ClientSubscriptionSummary,
+  summarizeClientSubscription,
+} from '@/lib/client-subscriptions'
 
 const PAIN_ZONES = ['Cuello', 'Hombros', 'Espalda alta', 'Espalda baja', 'Cadera', 'Rodillas', 'Tobillos']
 const SCALE = [1, 2, 3, 4, 5]
@@ -138,14 +143,16 @@ function StepPill({ active, done, label }: { active: boolean; done: boolean; lab
 function CheckinForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [error, setError] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
   const [step, setStep] = useState(0)
+  const [subscriptionSummary, setSubscriptionSummary] = useState<ClientSubscriptionSummary | null>(null)
 
   const typeParam = searchParams.get('type')
   const [checkinType, setCheckinType] = useState<CheckinType>(typeParam === 'weekly' ? 'weekly' : 'daily')
@@ -164,6 +171,53 @@ function CheckinForm() {
     nutrition_adherence: 3,
     weight: '',
   })
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadSubscription = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!mounted) return
+
+      if (!user) {
+        setSubscriptionSummary(summarizeClientSubscription(null))
+        setInitialLoading(false)
+        return
+      }
+
+      const { data: client } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (!mounted) return
+
+      if (!client) {
+        setSubscriptionSummary(summarizeClientSubscription(null))
+        setInitialLoading(false)
+        return
+      }
+
+      const { data: subscription } = await supabase
+        .from('client_subscriptions')
+        .select('*')
+        .eq('client_id', client.id)
+        .maybeSingle()
+
+      if (!mounted) return
+
+      setSubscriptionSummary(summarizeClientSubscription(subscription))
+      setInitialLoading(false)
+    }
+
+    void loadSubscription()
+
+    return () => {
+      mounted = false
+    }
+  }, [supabase])
 
   const steps = useMemo(() => (
     checkinType === 'daily'
@@ -489,6 +543,24 @@ function CheckinForm() {
           </div>
         </CardContent>
       </Card>
+    )
+  }
+
+  if (initialLoading) {
+    return <PageLoader />
+  }
+
+  if (subscriptionSummary && !subscriptionSummary.isActive) {
+    return (
+      <div className="mx-auto max-w-2xl pb-10">
+        <SubscriptionStatusCard
+          summary={subscriptionSummary}
+          title="No puedes enviar check-ins ahora"
+          body="Tu acceso esta pausado o vencido. Cuando tu entrenador reactive la suscripcion, podras volver a registrar tus avances."
+          ctaHref="/client"
+          ctaLabel="Volver al dashboard"
+        />
+      </div>
     )
   }
 

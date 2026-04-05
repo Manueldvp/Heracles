@@ -11,6 +11,8 @@ import TodayWorkout from './components/TodayWorkout'
 import TodayMeal from './components/TodayMeal'
 import CheckinReminder from './components/CheckinReminder'
 import Link from 'next/link'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import { summarizeClientSubscription } from '@/lib/client-subscriptions'
 
 export default async function ClientHomePage() {
   const supabase = await createClient()
@@ -65,6 +67,36 @@ export default async function ClientHomePage() {
     .from('profiles').select('*')
     .eq('id', clientData.trainer_id).single()
 
+  const { data: subscription } = await supabase
+    .from('client_subscriptions')
+    .select('*')
+    .eq('client_id', clientData.id)
+    .maybeSingle()
+
+  const subscriptionSummary = summarizeClientSubscription(subscription)
+
+  if (!subscriptionSummary.isActive) {
+    return (
+      <div className="flex flex-col gap-6 pb-28">
+        <ClientHeader
+          firstName={clientData.full_name.split(' ')[0]}
+          greeting={new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 19 ? 'Buenas tardes' : 'Buenas noches'}
+          goal={clientData.goal}
+          level={clientData.level}
+          trainerName={trainerProfile?.full_name?.split(' ')[0]}
+          trainerAvatar={trainerProfile?.avatar_url}
+        />
+        <SubscriptionStatusCard
+          summary={subscriptionSummary}
+          title="Tu acceso esta pausado"
+          body="Tu entrenador necesita activar o renovar tu suscripcion para volver a mostrar rutinas, nutricion y check-ins."
+          ctaHref="/client/profile"
+          ctaLabel="Ver mi perfil"
+        />
+      </div>
+    )
+  }
+
   const [routineRes, planRes, { data: checkins }] = await Promise.all([
     supabase.from('routines').select('*').eq('client_id', clientData.id).eq('is_active', true).limit(1).maybeSingle(),
     supabase.from('nutrition_plans').select('*').eq('client_id', clientData.id).eq('is_active', true).limit(1).maybeSingle(),
@@ -73,6 +105,7 @@ export default async function ClientHomePage() {
 
   const routine = routineRes?.data
   const plan = planRes?.data
+  const canCheckIn = Boolean(routine || plan)
   const lastCheckin = checkins?.[0]
   const firstName = clientData.full_name.split(' ')[0]
 
@@ -105,7 +138,23 @@ export default async function ClientHomePage() {
           trainerAvatar={trainerProfile?.avatar_url}
         />
 
-        <CheckinReminder clientId={clientData.id} />
+        {canCheckIn ? (
+          <CheckinReminder clientId={clientData.id} />
+        ) : (
+          <Card className="border-dashed border-border bg-card">
+            <CardContent className="flex items-start gap-4 p-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60">
+                <ClipboardList size={18} className="text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Check-in aún no disponible</p>
+                <p className="mt-0.5 text-sm leading-6 text-muted-foreground">
+                  Se activará cuando tengas una rutina o un plan nutricional activo.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <TodayWorkout
           routine={routine}
@@ -214,12 +263,18 @@ export default async function ClientHomePage() {
                 <Activity size={15} className="text-primary" />
                 Mis check-ins
               </p>
-              <Link href="/client/checkin">
-                <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white text-xs h-7 gap-1">
-                  <Plus size={12} />
-                  Nuevo
-                </Button>
-              </Link>
+              {canCheckIn ? (
+                <Link href="/client/checkin">
+                  <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white text-xs h-7 gap-1">
+                    <Plus size={12} />
+                    Nuevo
+                  </Button>
+                </Link>
+              ) : (
+                <Badge variant="secondary" className="text-xs">
+                  Requiere plan o rutina activa
+                </Badge>
+              )}
             </div>
 
             {lastCheckin ? (
@@ -271,11 +326,17 @@ export default async function ClientHomePage() {
               <div className="text-center py-8">
                 <ClipboardList size={28} className="mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Aún no has hecho check-ins</p>
-                <Link href="/client/checkin">
-                  <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white text-xs mt-3">
-                    Hacer mi primer check-in
-                  </Button>
-                </Link>
+                {canCheckIn ? (
+                  <Link href="/client/checkin">
+                    <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white text-xs mt-3">
+                      Hacer mi primer check-in
+                    </Button>
+                  </Link>
+                ) : (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Cuando tengas una rutina o plan activo podrás registrar tu primer check-in.
+                  </p>
+                )}
               </div>
             )}
           </CardContent>

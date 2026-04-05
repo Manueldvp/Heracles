@@ -19,6 +19,8 @@ export type AssistantConfig = {
   methodology: string
 }
 
+const CHAT_STORAGE_PREFIX = 'treinex-assistant-chat-history'
+
 type AssistantProfileConfig = {
   assistant_name?: string | null
   assistant_personality?: string | null
@@ -111,7 +113,7 @@ export function extractAssistantConfig(
     || inferMethodology(prompt)
 
   return {
-    assistantName: config.assistant_name?.trim() || config.ai_trainer_name?.trim() || 'Coach',
+    assistantName: config.assistant_name?.trim() || config.ai_trainer_name?.trim() || 'Treinex',
     personality,
     methodology,
   }
@@ -193,7 +195,30 @@ export function sanitizeAssistantSurfaceText(message: string) {
     next = next.replace(pattern, '')
   })
 
+  next = next
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+
   return next.replace(/\s+/g, ' ').trim()
+}
+
+export function getAssistantChatStorageKey(userId: string) {
+  return `${CHAT_STORAGE_PREFIX}:${userId}`
+}
+
+export function clearAssistantChatStorage(userId?: string) {
+  if (typeof window === 'undefined') return
+
+  if (userId) {
+    window.sessionStorage.removeItem(getAssistantChatStorageKey(userId))
+    return
+  }
+
+  Object.keys(window.sessionStorage)
+    .filter((key) => key.startsWith(`${CHAT_STORAGE_PREFIX}:`))
+    .forEach((key) => window.sessionStorage.removeItem(key))
 }
 
 export function getAutonomousAssistantMessages(personality: string) {

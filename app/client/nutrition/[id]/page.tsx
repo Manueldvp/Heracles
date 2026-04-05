@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Apple, ArrowLeft, Clock3, Flame, Leaf, Lightbulb, Pill, Salad } from 'lucide-react'
 import Link from 'next/link'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import { summarizeClientSubscription } from '@/lib/client-subscriptions'
 
 type Food = {
   name: string
@@ -59,6 +61,26 @@ export default async function ClientNutritionDetailPage({
     .single()
 
   if (!client) redirect('/client')
+
+  const { data: subscription } = await supabase
+    .from('client_subscriptions')
+    .select('*')
+    .eq('client_id', client.id)
+    .maybeSingle()
+
+  const subscriptionSummary = summarizeClientSubscription(subscription)
+
+  if (!subscriptionSummary.isActive) {
+    return (
+      <SubscriptionStatusCard
+        summary={subscriptionSummary}
+        title="Este plan no esta disponible"
+        body="Tu acceso a nutricion esta pausado o vencido. Pide a tu entrenador que reactive la suscripcion."
+        ctaHref="/client/nutrition"
+        ctaLabel="Volver a nutricion"
+      />
+    )
+  }
 
   const { data: plan } = await supabase
     .from('nutrition_plans')

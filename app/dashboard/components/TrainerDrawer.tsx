@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { Home, Users, Settings, LogOut, Bell, CheckCheck, FileText } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { useRealtimeNotifications } from '@/lib/notifications/useRealtimeNotifications'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 interface Props {
   email: string
@@ -70,7 +71,7 @@ export default function TrainerDrawer({ email, trainerName, trainerId, onLogout,
       {/* Bell */}
       <button
         onClick={() => void openNotifications()}
-        className="relative flex h-10 w-10 items-center justify-center rounded-full border border-border bg-transparent transition hover:bg-accent/70"
+        className="relative flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card/70 transition hover:bg-accent/70"
       >
         <Bell size={16} className="text-muted-foreground" />
         {unreadCount > 0 && (
@@ -85,28 +86,24 @@ export default function TrainerDrawer({ email, trainerName, trainerId, onLogout,
         if (!v) setShowNotifs(false)
       }}>
         <SheetTrigger asChild>
-          <button className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-border bg-card transition hover:border-primary/50">
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-            ) : (
-              <span className="text-orange-400 font-bold text-sm">{initial}</span>
-            )}
+          <button className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40">
+            <Avatar className="h-full w-full">
+              {avatarUrl ? <AvatarImage src={avatarUrl} alt="Avatar" /> : null}
+              <AvatarFallback className="bg-primary/10 text-primary">{initial}</AvatarFallback>
+            </Avatar>
           </button>
         </SheetTrigger>
 
-        <SheetContent side="left" className="flex w-72 flex-col border-border bg-background p-0">
+        <SheetContent side="left" className="flex w-80 flex-col border-border bg-background p-0">
           <SheetTitle className="sr-only">Menú de navegación</SheetTitle>
 
           {/* Perfil */}
           <div className="border-b border-border p-6">
             <div className="flex items-center gap-3">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-card">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-primary font-bold text-xl">{initial}</span>
-                )}
-              </div>
+              <Avatar className="h-14 w-14 shrink-0 border border-border bg-card shadow-sm">
+                {avatarUrl ? <AvatarImage src={avatarUrl} alt="Avatar" /> : null}
+                <AvatarFallback className="bg-primary/10 text-xl text-primary">{initial}</AvatarFallback>
+              </Avatar>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-foreground">{trainerName}</p>
                 <p className="truncate text-xs text-muted-foreground">{email}</p>

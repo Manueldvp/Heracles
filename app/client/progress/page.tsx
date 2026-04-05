@@ -10,9 +10,15 @@ import {
 } from 'recharts'
 import {
   TrendingUp, TrendingDown, Dumbbell, Trophy, ChevronDown, ChevronUp,
-  BarChart2, ArrowLeft, Flame, Zap, Apple, Scale, Calendar, Minus
+  BarChart2, ArrowLeft, Flame, Zap, Apple, Scale, Calendar
 } from 'lucide-react'
 import Link from 'next/link'
+import PageLoader from '@/components/ui/page-loader'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import {
+  ClientSubscriptionSummary,
+  summarizeClientSubscription,
+} from '@/lib/client-subscriptions'
 
 interface SetLog { set: number; weight: number; reps: number }
 interface ExerciseLog {
@@ -29,16 +35,37 @@ function formatDate(d: string) {
   return `${date.getDate()}/${date.getMonth() + 1}`
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type ChartTooltipValue = number | string
+type ChartTooltipItem = {
+  name?: string
+  value?: ChartTooltipValue
+  color?: string
+}
+
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: ChartTooltipItem[]
+  label?: string
+}) => {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 shadow-xl">
       <p className="text-zinc-400 text-xs mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} className="text-white text-xs font-semibold" style={{ color: p.color }}>
-          {p.name}: {p.value}{p.name?.includes('Peso') ? ' kg' : p.name?.includes('Vol') ? ' kg' : ''}
-        </p>
-      ))}
+      {payload.map((item, index) => {
+        const labelText = String(item.name ?? 'Dato')
+        const valueText = item.value ?? '—'
+        const suffix = labelText.includes('Peso') || labelText.includes('Vol') ? ' kg' : ''
+
+        return (
+          <p key={index} className="text-white text-xs font-semibold" style={{ color: item.color }}>
+            {labelText}: {valueText}{suffix}
+          </p>
+        )
+      })}
     </div>
   )
 }
@@ -47,7 +74,6 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 function VolumeBar({ sessionsThisWeek }: { sessionsThisWeek: number }) {
   // For hypertrophy: 2-3 days = low, 3-4 = medium, 5+ = high
   const level = sessionsThisWeek >= 5 ? 'high' : sessionsThisWeek >= 3 ? 'medium' : 'low'
-  const labels = { low: 'Bajo', medium: 'Medio', high: 'Alto' }
   const configs = {
     low:    { color: 'bg-red-500',    text: 'text-red-400',    label: 'Bajo',   desc: 'Aumenta la frecuencia para mejores resultados' },
     medium: { color: 'bg-yellow-500', text: 'text-yellow-400', label: 'Medio',  desc: 'Buen volumen, sigue así' },
@@ -199,11 +225,12 @@ function ExerciseProgressCard({ summary }: { summary: ExerciseSummary }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function ClientProgressPage() {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const [summaries, setSummaries] = useState<ExerciseSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [exerciseFilter, setExerciseFilter] = useState('')
   const [visibleCount, setVisibleCount] = useState(6)
+  const [subscriptionSummary, setSubscriptionSummary] = useState<ClientSubscriptionSummary | null>(null)
 
   // Stats
   const [totalSessions, setTotalSessions] = useState(0)
@@ -226,6 +253,20 @@ export default function ClientProgressPage() {
       const { data: client } = await supabase
         .from('clients').select('id').eq('user_id', user.id).single()
       if (!client) return
+
+      const { data: subscription } = await supabase
+        .from('client_subscriptions')
+        .select('*')
+        .eq('client_id', client.id)
+        .maybeSingle()
+
+      const nextSubscriptionSummary = summarizeClientSubscription(subscription)
+      setSubscriptionSummary(nextSubscriptionSummary)
+
+      if (!nextSubscriptionSummary.isActive) {
+        setLoading(false)
+        return
+      }
 
       // ── Exercise logs ──────────────────────────────────────────────────────
       const { data: logs } = await supabase
@@ -327,7 +368,7 @@ export default function ClientProgressPage() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [supabase])
 
   const adherenceLabel = avgAdherence >= 80 ? { text: '¡Excelente!', color: 'text-green-400' }
     : avgAdherence >= 50 ? { text: 'Regular', color: 'text-yellow-400' }
@@ -341,6 +382,24 @@ export default function ClientProgressPage() {
   }, [exerciseFilter, summaries])
 
   const visibleSummaries = filteredSummaries.slice(0, visibleCount)
+
+  if (loading) {
+    return <PageLoader />
+  }
+
+  if (subscriptionSummary && !subscriptionSummary.isActive) {
+    return (
+      <div className="max-w-lg mx-auto pb-10">
+        <SubscriptionStatusCard
+          summary={subscriptionSummary}
+          title="Tu progreso no esta disponible"
+          body="Los registros de progreso volveran a mostrarse cuando tu entrenador reactive la suscripcion."
+          ctaHref="/client"
+          ctaLabel="Volver al dashboard"
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-lg mx-auto pb-10">

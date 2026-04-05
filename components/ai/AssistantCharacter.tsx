@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { AnimatePresence, motion } from 'framer-motion'
 import { LoaderCircle, Send, Sparkles } from 'lucide-react'
 import {
+  getAssistantChatStorageKey,
   getAssistantTone,
   sanitizeAssistantSurfaceText,
   type AssistantEvent,
@@ -25,10 +26,6 @@ type AssistantStateEvent = CustomEvent<{
   event?: AssistantEvent
   message?: string
 }>
-
-const STORAGE_KEYS = {
-  chat: 'treinex-assistant-chat-history',
-} as const
 
 const CHARACTER_ASSETS: Record<CharacterPreference, string> = {
   male: '/ai/male.png',
@@ -57,6 +54,7 @@ function toAssistantState(nextState?: AssistantVisualState, nextEvent?: Assistan
 
 export default function AssistantCharacter({
   assistantName,
+  userId,
   personality = 'Profesional, cercano y claro.',
   canAsk = false,
   characterPreference = 'male',
@@ -64,6 +62,7 @@ export default function AssistantCharacter({
   onCharacterChange,
 }: {
   assistantName: string
+  userId: string
   personality?: string
   canAsk?: boolean
   characterPreference?: CharacterPreference
@@ -81,6 +80,7 @@ export default function AssistantCharacter({
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const characterButtonRef = useRef<HTMLButtonElement | null>(null)
+  const chatStorageKey = useMemo(() => getAssistantChatStorageKey(userId), [userId])
 
   const setSurfaceReaction = useCallback((nextState: AssistantState) => {
     setAssistantState(nextState)
@@ -100,10 +100,10 @@ export default function AssistantCharacter({
         content: cleanContent,
       }].slice(-10)
 
-      sessionStorage.setItem(STORAGE_KEYS.chat, JSON.stringify(next))
+      sessionStorage.setItem(chatStorageKey, JSON.stringify(next))
       return next
     })
-  }, [])
+  }, [chatStorageKey])
 
   useEffect(() => {
     setSelectedCharacter(characterPreference)
@@ -113,20 +113,22 @@ export default function AssistantCharacter({
     if (!connectionValid) return
 
     const syncFromStorage = () => {
-      const savedChat = sessionStorage.getItem(STORAGE_KEYS.chat)
+      const savedChat = sessionStorage.getItem(chatStorageKey)
 
       if (savedChat) {
         try {
           setChatMessages(JSON.parse(savedChat) as ChatMessage[])
         } catch {
-          sessionStorage.removeItem(STORAGE_KEYS.chat)
+          sessionStorage.removeItem(chatStorageKey)
         }
+      } else {
+        setChatMessages([])
       }
     }
 
     const timer = window.setTimeout(syncFromStorage, 0)
     return () => window.clearTimeout(timer)
-  }, [connectionValid])
+  }, [chatStorageKey, connectionValid])
 
   useEffect(() => {
     if (!connectionValid) return
@@ -304,11 +306,14 @@ export default function AssistantCharacter({
               animate={{ opacity: 1, x: 0, scale: 1 }}
               exit={{ opacity: 0, x: 12, scale: 0.96 }}
               transition={SPRING}
-              className="pointer-events-auto flex h-[min(70vh,560px)] w-[min(360px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[30px] border border-white/10 bg-[linear-gradient(180deg,rgba(28,29,35,0.96),rgba(11,12,15,0.96))] shadow-[0_24px_70px_rgba(0,0,0,0.42)] backdrop-blur-2xl"
+              className="pointer-events-auto flex h-[min(70vh,560px)] w-[min(380px,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(24,25,31,0.98),rgba(12,13,17,0.98))] shadow-[0_28px_90px_rgba(0,0,0,0.46)] backdrop-blur-2xl"
             >
-              <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.16),transparent_58%)] px-4 pb-3 pt-4">
+              <div className="border-b border-white/8 bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.12),transparent_58%)] px-5 pb-4 pt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-base font-semibold text-white">{assistantName}</span>
+                  <div>
+                    <span className="text-base font-semibold text-white">{assistantName}</span>
+                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-white/45">Assistant</p>
+                  </div>
                   <button
                     type="button"
                     onClick={handleCharacterToggle}
@@ -323,25 +328,24 @@ export default function AssistantCharacter({
 
               {canAsk ? (
                 <>
-                  <div
-                    className="max-h-[400px] flex-1 overflow-y-auto px-3 py-3 pr-2 [scrollbar-color:rgba(255,255,255,0.14)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/12 [&::-webkit-scrollbar-track]:bg-transparent"
-                  >
-                    <div
-                      className="flex min-h-full flex-col justify-end gap-2 pr-1"
-                    >
+                  <div className="max-h-[400px] flex-1 overflow-y-auto px-4 py-4 pr-3 [scrollbar-color:rgba(255,255,255,0.14)_transparent] [scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-white/12 [&::-webkit-scrollbar-track]:bg-transparent">
+                    <div className="flex min-h-full flex-col justify-end gap-2.5 pr-1">
                       {chatMessages.length ? (
                         chatMessages.map((entry) => (
-                          <div
+                          <motion.div
                             key={entry.id}
+                            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
                             className={entry.role === 'assistant'
-                              ? 'max-w-[92%] break-words whitespace-pre-wrap rounded-3xl rounded-bl-lg border border-orange-400/15 bg-orange-500/10 px-3.5 py-2.5 text-sm leading-5 text-white/95'
-                              : 'ml-auto max-w-[88%] break-words whitespace-pre-wrap rounded-3xl rounded-br-lg border border-white/8 bg-white/[0.07] px-3.5 py-2.5 text-sm leading-5 text-white/90'}
+                              ? 'max-w-[92%] break-words whitespace-pre-wrap rounded-[24px] rounded-bl-md border border-orange-200/60 bg-orange-50 px-4 py-3 text-sm leading-6 text-zinc-900 shadow-[0_10px_24px_rgba(15,23,42,0.08)]'
+                              : 'ml-auto max-w-[88%] break-words whitespace-pre-wrap rounded-[24px] rounded-br-md border border-white/10 bg-white/[0.08] px-4 py-3 text-sm leading-6 text-white/95 shadow-[0_10px_24px_rgba(0,0,0,0.18)]'}
                           >
                             {entry.content}
-                          </div>
+                          </motion.div>
                         ))
                       ) : (
-                        <div className="rounded-3xl border border-white/8 bg-white/[0.04] px-3.5 py-3 text-sm text-white/60">
+                        <div className="rounded-[24px] border border-white/8 bg-white/[0.04] px-4 py-3 text-sm leading-6 text-white/70">
                           Escribe algo y seguimos desde aqui.
                         </div>
                       )}
@@ -350,19 +354,19 @@ export default function AssistantCharacter({
                   </div>
 
                   <div className="border-t border-white/8 p-3">
-                    <div className="flex items-center gap-2 rounded-[24px] border border-white/8 bg-black/20 p-1.5">
+                    <div className="flex items-center gap-2 rounded-[26px] border border-white/8 bg-black/20 p-1.5">
                       <input
                         value={question}
                         onChange={(eventData) => setQuestion(eventData.target.value)}
                         onKeyDown={(eventData) => eventData.key === 'Enter' && handleAsk()}
                         placeholder={`Habla con ${assistantName}`}
-                        className="h-10 flex-1 bg-transparent px-3 text-sm text-white placeholder:text-white/35 focus:outline-none"
+                        className="h-10 flex-1 bg-transparent px-3 text-sm leading-6 text-white placeholder:text-white/45 focus:outline-none"
                       />
                       <button
                         type="button"
                         onClick={handleAsk}
                         disabled={asking || !question.trim()}
-                        className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-white transition hover:bg-orange-400 disabled:opacity-40"
+                        className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-white shadow-[0_10px_20px_rgba(249,115,22,0.28)] transition hover:bg-orange-600 disabled:opacity-40"
                         aria-label="Enviar mensaje"
                       >
                         {asking ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

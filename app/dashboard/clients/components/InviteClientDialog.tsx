@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,7 +13,7 @@ import { UserPlus, Mail, FileText, Check, Loader2, AlertCircle, ArrowRight } fro
 interface Form {
   id: string
   title: string
-  fields: any[]
+  fields: unknown[]
 }
 
 interface Props {
@@ -24,18 +24,16 @@ export default function InviteClientDialog({ onInvited }: Props) {
   const supabase = createClient()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
+  const [fullName, setFullName] = useState('')
   const [selectedFormId, setSelectedFormId] = useState<string | null>(null)
   const [forms, setForms] = useState<Form[]>([])
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
   const [error, setError] = useState('')
   const [upgradeRequired, setUpgradeRequired] = useState(false)
 
-  useEffect(() => {
-    if (open) loadForms()
-  }, [open])
-
-  const loadForms = async () => {
+  const loadForms = useCallback(async () => {
     const { data } = await supabase
       .from('forms')
       .select('id, title, fields')
@@ -43,7 +41,11 @@ export default function InviteClientDialog({ onInvited }: Props) {
     setForms(data ?? [])
     // Auto-select first form if available
     if (data && data.length > 0) setSelectedFormId(data[0].id)
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    if (open) void loadForms()
+  }, [loadForms, open])
 
   const handleInvite = async () => {
     if (!email.trim()) return
@@ -57,27 +59,33 @@ export default function InviteClientDialog({ onInvited }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email.trim(),
+          fullName: fullName.trim() || null,
           formId: selectedFormId,
         }),
       })
 
+      const resData = await res.json()
+
       if (!res.ok) {
-        const resData = await res.json()
         setUpgradeRequired(Boolean(resData.upgradeRequired))
         throw new Error(resData.error ?? 'Error enviando email')
       }
 
+      setSuccessMessage(resData.message ?? 'Cliente agregado correctamente')
       setSent(true)
       onInvited?.()
       setTimeout(() => {
         setOpen(false)
         setSent(false)
         setEmail('')
+        setFullName('')
         setSelectedFormId(null)
+        setSuccessMessage('')
       }, 2500)
 
-    } catch (e: any) {
-      setError(e.message ?? 'Error al enviar la invitación')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error al enviar la invitación'
+      setError(message)
     }
 
     setLoading(false)
@@ -86,7 +94,7 @@ export default function InviteClientDialog({ onInvited }: Props) {
   return (
     <Dialog open={open} onOpenChange={(v) => {
       setOpen(v)
-      if (!v) { setError(''); setSent(false); setEmail(''); setUpgradeRequired(false) }
+      if (!v) { setError(''); setSent(false); setEmail(''); setFullName(''); setUpgradeRequired(false); setSuccessMessage('') }
     }}>
       <DialogTrigger asChild>
         <Button className="bg-orange-500 hover:bg-orange-600 text-white gap-1.5">
@@ -104,14 +112,28 @@ export default function InviteClientDialog({ onInvited }: Props) {
             <div className="w-14 h-14 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
               <Check size={26} className="text-green-400" />
             </div>
-            <p className="text-white font-semibold">Invitación enviada</p>
+            <p className="text-white font-semibold">Cliente procesado correctamente</p>
             <p className="text-zinc-500 text-sm text-center">
-              <span className="text-white">{email}</span> recibirá un link para registrarse
-              {selectedFormId ? ' y completar el formulario de intake' : ''}.
+              {successMessage || (
+                <>
+                  <span className="text-white">{email}</span> recibirá un link para registrarse
+                  {selectedFormId ? ' y completar el formulario de intake' : ''}.
+                </>
+              )}
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-5 pt-1">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-zinc-400 text-xs font-medium">Nombre del cliente</label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                placeholder="Nombre completo (opcional)"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-blue-500/50"
+              />
+            </div>
 
             {/* Email */}
             <div className="flex flex-col gap-1.5">

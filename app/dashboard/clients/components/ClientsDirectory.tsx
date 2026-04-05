@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import InviteClientDialog from './InviteClientDialog'
 import ClientGridCard from './ClientGridCard'
+import { getClientSubscriptionIndicator } from '@/lib/client-subscriptions'
 
 type SortOption = 'newest' | 'oldest' | 'registration'
 type FilterOption = 'all' | 'active' | 'pending' | 'expired'
@@ -19,6 +20,8 @@ type ClientRecord = {
   created_at: string
   invite_token_expires_at?: string | null
   avatar_url?: string | null
+  subscription_status?: 'active' | 'expired' | 'paused' | null
+  subscription_end_date?: string | null
 }
 
 function formatLastActivity(date?: string) {
@@ -74,6 +77,29 @@ export default function ClientsDirectory({
     if (sort === 'registration') return base
 
     return [...base].sort((a, b) => {
+      const subscriptionOrderDiff = (() => {
+        const leftPending = a.status === 'pending'
+        const rightPending = b.status === 'pending'
+
+        if (leftPending || rightPending) {
+          if (leftPending && rightPending) return 0
+          return leftPending ? 1 : -1
+        }
+
+        const leftIndicator = getClientSubscriptionIndicator({
+          status: a.subscription_status ?? undefined,
+          end_date: a.subscription_end_date ?? undefined,
+        })
+        const rightIndicator = getClientSubscriptionIndicator({
+          status: b.subscription_status ?? undefined,
+          end_date: b.subscription_end_date ?? undefined,
+        })
+
+        return leftIndicator.sortOrder - rightIndicator.sortOrder
+      })()
+
+      if (subscriptionOrderDiff !== 0) return subscriptionOrderDiff
+
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       return sort === 'oldest' ? diff : -diff
     })
@@ -106,12 +132,12 @@ export default function ClientsDirectory({
         : 'Clientes que requieren atención'
 
   const sectionDescription = filter === 'all'
-    ? 'Vista completa de clientes, pendientes y planes por renovar.'
+    ? 'Vista completa de clientes, invitaciones y suscripciones por renovar.'
     : filter === 'active'
-      ? 'Clientes con seguimiento vigente.'
+      ? 'Clientes con acceso y seguimiento vigente.'
       : filter === 'pending'
         ? 'Invitaciones y onboardings pendientes.'
-        : 'Clientes sin actividad reciente o con planificación vencida.'
+        : 'Clientes sin actividad reciente o con suscripcion vencida o pausada.'
 
   return (
     <div className="max-w-full space-y-6 lg:space-y-8">
@@ -120,7 +146,7 @@ export default function ClientsDirectory({
           <p className="text-sm text-muted-foreground">Sistema de clientes</p>
           <h1 className="mt-3 text-3xl font-semibold tracking-[-0.05em] text-foreground sm:text-4xl">Clientes</h1>
           <p className="mt-3 max-w-2xl text-sm text-muted-foreground sm:text-base">
-            Gestiona clientes activos, pendientes y planes vencidos desde una sola vista operativa.
+            Gestiona clientes activos, pendientes y suscripciones vencidas desde una sola vista operativa.
           </p>
         </div>
         <InviteClientDialog />
@@ -145,7 +171,7 @@ export default function ClientsDirectory({
           <CardContent className="p-6">
             <p className="text-sm text-red-400">Atención prioritaria</p>
             <p className="mt-4 text-2xl font-bold text-red-400 sm:text-3xl">{inactiveClients.length + expiredClients.length}</p>
-            <p className="mt-2 text-sm text-red-400">Clientes sin actividad o con planificación vencida.</p>
+            <p className="mt-2 text-sm text-red-400">Clientes sin actividad o con acceso vencido.</p>
           </CardContent>
         </Card>
       </div>
@@ -167,7 +193,7 @@ export default function ClientsDirectory({
               {expiredClients.slice(0, 2).map((client) => (
                 <Link key={client.id} href={`/dashboard/clients/${client.id}`} className="rounded-xl border border-red-500/20 bg-background p-4 transition hover:border-red-500/30">
                   <p className="text-lg font-semibold text-foreground">{client.full_name}</p>
-                  <p className="mt-2 text-sm text-red-400">Sin rutina ni nutrición activa</p>
+                  <p className="mt-2 text-sm text-red-400">Suscripcion vencida o pausada</p>
                 </Link>
               ))}
             </div>
@@ -255,6 +281,12 @@ export default function ClientsDirectory({
               const isPending = client.status === 'pending'
               const isExpiredInvite = expiredInviteSet.has(client.id)
               const isExpiredPlan = expiredIdSet.has(client.id) && !isPending
+              const subscriptionBadge = isPending
+                ? null
+                : getClientSubscriptionIndicator({
+                    status: client.subscription_status ?? undefined,
+                    end_date: client.subscription_end_date ?? undefined,
+                  })
 
               return (
                 <ClientGridCard
@@ -263,6 +295,7 @@ export default function ClientsDirectory({
                   name={client.full_name || client.email}
                   subtitle={isPending ? client.email : 'Seguimiento activo'}
                   status={isPending ? (isExpiredInvite ? 'expired' : 'pending') : isExpiredPlan ? 'expired' : 'active'}
+                  subscriptionBadge={subscriptionBadge}
                   lastActivity={
                     isPending
                       ? client.invite_token_expires_at
@@ -273,7 +306,9 @@ export default function ClientsDirectory({
                   avatarUrl={client.avatar_url}
                   note={
                     isExpiredPlan
-                      ? 'Requiere nueva rutina o nutrición.'
+                      ? subscriptionBadge?.label === 'Sin plan'
+                        ? 'Este cliente todavía no tiene una suscripción asignada.'
+                        : 'Requiere revisión o renovación de su acceso.'
                       : latestActivity
                         ? 'Cliente con actividad registrada.'
                         : isPending

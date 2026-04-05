@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import ExerciseMedia from '@/components/exercise-media'
 import { Clock3, Layers3, Sparkles } from 'lucide-react'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import { summarizeClientSubscription } from '@/lib/client-subscriptions'
 
 type RoutineExercise = {
   name: string
@@ -48,6 +50,26 @@ export default async function ClientRoutineDetailPage({
     .single()
 
   if (!client) redirect('/client')
+
+  const { data: subscription } = await supabase
+    .from('client_subscriptions')
+    .select('*')
+    .eq('client_id', client.id)
+    .maybeSingle()
+
+  const subscriptionSummary = summarizeClientSubscription(subscription)
+
+  if (!subscriptionSummary.isActive) {
+    return (
+      <SubscriptionStatusCard
+        summary={subscriptionSummary}
+        title="Esta rutina no esta disponible"
+        body="Tu acceso a rutinas esta pausado o vencido. Pide a tu entrenador que reactive la suscripcion."
+        ctaHref="/client/routine"
+        ctaLabel="Volver a rutinas"
+      />
+    )
+  }
 
   const { data: routine } = await supabase
     .from('routines')

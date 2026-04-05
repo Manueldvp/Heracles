@@ -13,6 +13,12 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import DeleteClientButton from './components/DeleteClientButton'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import {
+  formatSubscriptionDate,
+  summarizeClientSubscription,
+} from '@/lib/client-subscriptions'
+import ClientSubscriptionActions from './components/ClientSubscriptionActions'
 
 type RoutineSummary = {
   title?: string
@@ -59,11 +65,13 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   if (!client) notFound()
 
   const [
+    { data: subscription },
     { data: routines },
     { data: nutritionPlans },
     { data: checkins },
     { data: exerciseLogs },
   ] = await Promise.all([
+    supabase.from('client_subscriptions').select('*').eq('client_id', client.id).maybeSingle(),
     supabase.from('routines').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(5),
     supabase.from('nutrition_plans').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(3),
     supabase.from('checkins').select('*').eq('client_id', client.id).order('created_at', { ascending: false }).limit(6),
@@ -71,6 +79,7 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
   ])
 
   const lastCheckin = checkins?.[0]
+  const subscriptionSummary = summarizeClientSubscription(subscription)
 
   const weightCheckins = checkins?.filter(c => c.weight) ?? []
   const weightChange = weightCheckins.length >= 2
@@ -124,6 +133,15 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
               <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-xs px-2 py-0.5">
                 {levelLabel[client.level] ?? client.level}
               </Badge>
+              <Badge className={`text-xs px-2 py-0.5 border ${
+                subscriptionSummary.isActive
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : subscriptionSummary.isPaused
+                    ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    : 'bg-red-500/20 text-red-400 border-red-500/30'
+              }`}>
+                {subscriptionSummary.label}
+              </Badge>
               {daysSinceCheckin !== null && (
                 <Badge className={`text-xs px-2 py-0.5 border ${
                   daysSinceCheckin <= 3 ? 'bg-green-500/20 text-green-400 border-green-500/30'
@@ -151,6 +169,19 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
           </Link>
           <DeleteClientButton clientId={client.id} clientName={client.full_name} />
         </div>
+      </div>
+
+      <div className="mb-4">
+        <SubscriptionStatusCard
+          summary={subscriptionSummary}
+          title="Acceso del cliente"
+          body={
+            subscriptionSummary.isActive
+              ? `Acceso habilitado hasta ${formatSubscriptionDate(subscriptionSummary.endDate)}.`
+              : subscriptionSummary.description
+          }
+          action={<ClientSubscriptionActions clientId={client.id} summary={subscriptionSummary} />}
+        />
       </div>
 
       {/* Alerta dolor */}

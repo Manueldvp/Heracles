@@ -8,6 +8,10 @@ type Props = {
   name: string
   subtitle: string
   status: 'active' | 'pending' | 'expired'
+  subscriptionBadge?: {
+    label: string
+    tone: 'success' | 'warning' | 'danger' | 'muted'
+  } | null
   lastActivity: string
   avatarUrl?: string | null
   note?: string
@@ -19,11 +23,19 @@ const statusConfig = {
   expired: 'border-red-500/20 bg-red-500/10 text-red-400',
 } as const
 
+const subscriptionBadgeConfig = {
+  success: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
+  warning: 'border-amber-500/20 bg-amber-500/10 text-amber-400',
+  danger: 'border-red-500/20 bg-red-500/10 text-red-400',
+  muted: 'border-border bg-muted/60 text-muted-foreground',
+} as const
+
 export default function ClientGridCard({
   href,
   name,
   subtitle,
   status,
+  subscriptionBadge,
   lastActivity,
   avatarUrl,
   note,
@@ -48,9 +60,16 @@ export default function ClientGridCard({
                 <p className="mt-1 break-words text-sm text-muted-foreground">{subtitle}</p>
               </div>
             </div>
-            <Badge className={`w-fit ${statusConfig[status]}`}>
-              {status === 'active' ? 'Activo' : status === 'pending' ? 'Pendiente' : 'Expirado'}
-            </Badge>
+            <div className="flex flex-col items-start gap-2">
+              <Badge className={`w-fit ${statusConfig[status]}`}>
+                {status === 'active' ? 'Activo' : status === 'pending' ? 'Pendiente' : 'Expirado'}
+              </Badge>
+              {subscriptionBadge ? (
+                <Badge className={`w-fit ${subscriptionBadgeConfig[subscriptionBadge.tone]}`}>
+                  {subscriptionBadge.label}
+                </Badge>
+              ) : null}
+            </div>
           </div>
 
           <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">

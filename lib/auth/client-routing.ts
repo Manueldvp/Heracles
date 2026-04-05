@@ -33,7 +33,12 @@ export function clearPendingInviteToken() {
 async function acceptInviteIfNeeded(supabase: BrowserSupabase, inviteToken?: string | null) {
   if (!inviteToken) return { accepted: false, error: null as string | null }
 
-  const { error } = await supabase.rpc('accept_invite', { token: inviteToken })
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) {
+    return { accepted: false, error: 'Sesión no lista para aceptar la invitación' }
+  }
+
+  const { error } = await supabase.rpc('accept_invite', { p_token: inviteToken })
   if (error) {
     return { accepted: false, error: error.message ?? 'No fue posible aceptar la invitación' }
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import PageLoader from '@/components/ui/page-loader'
-import { Upload, X, FileText, Trash2, Plus, Camera, Zap, User, Brain, GraduationCap } from 'lucide-react'
+import { Upload, X, FileText, Trash2, Plus, Camera, Zap, User, Brain, GraduationCap, Globe } from 'lucide-react'
 
 const DEFAULT_PROMPT = `Eres un asistente experto de entrenamiento personal.
 Tu personalidad:
@@ -33,13 +33,14 @@ interface BillingStatus {
 }
 
 export default function ProfilePage() {
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const docInputRef = useRef<HTMLInputElement>(null)
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [uploadingDoc, setUploadingDoc] = useState(false)
   const [newCert, setNewCert] = useState('')
@@ -50,6 +51,9 @@ export default function ProfilePage() {
     bio: '',
     specialty: '',
     certifications: [] as string[],
+    username: '',
+    is_public: true,
+    whatsapp_number: '',
     ai_trainer_name: 'Treinex',
     ai_system_prompt: DEFAULT_PROMPT,
     avatar_url: '',
@@ -71,6 +75,9 @@ export default function ProfilePage() {
           bio: profile.bio || '',
           specialty: profile.specialty || '',
           certifications: profile.certifications || [],
+          username: profile.username || '',
+          is_public: profile.is_public ?? true,
+          whatsapp_number: profile.whatsapp_number || '',
           ai_trainer_name: profile.ai_trainer_name || 'Treinex',
           ai_system_prompt: profile.ai_system_prompt || DEFAULT_PROMPT,
           avatar_url: profile.avatar_url || '',
@@ -86,7 +93,7 @@ export default function ProfilePage() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [supabase])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -155,18 +162,37 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true)
     setSaved(false)
+    setSaveError('')
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    await supabase.from('profiles').update({
+
+    const normalizedUsername = form.username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
+    const normalizedWhatsapp = form.whatsapp_number.trim()
+
+    const { error } = await supabase.from('profiles').update({
       full_name: form.full_name,
       bio: form.bio,
       specialty: form.specialty,
       certifications: form.certifications,
+      username: normalizedUsername || null,
+      is_public: form.is_public,
+      whatsapp_number: normalizedWhatsapp || null,
       ai_trainer_name: form.ai_trainer_name,
       ai_system_prompt: form.ai_system_prompt,
       avatar_url: form.avatar_url,
       documents: form.documents,
     }).eq('id', user.id)
+
+    if (error) {
+      setSaving(false)
+      setSaveError(
+        error.code === '23505'
+          ? 'Ese username ya está en uso. Prueba con otro.'
+          : error.message ?? 'No pudimos guardar tu perfil público.',
+      )
+      return
+    }
+
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
@@ -270,6 +296,61 @@ export default function ProfilePage() {
               className="w-full px-3 py-2 rounded-xl bg-zinc-800 border border-zinc-700 text-white text-sm focus:outline-none focus:border-orange-500 resize-none placeholder:text-zinc-600"
             />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="bg-zinc-900 border-zinc-800 mb-4">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-white text-base flex items-center gap-2">
+            <Globe size={15} className="text-blue-400" />
+            Perfil publico
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <Label className="text-zinc-400 text-xs uppercase tracking-widest mb-2 block">Username publico</Label>
+              <Input
+                value={form.username}
+                onChange={e => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                placeholder="manuel_fit"
+                className="bg-zinc-800 border-zinc-700 text-white focus-visible:border-orange-500"
+              />
+              <p className="mt-1.5 text-zinc-600 text-xs">
+                Tu perfil quedará en {`/trainer/${form.username || 'username'}`}
+              </p>
+            </div>
+            <div>
+              <Label className="text-zinc-400 text-xs uppercase tracking-widest mb-2 block">WhatsApp</Label>
+              <Input
+                value={form.whatsapp_number}
+                onChange={e => setForm({ ...form, whatsapp_number: e.target.value })}
+                placeholder="56912345678"
+                className="bg-zinc-800 border-zinc-700 text-white focus-visible:border-orange-500"
+              />
+              <p className="mt-1.5 text-zinc-600 text-xs">Se usará para el botón directo a WhatsApp.</p>
+            </div>
+          </div>
+
+          <label className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-800/70 px-4 py-3">
+            <input
+              type="checkbox"
+              checked={form.is_public}
+              onChange={e => setForm({ ...form, is_public: e.target.checked })}
+              className="h-4 w-4 rounded border-zinc-600 bg-zinc-900 text-orange-500"
+            />
+            <div>
+              <p className="text-sm font-medium text-white">Publicar mi perfil</p>
+              <p className="text-xs text-zinc-500">Si lo desactivas, tu ruta pública devolverá 404.</p>
+            </div>
+          </label>
+
+          {form.username ? (
+            <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-4 py-3">
+              <p className="text-xs text-blue-300 uppercase tracking-widest">Preview</p>
+              <p className="mt-2 text-sm text-white break-all">/trainer/{form.username}</p>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -407,6 +488,9 @@ export default function ProfilePage() {
       </Card>
 
       <div className="flex justify-end items-center gap-3">
+        {saveError ? (
+          <p className="text-red-400 text-sm">{saveError}</p>
+        ) : null}
         {saved && (
           <p className="text-green-400 text-sm flex items-center gap-1.5">
             <span className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center text-xs">✓</span>

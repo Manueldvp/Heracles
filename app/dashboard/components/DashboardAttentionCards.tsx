@@ -10,6 +10,7 @@ type AttentionCard = {
   detail: string
   action: string
   tone: 'rose' | 'slate'
+  href?: string
 }
 
 export default function DashboardAttentionCards({ initialCards }: { initialCards: AttentionCard[] }) {
@@ -46,7 +47,7 @@ export default function DashboardAttentionCards({ initialCards }: { initialCards
           actionLabel={pendingId === card.id ? 'Enviando...' : card.action}
           tone={card.tone}
           onAction={card.action === 'Recordar' ? () => void handleReminder(card) : undefined}
-          href={card.action === 'Recordar' ? undefined : `/dashboard/clients/${card.clientId}/routines/new`}
+          href={card.action === 'Recordar' ? undefined : card.href}
           disabled={pendingId === card.id}
         />
       ))}

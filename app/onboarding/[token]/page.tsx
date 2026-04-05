@@ -41,15 +41,15 @@ function FieldInput({ field, value, onChange, hasError }: {
     return (
       <div className="flex flex-col gap-2">
         {(field.options ?? []).map((opt, i) => (
-          <button key={i} onClick={() => onChange(opt)}
+          <button key={i} type="button" onClick={() => onChange(opt)}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-sm transition text-left ${
-              value === opt ? 'bg-orange-500/10 border-orange-500/30 text-white'
+              value === opt ? 'bg-orange-500 border-orange-500 text-white shadow-[0_10px_24px_rgba(249,115,22,0.22)]'
               : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}>
             <div className={`w-4 h-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-              value === opt ? 'border-orange-400' : 'border-zinc-600'
+              value === opt ? 'border-white/80' : 'border-zinc-600'
             }`}>
-              {value === opt && <div className="w-2 h-2 rounded-full bg-orange-400" />}
+              {value === opt && <div className="w-2 h-2 rounded-full bg-white" />}
             </div>
             {opt}
           </button>
@@ -65,9 +65,9 @@ function FieldInput({ field, value, onChange, hasError }: {
     return (
       <div className="flex flex-wrap gap-2">
         {(field.options ?? []).map((opt, i) => (
-          <button key={i} onClick={() => toggle(opt)}
+          <button key={i} type="button" onClick={() => toggle(opt)}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border text-sm transition ${
-              selected.includes(opt) ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+              selected.includes(opt) ? 'bg-orange-500 border-orange-500 text-white shadow-[0_10px_24px_rgba(249,115,22,0.22)]'
               : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600'
             }`}>
             {selected.includes(opt) && <Check size={11} />}
@@ -81,9 +81,9 @@ function FieldInput({ field, value, onChange, hasError }: {
     return (
       <div className="flex gap-2">
         {[1,2,3,4,5].map(n => (
-          <button key={n} onClick={() => onChange(n)}
+          <button key={n} type="button" onClick={() => onChange(n)}
             className={`flex-1 py-3 rounded-xl border text-sm font-bold transition ${
-              value >= n ? 'bg-orange-500/20 border-orange-500/30 text-orange-400'
+              value >= n ? 'bg-orange-500 border-orange-500 text-white shadow-[0_10px_24px_rgba(249,115,22,0.18)]'
               : 'bg-zinc-800 border-zinc-700 text-zinc-600 hover:text-zinc-300'
             }`}>
             {n}

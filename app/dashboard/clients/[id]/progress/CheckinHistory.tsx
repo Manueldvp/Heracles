@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Droplets, Flame, MoonStar, ShieldAlert, SmilePlus, Zap } from 'lucide-react'
+import { Droplets, Dumbbell, Flame, MoonStar, Scale, ShieldAlert, SmilePlus, Target, Zap } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
@@ -41,20 +41,24 @@ function MetricTile({
   label,
   value,
   icon: Icon,
+  iconClassName,
   className,
 }: {
   label: string
   value: string | number
   icon: typeof Droplets
+  iconClassName: string
   className: string
 }) {
   return (
-    <div className={`rounded-xl border px-3 py-3 text-center ${className}`}>
-      <div className="flex items-center justify-center gap-2">
-        <Icon className="h-3.5 w-3.5" />
+    <div className={`rounded-2xl border px-4 py-3 ${className}`}>
+      <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-background/70">
+          <Icon className={`h-3.5 w-3.5 ${iconClassName}`} />
+        </div>
         <p className="text-[11px] uppercase tracking-[0.18em]">{label}</p>
       </div>
-      <p className="mt-2 text-sm font-semibold">{value}</p>
+      <p className="mt-3 text-sm font-semibold">{value}</p>
     </div>
   )
 }
@@ -75,38 +79,67 @@ function CheckinDetail({
 }) {
   return (
     <div className="mt-3 space-y-4 border-t border-border pt-4">
-      <div className="grid gap-2 sm:grid-cols-4">
-        <MetricTile className="border-orange-500/20 bg-orange-500/10 text-orange-300" icon={Zap} label="Energía" value={checkin.energy_level ? `${checkin.energy_level}/5` : '—'} />
-        <MetricTile className="border-indigo-500/20 bg-indigo-500/10 text-indigo-300" icon={MoonStar} label="Sueño" value={checkin.sleep_quality ? `${checkin.sleep_quality}/5` : '—'} />
-        <MetricTile className="border-primary/20 bg-primary/10 text-primary" icon={Flame} label="Entrenos" value={checkin.completed_workouts ?? '—'} />
-        <MetricTile className="border-border bg-muted/30 text-foreground" icon={SmilePlus} label="Peso" value={checkin.weight ? `${checkin.weight} kg` : '—'} />
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricTile className="border-border bg-muted/25 text-foreground" icon={Zap} iconClassName="text-amber-500" label="Energía" value={checkin.energy_level ? `${checkin.energy_level}/5` : '—'} />
+        <MetricTile className="border-border bg-muted/25 text-foreground" icon={MoonStar} iconClassName="text-indigo-400" label="Sueño" value={checkin.sleep_quality ? `${checkin.sleep_quality}/5` : '—'} />
+        <MetricTile className="border-border bg-muted/25 text-foreground" icon={Dumbbell} iconClassName="text-orange-500" label="Entrenos" value={checkin.completed_workouts ?? '—'} />
+        <MetricTile className="border-border bg-muted/25 text-foreground" icon={Scale} iconClassName="text-emerald-400" label="Peso" value={checkin.weight ? `${checkin.weight} kg` : '—'} />
       </div>
 
       {(checkin.mood || checkin.stress_level || checkin.water_liters || checkin.nutrition_adherence) && (
         <div className="grid gap-2 sm:grid-cols-2">
           {checkin.mood ? (
-            <div className="rounded-xl border border-pink-500/20 bg-[linear-gradient(135deg,rgba(244,114,182,0.18),rgba(249,115,22,0.14))] px-3 py-3">
-              <div className="flex items-center gap-2 text-pink-200">
-                <SmilePlus className="h-4 w-4" />
-                <p className="text-xs uppercase tracking-[0.16em]">Estado de ánimo</p>
+            <div className="rounded-2xl border border-border bg-muted/25 px-4 py-3">
+              <div className="flex items-center gap-2 text-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-background/70">
+                  <SmilePlus className="h-4 w-4 text-pink-400" />
+                </div>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Estado de ánimo</p>
               </div>
-              <p className="mt-2 text-sm font-semibold text-white">{moodLabel(checkin.mood)} · {checkin.mood}/5</p>
+              <p className="mt-3 text-sm font-semibold text-foreground">{moodLabel(checkin.mood)} · {checkin.mood}/5</p>
             </div>
           ) : null}
           {checkin.water_liters ? (
-            <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/10 px-3 py-3">
-              <div className="flex items-center gap-2 text-cyan-300">
-                <Droplets className="h-4 w-4" />
-                <p className="text-xs uppercase tracking-[0.16em]">Agua</p>
+            <div className="rounded-2xl border border-border bg-muted/25 px-4 py-3">
+              <div className="flex items-center gap-2 text-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-background/70">
+                  <Droplets className="h-4 w-4 text-cyan-400" />
+                </div>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Agua</p>
               </div>
-              <p className="mt-2 text-sm font-semibold text-white">{checkin.water_liters}L registrados</p>
+              <p className="mt-3 text-sm font-semibold text-foreground">{checkin.water_liters}L registrados</p>
             </div>
           ) : null}
-          {checkin.stress_level ? <Badge className="border-red-500/20 bg-red-500/10 text-red-400">Estrés {checkin.stress_level}/5</Badge> : null}
-          {checkin.nutrition_adherence ? <Badge className="border-primary/20 bg-primary/10 text-primary">Adherencia {checkin.nutrition_adherence}/5</Badge> : null}
-          {checkin.calories_consumed ? <Badge className="border-border bg-muted/40 text-foreground">{checkin.calories_consumed} kcal</Badge> : null}
+          {checkin.nutrition_adherence ? (
+            <div className="rounded-2xl border border-border bg-muted/25 px-4 py-3">
+              <div className="flex items-center gap-2 text-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-background/70">
+                  <Target className="h-4 w-4 text-violet-400" />
+                </div>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Adherencia</p>
+              </div>
+              <p className="mt-3 text-sm font-semibold text-foreground">{checkin.nutrition_adherence}/5</p>
+            </div>
+          ) : null}
+          {checkin.calories_consumed ? (
+            <div className="rounded-2xl border border-border bg-muted/25 px-4 py-3">
+              <div className="flex items-center gap-2 text-foreground">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-background/70">
+                  <Flame className="h-4 w-4 text-orange-500" />
+                </div>
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Calorías</p>
+              </div>
+              <p className="mt-3 text-sm font-semibold text-foreground">{checkin.calories_consumed} kcal</p>
+            </div>
+          ) : null}
         </div>
       )}
+
+      {checkin.stress_level ? (
+        <div className="flex flex-wrap gap-2">
+          <Badge className="border-red-500/20 bg-red-500/10 text-red-300">Estrés {checkin.stress_level}/5</Badge>
+        </div>
+      ) : null}
 
       {checkin.pain_zones && checkin.pain_zones.length > 0 ? (
         <div className="flex flex-wrap gap-2">
@@ -155,7 +188,7 @@ export default function CheckinHistory({ checkins }: { checkins: Checkin[] }) {
         </CardHeader>
         <CardContent className="space-y-4">
           {latest ? (
-            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+            <div className="rounded-2xl border border-border bg-muted/15 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{formatCheckinDate(latest.created_at)}</p>
@@ -185,30 +218,27 @@ export default function CheckinHistory({ checkins }: { checkins: Checkin[] }) {
           {rest.length > 0 ? (
             <div className="space-y-3">
               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Registros anteriores</p>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              <div className="flex flex-wrap gap-2">
                 {rest.map(checkin => (
                   <button
                     key={checkin.id}
                     type="button"
                     onClick={() => setOpenId(current => current === checkin.id ? null : checkin.id)}
-                    className={`min-w-[132px] rounded-xl border px-3 py-3 text-left transition ${
+                    className={`rounded-full border px-3 py-1.5 text-left transition ${
                       openId === checkin.id
-                        ? 'border-primary/20 bg-primary/10'
-                        : 'border-border bg-background hover:border-primary/20 hover:bg-muted/30'
+                        ? 'border-primary/20 bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/20 hover:bg-muted/30 hover:text-foreground'
                     }`}
                   >
-                    <p className="text-sm font-medium text-foreground">
+                    <p className="text-xs font-medium">
                       {new Date(checkin.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })}
                     </p>
-                    <p className="mt-2 text-xs text-muted-foreground">Energía {checkin.energy_level ?? '—'}/5</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Sueño {checkin.sleep_quality ?? '—'}/5</p>
-                    {checkin.weight ? <p className="mt-1 text-xs text-muted-foreground">{checkin.weight} kg</p> : null}
                   </button>
                 ))}
               </div>
 
               {activeCheckin ? (
-                <div className="rounded-xl border border-border bg-muted/30 p-4">
+                <div className="rounded-2xl border border-border bg-muted/25 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-semibold text-foreground">{formatCheckinDate(activeCheckin.created_at)}</p>
                     {activeCheckin.type ? (

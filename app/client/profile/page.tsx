@@ -223,12 +223,13 @@ export default function ClientProfilePage() {
             <div className="grid grid-cols-2 gap-2">
               {goalOptions.map(opt => (
                 <button
+                  type="button"
                   key={opt.value}
                   onClick={() => setForm({ ...form, goal: opt.value })}
                   className={`px-3 py-2.5 rounded-xl text-sm font-medium transition text-left ${
                     form.goal === opt.value
-                      ? 'bg-orange-500/20 border border-orange-500/50 text-orange-400'
-                      : 'bg-zinc-800 border border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                      ? 'border border-orange-500 bg-orange-500 text-white shadow-[0_10px_24px_rgba(249,115,22,0.22)]'
+                      : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white'
                   }`}
                 >
                   {opt.label}
@@ -241,12 +242,13 @@ export default function ClientProfilePage() {
             <div className="grid grid-cols-3 gap-2">
               {levelOptions.map(opt => (
                 <button
+                  type="button"
                   key={opt.value}
                   onClick={() => setForm({ ...form, level: opt.value })}
                   className={`px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                     form.level === opt.value
-                      ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400'
-                      : 'bg-zinc-800 border border-zinc-700 text-zinc-400 hover:border-zinc-600'
+                      ? 'border border-blue-400 bg-blue-500 text-white shadow-[0_10px_24px_rgba(59,130,246,0.22)]'
+                      : 'bg-zinc-800 border border-zinc-700 text-zinc-300 hover:border-zinc-500 hover:text-white'
                   }`}
                 >
                   {opt.label}

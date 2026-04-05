@@ -5,6 +5,7 @@ import { APP_NAME, EMAIL_FROM } from '@/lib/branding'
 import { buildInviteEmail } from '@/lib/email/templates'
 import { getTrainerBillingStatus } from '@/lib/billing'
 import { updateOnboardingProgress } from '@/lib/onboarding'
+import { inviteClient } from '@/lib/clients/invite-client'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    const { email, formId } = await req.json()
+    const { email, fullName, formId } = await req.json()
 
     if (!email) {
       return NextResponse.json({ error: 'Falta el email del cliente' }, { status: 400 })
@@ -40,51 +41,68 @@ export async function POST(req: Request) {
       }, { status: 402 })
     }
 
-    const normalizedEmail = String(email).trim().toLowerCase()
-    const token = crypto.randomUUID()
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-
-    const { error: clientError } = await supabase.from('clients').insert({
-      trainer_id: user.id,
-      email: normalizedEmail,
-      full_name: normalizedEmail.split('@')[0],
-      invite_token: token,
-      invite_token_expires_at: expiresAt,
-      form_id: formId ?? null,
-      onboarding_completed: false,
-      status: 'pending',
-      goal: 'muscle_gain',
-      level: 'beginner',
+    const inviteResult = await inviteClient(supabase, {
+      trainerId: user.id,
+      email: String(email),
+      fullName: typeof fullName === 'string' ? fullName : null,
+      formId: typeof formId === 'string' ? formId : null,
     })
 
-    if (clientError) {
-      return NextResponse.json({ error: clientError.message }, { status: 400 })
+    if (!inviteResult.ok) {
+      const status =
+        inviteResult.code === 'UNAUTHENTICATED'
+          ? 401
+          : inviteResult.code === 'FORBIDDEN'
+            ? 403
+            : inviteResult.code === 'CLIENT_ALREADY_EXISTS'
+              ? 409
+              : inviteResult.code === 'INVALID_EMAIL'
+                ? 400
+              : 400
+
+      return NextResponse.json({ error: inviteResult.message, code: inviteResult.code }, { status })
     }
 
     await updateOnboardingProgress(supabase, user.id, { created_client: true })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-    const inviteUrl = `${appUrl}/invite/${token}`
-    const trainerName = profile.full_name ?? 'Tu entrenador'
+    let inviteUrl: string | null = null
 
-    const { error: emailError } = await resend.emails.send({
-      from: EMAIL_FROM,
-      to: normalizedEmail,
-      subject: `${trainerName} te invita a entrenar en ${APP_NAME}`,
-      html: buildInviteEmail({
-        trainerName,
-        inviteUrl,
-        hasForm: Boolean(formId),
-      }),
-    })
+    if (inviteResult.action === 'created-pending-invite') {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+      inviteUrl = `${appUrl}/invite/${inviteResult.inviteToken}`
+      const trainerName = profile.full_name ?? 'Tu entrenador'
 
-    if (emailError) {
-      console.error('invite email error:', emailError)
-      return NextResponse.json({ error: emailError.message }, { status: 400 })
+      const { error: emailError } = await resend.emails.send({
+        from: EMAIL_FROM,
+        to: inviteResult.email,
+        subject: `${trainerName} te invita a entrenar en ${APP_NAME}`,
+        html: buildInviteEmail({
+          trainerName,
+          inviteUrl,
+          hasForm: Boolean(formId),
+        }),
+      })
+
+      if (emailError) {
+        console.error('invite email error:', emailError)
+        await supabase
+          .from('clients')
+          .delete()
+          .eq('id', inviteResult.clientId)
+          .eq('trainer_id', user.id)
+          .eq('status', 'pending')
+
+        return NextResponse.json({ error: emailError.message }, { status: 400 })
+      }
     }
 
     return NextResponse.json({
       ok: true,
+      action: inviteResult.action,
+      message: inviteResult.message,
+      clientId: inviteResult.clientId,
+      clientStatus: inviteResult.clientStatus,
+      email: inviteResult.email,
       inviteUrl,
       status: {
         ...billing,

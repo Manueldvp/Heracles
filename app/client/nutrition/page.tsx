@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Salad, ChevronRight, ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import SetActiveNutritionButton from './SetActiveNutritionButton'
+import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
+import { summarizeClientSubscription } from '@/lib/client-subscriptions'
 
 type NutritionPlanContent = {
   title?: string
@@ -28,6 +30,40 @@ export default async function ClientNutritionListPage() {
   const { data: client } = await supabase
     .from('clients').select('*').eq('user_id', user.id).single()
   if (!client) redirect('/client')
+
+  const { data: subscription } = await supabase
+    .from('client_subscriptions')
+    .select('*')
+    .eq('client_id', client.id)
+    .maybeSingle()
+
+  const subscriptionSummary = summarizeClientSubscription(subscription)
+
+  if (!subscriptionSummary.isActive) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-center gap-3 mb-6">
+          <Link href="/client" className="text-zinc-500 hover:text-zinc-300 transition">
+            <ChevronLeft size={20} />
+          </Link>
+          <div>
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Salad size={18} className="text-primary" />
+              Mis planes nutricionales
+            </h2>
+            <p className="text-zinc-500 text-xs mt-0.5">Acceso bloqueado hasta renovar la suscripcion</p>
+          </div>
+        </div>
+        <SubscriptionStatusCard
+          summary={subscriptionSummary}
+          title="Tu plan nutricional no esta disponible"
+          body="Cuando tu entrenador reactive la suscripcion, volveras a ver tus planes aqui."
+          ctaHref="/client"
+          ctaLabel="Volver al dashboard"
+        />
+      </div>
+    )
+  }
 
   const { data: plans } = await supabase
     .from('nutrition_plans').select('*').eq('client_id', client.id).order('created_at', { ascending: false })

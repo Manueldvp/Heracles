@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import ClientDrawer from './ClientDrawer'
+import { clearAssistantChatStorage } from '@/lib/ai-assistant'
 
 interface Props {
   email: string
@@ -17,6 +18,7 @@ export default function ClientDrawerWrapper({ email, clientName, clientId, avata
   const supabase = createClient()
 
   const handleLogout = async () => {
+    clearAssistantChatStorage()
     await supabase.auth.signOut()
     router.push('/login')
   }
