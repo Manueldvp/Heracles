@@ -7,11 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, Search, X } from 'lucide-react'
+import { Plus, Trash2, Search, X, ImageOff } from 'lucide-react'
+import ExerciseDetails from '@/components/routines/ExerciseDetails'
 
 interface Exercise {
   exerciseId: string
+  slug?: string
   name: string
+  description?: string | null
+  instructions?: string[] | string | null
   imageUrl: string
   videoUrl?: string
   mediaType?: string
@@ -20,6 +24,8 @@ interface Exercise {
 interface RoutineExercise {
   exerciseId: string
   name: string
+  description?: string | null
+  instructions?: string[] | string | null
   imageUrl: string
   videoUrl?: string
   mediaType?: string
@@ -31,10 +37,35 @@ interface RoutineExercise {
 
 interface Day {
   name: string
+  isRest: boolean
+  restNotes?: string
   exercises: RoutineExercise[]
 }
 
 const DAY_NAMES = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
+function ExerciseThumb({
+  src,
+  alt,
+  className,
+}: {
+  src?: string
+  alt: string
+  className: string
+}) {
+  if (src) {
+    return <img src={src} alt={alt} className={className} />
+  }
+
+  return (
+    <div className={`${className} flex items-center justify-center bg-zinc-900 text-zinc-500`}>
+      <div className="flex flex-col items-center gap-1 px-2 text-center">
+        <ImageOff size={18} />
+        <span className="text-[10px] leading-tight">Sin imagen por ahora</span>
+      </div>
+    </div>
+  )
+}
 
 export default function ManualRoutinePage() {
   const router = useRouter()
@@ -43,7 +74,7 @@ export default function ManualRoutinePage() {
   const supabase = createClient()
 
   const [title, setTitle] = useState('')
-  const [days, setDays] = useState<Day[]>([{ name: 'Lunes', exercises: [] }])
+  const [days, setDays] = useState<Day[]>([{ name: 'Lunes', isRest: false, restNotes: '', exercises: [] }])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -69,11 +100,35 @@ export default function ManualRoutinePage() {
 
   const addDay = () => {
     const next = DAY_NAMES[days.length % 7]
-    setDays([...days, { name: next, exercises: [] }])
+    setDays([...days, { name: next, isRest: false, restNotes: '', exercises: [] }])
   }
 
   const removeDay = (i: number) => {
     setDays(days.filter((_, idx) => idx !== i))
+  }
+
+  const toggleRestDay = (dayIdx: number) => {
+    setDays((current) => current.map((day, index) => {
+      if (index !== dayIdx) return day
+
+      return {
+        ...day,
+        isRest: !day.isRest,
+        exercises: !day.isRest ? [] : day.exercises,
+      }
+    }))
+    setActiveDayIndex((current) => (current === dayIdx ? null : current))
+    setSelectedExercise(null)
+    setSearch('')
+    setSearchResults([])
+  }
+
+  const updateRestNotes = (dayIdx: number, value: string) => {
+    setDays((current) => current.map((day, index) => (
+      index === dayIdx
+        ? { ...day, restNotes: value }
+        : day
+    )))
   }
 
   const addExerciseToDay = () => {
@@ -81,6 +136,8 @@ export default function ManualRoutinePage() {
     const newEx: RoutineExercise = {
       exerciseId: selectedExercise.exerciseId,
       name: selectedExercise.name,
+      description: selectedExercise.description ?? null,
+      instructions: selectedExercise.instructions ?? null,
       imageUrl: selectedExercise.imageUrl,
       videoUrl: selectedExercise.videoUrl,
       mediaType: selectedExercise.mediaType,
@@ -103,7 +160,7 @@ export default function ManualRoutinePage() {
 
   const handleSave = async () => {
     if (!title.trim()) { setError('Agrega un título a la rutina'); return }
-    if (days.every(d => d.exercises.length === 0)) { setError('Agrega al menos un ejercicio'); return }
+    if (days.every(d => d.exercises.length === 0 && !d.isRest)) { setError('Agrega al menos un día de entrenamiento o marca un día de descanso'); return }
 
     setSaving(true)
     setError('')
@@ -112,8 +169,13 @@ export default function ManualRoutinePage() {
       title,
       days: days.map(d => ({
         day: d.name,
+        is_rest: d.isRest,
+        rest_notes: d.restNotes,
         exercises: d.exercises.map(e => ({
           name: e.name,
+          description: e.description,
+          instructions: e.instructions,
+          exercise_id: e.exerciseId,
           image_url: e.imageUrl,
           video_url: e.videoUrl,
           media_type: e.mediaType,
@@ -183,8 +245,17 @@ export default function ManualRoutinePage() {
             <div className="flex gap-2">
               <Button
                 size="sm"
+                variant={day.isRest ? 'default' : 'outline'}
+                className={day.isRest ? 'bg-emerald-600 hover:bg-emerald-500 text-white text-xs' : 'border-zinc-700 text-zinc-400 text-xs'}
+                onClick={() => toggleRestDay(dayIdx)}
+              >
+                {day.isRest ? 'Día de descanso' : 'Marcar descanso'}
+              </Button>
+              <Button
+                size="sm"
                 variant="outline"
                 className="border-zinc-700 text-zinc-400 text-xs"
+                disabled={day.isRest}
                 onClick={() => setActiveDayIndex(activeDayIndex === dayIdx ? null : dayIdx)}
               >
                 <Search size={13} className="mr-1" />
@@ -205,22 +276,41 @@ export default function ManualRoutinePage() {
           <CardContent>
 
             {/* Ejercicios del día */}
-            {day.exercises.length === 0 ? (
+            {day.isRest ? (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                <p className="text-sm font-medium text-emerald-300">Día de descanso</p>
+                <p className="mt-1 text-xs text-zinc-400">Este día no tendrá ejercicios asignados.</p>
+                <div className="mt-3">
+                  <Label className="text-zinc-400 text-xs">Indicaciones de descanso</Label>
+                  <Input
+                    value={day.restNotes ?? ''}
+                    onChange={(e) => updateRestNotes(dayIdx, e.target.value)}
+                    placeholder="Ej: caminar 20 min, movilidad suave, hidratarse"
+                    className="bg-zinc-800 border-zinc-700 text-white mt-2"
+                  />
+                </div>
+              </div>
+            ) : day.exercises.length === 0 ? (
               <p className="text-zinc-600 text-sm">Sin ejercicios aún.</p>
             ) : (
               <div className="flex flex-col gap-2 mb-4">
                 {day.exercises.map((ex, exIdx) => (
                   <div key={exIdx} className="bg-zinc-800 rounded-lg p-3 flex items-center gap-3">
-                    <img
+                    <ExerciseThumb
                       src={ex.imageUrl}
                       alt={ex.name}
                       className="w-12 h-12 rounded object-cover shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white text-sm font-medium capitalize truncate">{ex.name}</p>
-                      <p className="text-zinc-500 text-xs">{ex.sets} series × {ex.reps} reps · {ex.rest}</p>
-                      {ex.notes && <p className="text-zinc-600 text-xs mt-0.5">💬 {ex.notes}</p>}
-                    </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium capitalize truncate">{ex.name}</p>
+                        <p className="text-zinc-500 text-xs">{ex.sets} series × {ex.reps} reps · {ex.rest}</p>
+                        <ExerciseDetails
+                          description={ex.description}
+                          instructions={ex.instructions}
+                          notes={ex.notes}
+                          compact
+                        />
+                      </div>
                     <Button
                       size="sm"
                       variant="ghost"
@@ -235,7 +325,7 @@ export default function ManualRoutinePage() {
             )}
 
             {/* Buscador inline */}
-            {activeDayIndex === dayIdx && (
+            {activeDayIndex === dayIdx && !day.isRest && (
               <div className="border border-zinc-700 rounded-xl p-4 mt-2 flex flex-col gap-3">
                 <div className="flex gap-2">
                   <Input
@@ -263,12 +353,13 @@ export default function ManualRoutinePage() {
                         onClick={() => setSelectedExercise(ex)}
                         className="bg-zinc-800 rounded-lg p-2 cursor-pointer hover:border hover:border-orange-500 transition flex flex-col items-center gap-2"
                       >
-                        <img
+                        <ExerciseThumb
                           src={ex.imageUrl}
                           alt={ex.name}
                           className="w-full h-20 object-cover rounded"
                         />
                         <p className="text-white text-xs text-center capitalize leading-tight">{ex.name}</p>
+                        {ex.description ? <p className="text-zinc-500 text-[11px] text-center line-clamp-2">{ex.description}</p> : null}
                       </div>
                     ))}
                   </div>
@@ -282,13 +373,18 @@ export default function ManualRoutinePage() {
                 {selectedExercise && (
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center gap-3 bg-zinc-800 rounded-lg p-3">
-                      <img
+                      <ExerciseThumb
                         src={selectedExercise.imageUrl}
                         alt={selectedExercise.name}
                         className="w-16 h-16 rounded object-cover shrink-0"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-white font-medium capitalize truncate">{selectedExercise.name}</p>
+                        <ExerciseDetails
+                          description={selectedExercise.description}
+                          instructions={selectedExercise.instructions}
+                          compact
+                        />
                       </div>
                       <Button
                         size="sm"

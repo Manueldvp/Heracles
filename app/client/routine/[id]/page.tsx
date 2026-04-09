@@ -8,9 +8,12 @@ import ExerciseMedia from '@/components/exercise-media'
 import { Clock3, Layers3, Sparkles } from 'lucide-react'
 import SubscriptionStatusCard from '@/components/subscriptions/subscription-status-card'
 import { summarizeClientSubscription } from '@/lib/client-subscriptions'
+import ExerciseDetails from '@/components/routines/ExerciseDetails'
 
 type RoutineExercise = {
   name: string
+  description?: string
+  instructions?: string[] | string
   image_url?: string
   video_url?: string
   media_url?: string
@@ -24,6 +27,8 @@ type RoutineExercise = {
 type RoutineDay = {
   day: string
   focus?: string
+  is_rest?: boolean
+  rest_notes?: string
   exercises?: RoutineExercise[]
 }
 
@@ -112,11 +117,19 @@ export default async function ClientRoutineDetailPage({
                   <CardTitle className="text-white text-base">{day.focus}</CardTitle>
                 )}
                 <Badge variant="outline" className="border-zinc-700 text-zinc-400">
-                  {day.exercises?.length ?? 0} ejercicios
+                  {day.is_rest ? 'Descanso' : `${day.exercises?.length ?? 0} ejercicios`}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
+              {day.is_rest ? (
+                <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <p className="text-sm font-medium text-emerald-300">Día de descanso</p>
+                  <p className="mt-2 text-sm text-zinc-300">
+                    {day.rest_notes?.trim() || 'Recupera, camina suave o realiza movilidad ligera según indicación de tu entrenador.'}
+                  </p>
+                </div>
+              ) : (
               <div className="grid gap-3">
                 {day.exercises?.map((exercise, i: number) => (
                   <div key={i} className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-950">
@@ -143,16 +156,17 @@ export default async function ClientRoutineDetailPage({
                             </Badge>
                           </div>
                         </div>
-                        {exercise.notes && (
-                          <div className="rounded-xl border border-zinc-800 bg-zinc-900/70 px-3 py-2">
-                            <p className="text-zinc-400 text-sm leading-6">💡 {exercise.notes}</p>
-                          </div>
-                        )}
+                        <ExerciseDetails
+                          description={exercise.description}
+                          instructions={exercise.instructions}
+                          notes={exercise.notes}
+                        />
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
         ))}

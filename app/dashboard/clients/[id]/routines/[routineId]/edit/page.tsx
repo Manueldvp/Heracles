@@ -9,18 +9,27 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import PageLoader from '@/components/ui/page-loader'
 import { Trash2, Plus, GripVertical } from 'lucide-react'
+import ExerciseDetails from '@/components/routines/ExerciseDetails'
 
 interface Exercise {
+  exercise_id?: string | null
   name: string
+  description?: string | null
+  instructions?: string[] | string | null
   sets: number
   reps: string
   rest: string
   notes: string
+  image_url?: string | null
+  video_url?: string | null
+  media_type?: string | null
 }
 
 interface Day {
   day: string
   focus: string
+  is_rest?: boolean
+  rest_notes?: string
   exercises: Exercise[]
 }
 
@@ -40,8 +49,17 @@ export default function EditRoutinePage() {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [routine, setRoutine] = useState<RoutineContent | null>(null)
-  const [exercises, setExercises] = useState<{ id: string; name: string }[]>([])
+  const [searchResults, setSearchResults] = useState<Array<{
+    exerciseId: string
+    name: string
+    description?: string | null
+    instructions?: string[] | string | null
+    imageUrl: string
+    videoUrl?: string
+    mediaType?: string | null
+  }>>([])
   const [search, setSearch] = useState('')
+  const [searching, setSearching] = useState(false)
   const [activeDay, setActiveDay] = useState<number | null>(null)
 
   useEffect(() => {
@@ -53,20 +71,28 @@ export default function EditRoutinePage() {
         .single()
       if (data) setRoutine(data.content as RoutineContent)
 
-      const { data: ex } = await supabase
-        .from('exercises')
-        .select('id, name')
-        .order('name')
-      if (ex) setExercises(ex)
-
       setLoading(false)
     }
     load()
-  }, [])
+  }, [routineId, supabase])
 
-  const filteredExercises = exercises.filter(e =>
-    e.name.toLowerCase().includes(search.toLowerCase())
-  )
+  const searchExercises = async () => {
+    if (!search.trim()) {
+      setSearchResults([])
+      return
+    }
+
+    setSearching(true)
+    try {
+      const response = await fetch(`/api/exercises?q=${encodeURIComponent(search)}`)
+      const payload = await response.json()
+      setSearchResults(Array.isArray(payload.data) ? payload.data : [])
+    } catch {
+      setSearchResults([])
+    } finally {
+      setSearching(false)
+    }
+  }
 
   const updateExercise = (dayIndex: number, exIndex: number, field: keyof Exercise, value: string | number) => {
     if (!routine) return
@@ -85,25 +111,64 @@ export default function EditRoutinePage() {
     setRoutine({ ...updated })
   }
 
-  const addExercise = (dayIndex: number, name: string) => {
+  const addExercise = (
+    dayIndex: number,
+    exercise: {
+      exerciseId?: string
+      name: string
+      description?: string | null
+      instructions?: string[] | string | null
+      imageUrl?: string
+      videoUrl?: string
+      mediaType?: string | null
+    },
+  ) => {
     if (!routine) return
     const updated = { ...routine }
     updated.days[dayIndex].exercises.push({
-      name,
+      exercise_id: exercise.exerciseId ?? null,
+      name: exercise.name,
+      description: exercise.description ?? null,
+      instructions: exercise.instructions ?? null,
       sets: 3,
       reps: '10-12',
       rest: '60s',
-      notes: ''
+      notes: '',
+      image_url: exercise.imageUrl ?? null,
+      video_url: exercise.videoUrl ?? null,
+      media_type: exercise.mediaType ?? null,
     })
     setRoutine({ ...updated })
     setActiveDay(null)
     setSearch('')
+    setSearchResults([])
   }
 
   const updateFocus = (dayIndex: number, value: string) => {
     if (!routine) return
     const updated = { ...routine }
     updated.days[dayIndex].focus = value
+    setRoutine(updated)
+  }
+
+  const toggleRestDay = (dayIndex: number) => {
+    if (!routine) return
+    const updated = { ...routine }
+    const currentDay = updated.days[dayIndex]
+    currentDay.is_rest = !currentDay.is_rest
+    if (currentDay.is_rest) {
+      currentDay.exercises = []
+    }
+    setRoutine(updated)
+    setActiveDay(null)
+    setSearch('')
+    setSearchResults([])
+  }
+
+  const updateRestNotes = (dayIndex: number, value: string) => {
+    if (!routine) return
+    const updated = { ...routine }
+    updated.days[dayIndex].rest_notes = value
     setRoutine(updated)
   }
 
@@ -169,11 +234,33 @@ export default function EditRoutinePage() {
                 <Input
                   value={day.focus}
                   onChange={(e) => updateFocus(dayIndex, e.target.value)}
+                  disabled={day.is_rest}
                   className="bg-zinc-800 border-zinc-700 text-white text-sm h-8"
                 />
+                <Button
+                  size="sm"
+                  type="button"
+                  variant={day.is_rest ? 'default' : 'outline'}
+                  onClick={() => toggleRestDay(dayIndex)}
+                  className={day.is_rest ? 'bg-emerald-600 hover:bg-emerald-500 text-white' : 'border-zinc-700 text-zinc-400'}
+                >
+                  {day.is_rest ? 'Descanso' : 'Marcar descanso'}
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
+              {day.is_rest ? (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <p className="text-sm font-medium text-emerald-300">Día de descanso</p>
+                  <Input
+                    value={day.rest_notes ?? ''}
+                    onChange={(e) => updateRestNotes(dayIndex, e.target.value)}
+                    placeholder="Ej: movilidad, paseo suave, recuperación activa"
+                    className="mt-3 bg-zinc-800 border-zinc-700 text-white text-sm"
+                  />
+                </div>
+              ) : (
+                <>
               <div className="grid gap-3 mb-3">
                 {day.exercises.map((exercise, exIndex) => (
                   <div key={exIndex} className="bg-zinc-800 rounded-lg p-3">
@@ -230,6 +317,12 @@ export default function EditRoutinePage() {
                         className="bg-zinc-700 border-zinc-600 text-white text-sm h-8"
                       />
                     </div>
+                    <ExerciseDetails
+                      description={exercise.description}
+                      instructions={exercise.instructions}
+                      notes={exercise.notes}
+                      compact
+                    />
                   </div>
                 ))}
               </div>
@@ -241,32 +334,42 @@ export default function EditRoutinePage() {
                     placeholder="Buscar ejercicio..."
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && void searchExercises()}
                     className="bg-zinc-700 border-zinc-600 text-white text-sm mb-2"
                     autoFocus
                   />
+                  <Button
+                    size="sm"
+                    type="button"
+                    onClick={() => void searchExercises()}
+                    disabled={searching}
+                    className="mb-2 w-full bg-zinc-700 hover:bg-zinc-600 text-white"
+                  >
+                    {searching ? 'Buscando...' : 'Buscar en base de ejercicios'}
+                  </Button>
                   <div className="max-h-48 overflow-y-auto grid gap-1">
-                    {filteredExercises.map((ex) => (
+                    {searchResults.map((ex) => (
                       <button
-                        key={ex.id}
-                        onClick={() => addExercise(dayIndex, ex.name)}
+                        key={ex.exerciseId}
+                        onClick={() => addExercise(dayIndex, ex)}
                         className="text-left px-3 py-2 rounded text-zinc-300 hover:bg-zinc-600 hover:text-white text-sm transition"
                       >
-                        {ex.name}
+                        <p>{ex.name}</p>
+                        {ex.description ? (
+                          <p className="mt-1 text-xs text-zinc-500 line-clamp-2">{ex.description}</p>
+                        ) : null}
                       </button>
                     ))}
-                    {filteredExercises.length === 0 && (
-                      <button
-                        onClick={() => addExercise(dayIndex, search)}
-                        className="text-left px-3 py-2 rounded text-orange-400 hover:bg-zinc-600 text-sm transition"
-                      >
-                        + Agregar &quot;{search}&quot; como ejercicio nuevo
-                      </button>
+                    {!searching && search.trim() && searchResults.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-zinc-500">
+                        Sin resultados para &quot;{search}&quot;
+                      </p>
                     )}
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => { setActiveDay(null); setSearch('') }}
+                    onClick={() => { setActiveDay(null); setSearch(''); setSearchResults([]) }}
                     className="mt-2 text-zinc-500 text-xs"
                   >
                     Cancelar
@@ -281,6 +384,8 @@ export default function EditRoutinePage() {
                 >
                   <Plus size={14} className="mr-1" /> Agregar ejercicio
                 </Button>
+              )}
+                </>
               )}
             </CardContent>
           </Card>

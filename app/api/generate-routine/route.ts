@@ -3,6 +3,7 @@ import { consumeAiGeneration } from '@/lib/billing'
 import { updateOnboardingProgress } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { hydrateRoutineContentWithExercises } from '@/lib/exercises-api'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -61,6 +62,8 @@ Genera exactamente 4 días de entrenamiento, no más, con esta estructura:
   ],
   "notes": "Recomendaciones generales para este cliente"
 }
+
+Usa nombres de ejercicios reales, claros y fáciles de encontrar en una base de ejercicios en español.
 `
 
   try {
@@ -80,14 +83,15 @@ Genera exactamente 4 días de entrenamiento, no más, con esta estructura:
     clean = jsonMatch[0]
     console.log('Respuesta de Gemini:', clean)
     const routine = JSON.parse(clean)
+    const hydratedRoutine = await hydrateRoutineContentWithExercises(routine)
 
     const { data: saved } = await supabase
       .from('routines')
       .insert({
         client_id: clientId,
         trainer_id: user.id,
-        title: routine.title,
-        content: routine,
+        title: hydratedRoutine.title,
+        content: hydratedRoutine,
         week_start: new Date().toISOString().split('T')[0],
       })
       .select()

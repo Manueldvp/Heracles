@@ -12,9 +12,12 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import ExerciseMedia from '@/components/exercise-media'
 import { inferMuscleGroup } from '@/lib/exercise-groups'
+import ExerciseDetails from '@/components/routines/ExerciseDetails'
 
 interface Exercise {
   name: string
+  description?: string
+  instructions?: string[] | string
   sets: number
   reps: string
   rest: string
@@ -28,6 +31,8 @@ interface Exercise {
 interface WorkoutDay {
   day: string
   focus?: string
+  is_rest?: boolean
+  rest_notes?: string
   exercises: Exercise[]
 }
 
@@ -409,10 +414,14 @@ function ExerciseCard({ exercise, index, isActive, isCompleted, onStart, onLogCo
         </div>
       )}
 
-      {isActive && phase === 'idle' && !loggerOpen && exercise.notes && (
-        <div className="px-4 py-2 border-t border-zinc-700/50 flex items-center gap-1.5">
-          <span className="text-zinc-600 text-xs">💡</span>
-          <p className="text-zinc-500 text-xs">{exercise.notes}</p>
+      {isActive && phase === 'idle' && !loggerOpen && (exercise.description || exercise.instructions || exercise.notes) && (
+        <div className="px-4 py-3 border-t border-zinc-700/50">
+          <ExerciseDetails
+            description={exercise.description}
+            instructions={exercise.instructions}
+            notes={exercise.notes}
+            compact
+          />
         </div>
       )}
     </div>
@@ -537,6 +546,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
 
   const displayDay = todayDay ?? nextDayInfo?.day
   const isToday = !!todayDay
+  const isRestDay = Boolean(displayDay?.is_rest)
   const exercises: Exercise[] = displayDay?.exercises ?? []
 
   const [activeIndex, setActiveIndex] = useState(0)
@@ -559,6 +569,57 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const [autoOpenLoggerIndex, setAutoOpenLoggerIndex] = useState<number | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
+  const ensureWorkoutSession = async () => {
+    if (!clientId || !routineId || !isToday) return null
+
+    const today = new Date().toISOString().split('T')[0]
+
+    if (sessionId) return sessionId
+
+    const { data: existingSession, error: existingSessionError } = await supabase
+      .from('workout_sessions')
+      .select('id')
+      .eq('client_id', clientId)
+      .eq('routine_id', routineId)
+      .eq('date', today)
+      .maybeSingle()
+
+    if (existingSessionError) {
+      console.error('Session lookup error:', existingSessionError)
+      return null
+    }
+
+    if (existingSession?.id) {
+      setSessionId(existingSession.id)
+      return existingSession.id
+    }
+
+    const { data: createdSession, error: createSessionError } = await supabase
+      .from('workout_sessions')
+      .insert({
+        client_id: clientId,
+        routine_id: routineId,
+        exercises_completed: 0,
+        exercises_total: exercises.length,
+        date: today,
+        completed_at: null,
+      })
+      .select('id')
+      .single()
+
+    if (createSessionError) {
+      console.error('Session create error:', createSessionError)
+      return null
+    }
+
+    if (createdSession?.id) {
+      setSessionId(createdSession.id)
+      return createdSession.id
+    }
+
+    return null
+  }
+
   // ── Load today's session on mount ──────────────────────────────────────────
   useEffect(() => {
     if (!clientId || !routineId || !isToday) return
@@ -576,11 +637,11 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
         if (error) console.error('Session load error:', error)
         const session = data?.[0]
         if (session) {
-          setAllDone(true)
-          setWorkoutStarted(true)
-          setCompleted(new Array(exCount).fill(true))
           setSessionId(session.id)
           if (session.completed_at) {
+            setAllDone(true)
+            setWorkoutStarted(true)
+            setCompleted(new Array(exCount).fill(true))
             const t = new Date(session.completed_at)
             if (!isNaN(t.getTime())) {
               setCompletedAt(`${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`)
@@ -594,6 +655,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const clearTimer = () => { if (timerRef.current) clearInterval(timerRef.current) }
 
   const startExercise = (index: number, setNumber = currentSet) => {
+    void ensureWorkoutSession()
     const workSecs = estimateWorkSeconds(exercises[index])
     setWorkoutStarted(true)
     setPhase('working')
@@ -679,22 +741,31 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
       const exerciseName = exercises[index].name.toLowerCase().trim()
       const maxWeight = Math.max(...sets.map(s => s.weight))
       const totalVolume = sets.reduce((acc, s) => acc + s.weight * s.reps, 0)
+      const ensuredSessionId = await ensureWorkoutSession()
 
       // Delete any existing log for this exercise today
-      await supabase.from('exercise_logs').delete()
+      const { error: deleteLogError } = await supabase.from('exercise_logs').delete()
         .eq('client_id', clientId)
         .eq('exercise_name', exerciseName)
         .eq('date', today)
 
-      await supabase.from('exercise_logs').insert({
+      if (deleteLogError) {
+        console.error('Exercise log cleanup error:', deleteLogError)
+      }
+
+      const { error: insertLogError } = await supabase.from('exercise_logs').insert({
         client_id: clientId,
-        workout_session_id: sessionId,
+        ...(ensuredSessionId ? { workout_session_id: ensuredSessionId } : {}),
         exercise_name: exerciseName,
         date: today,
         sets_data: sets,
         max_weight: maxWeight,
         total_volume: totalVolume,
       })
+
+      if (insertLogError) {
+        console.error('Exercise log insert error:', insertLogError)
+      }
     }
 
     const remaining = newCompleted.some(item => !item)
@@ -714,31 +785,29 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   // ── Save session — upsert by date to prevent duplicates ────────────────────
   const saveSession = async () => {
     const now = new Date()
-    const today = now.toISOString().split('T')[0]
     const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
     try {
-      // Delete any existing session for today first (e.g. from a previous reset that didn't clean up)
-      await supabase.from('workout_sessions').delete()
-        .eq('client_id', clientId)
-        .eq('routine_id', routineId)
-        .eq('date', today)
+      const ensuredSessionId = await ensureWorkoutSession()
 
-      const { data, error } = await supabase
-        .from('workout_sessions')
-        .insert({
-          client_id: clientId,
-          routine_id: routineId,
+      if (!ensuredSessionId) {
+        console.error('Unable to complete workout session: missing session id')
+      } else {
+        const { error } = await supabase
+          .from('workout_sessions')
+          .update({
           exercises_completed: exercises.length,
           exercises_total: exercises.length,
-          date: today,
-          completed_at: now.toISOString(),
-        })
-        .select('id')
-        .single()
+            completed_at: now.toISOString(),
+          })
+          .eq('id', ensuredSessionId)
 
-      if (error) console.error('Save session error:', error)
-      if (data) setSessionId(data.id)
+        if (error) {
+          console.error('Save session error:', error)
+        } else {
+          setSessionId(ensuredSessionId)
+        }
+      }
     } catch (e) {
       console.error('Save session exception:', e)
     }
@@ -756,13 +825,13 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
   const resetWorkout = async () => {
     const today = new Date().toISOString().split('T')[0]
 
+    await supabase.from('exercise_logs').delete()
+      .eq('client_id', clientId)
+      .eq('date', today)
+
     await supabase.from('workout_sessions').delete()
       .eq('client_id', clientId)
       .eq('routine_id', routineId)
-      .eq('date', today)
-
-    await supabase.from('exercise_logs').delete()
-      .eq('client_id', clientId)
       .eq('date', today)
 
     clearTimer()
@@ -873,7 +942,7 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
             <div className="flex flex-col gap-2">
               {[1,2,3].map(i => <div key={i} className="h-16 bg-zinc-800/50 rounded-xl animate-pulse" />)}
             </div>
-          ) : displayDay && exercises.length > 0 ? (
+          ) : displayDay && !isRestDay && exercises.length > 0 ? (
             allDone ? (
               <CompletionScreen
                 exercises={exercises} allLogs={allLogs}
@@ -918,15 +987,17 @@ export default function TodayWorkout({ routine, routineId, clientId }: Props) {
               </div>
             )
           ) : (
-            <div className="flex items-center gap-3 bg-green-500/5 border border-green-500/15 rounded-xl p-4">
-              <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-                <Clock size={16} className="text-green-400" />
+              <div className="flex items-center gap-3 bg-green-500/5 border border-green-500/15 rounded-xl p-4">
+                <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                  <Clock size={16} className="text-green-400" />
+                </div>
+                <div>
+                <p className="text-green-400 text-sm font-medium">{isRestDay ? 'Día de descanso' : 'Día de descanso activo'}</p>
+                <p className="text-zinc-500 text-xs mt-0.5">
+                  {displayDay?.rest_notes?.trim() || 'Estira, camina o descansa según cómo te sientas'}
+                </p>
+                </div>
               </div>
-              <div>
-                <p className="text-green-400 text-sm font-medium">Día de descanso activo</p>
-                <p className="text-zinc-500 text-xs mt-0.5">Estira, camina o descansa según cómo te sientas</p>
-              </div>
-            </div>
           )}
         </CardContent>
       </Card>

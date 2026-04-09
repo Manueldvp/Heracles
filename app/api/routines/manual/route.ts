@@ -1,6 +1,7 @@
 import { updateOnboardingProgress } from '@/lib/onboarding'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { hydrateRoutineContentWithExercises } from '@/lib/exercises-api'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -23,13 +24,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 })
   }
 
+  const hydratedContent = await hydrateRoutineContentWithExercises(content)
+
   const { data: routine, error } = await supabase
     .from('routines')
     .insert({
       client_id: clientId,
       trainer_id: user.id,
       title,
-      content,
+      content: hydratedContent,
     })
     .select('id, title')
     .single()

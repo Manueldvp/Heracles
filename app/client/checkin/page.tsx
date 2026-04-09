@@ -8,6 +8,7 @@ import {
   BatteryWarning,
   Camera,
   CheckCircle2,
+  CircleAlert,
   ClipboardList,
   Frown,
   HeartPulse,
@@ -50,6 +51,83 @@ type FormState = {
   stress_level: number
   nutrition_adherence: number
   weight: string
+}
+
+type ExistingCheckin = {
+  id: string
+  type: CheckinType
+  mood: number | null
+  energy_level: number | null
+  sleep_quality: number | null
+  completed_workouts: number | null
+  nutrition_adherence: number | null
+  water_liters: number | null
+  calories_consumed: number | null
+  notes: string | null
+  pain_zones: string[] | null
+  stress_level: number | null
+  weight: number | null
+  photo_url: string | null
+  created_at: string
+}
+
+function getPeriodRange(type: CheckinType) {
+  const now = new Date()
+  const start = new Date(now)
+
+  if (type === 'daily') {
+    start.setHours(0, 0, 0, 0)
+  } else {
+    const day = start.getDay()
+    const diff = day === 0 ? -6 : 1 - day
+    start.setDate(start.getDate() + diff)
+    start.setHours(0, 0, 0, 0)
+  }
+
+  const end = new Date(start)
+  if (type === 'daily') {
+    end.setDate(end.getDate() + 1)
+  } else {
+    end.setDate(end.getDate() + 7)
+  }
+
+  return {
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+  }
+}
+
+function buildFormFromCheckin(checkin: ExistingCheckin): FormState {
+  return {
+    mood: checkin.mood ?? 3,
+    energy_level: checkin.energy_level ?? 3,
+    sleep_quality: checkin.sleep_quality ?? 3,
+    completed_workouts: checkin.completed_workouts ?? 0,
+    adherence: checkin.type === 'daily' ? (checkin.nutrition_adherence ?? 3) : 3,
+    water_liters: checkin.water_liters?.toString() ?? '',
+    calories_consumed: checkin.calories_consumed?.toString() ?? '',
+    notes: checkin.notes ?? '',
+    pain_zones: checkin.pain_zones ?? [],
+    stress_level: checkin.stress_level ?? 3,
+    nutrition_adherence: checkin.type === 'weekly' ? (checkin.nutrition_adherence ?? 3) : 3,
+    weight: checkin.weight?.toString() ?? '',
+  }
+}
+
+function getFriendlyCheckinError(message: string | null | undefined, type: CheckinType) {
+  if (!message) return 'No se pudo guardar tu check-in. Intenta de nuevo.'
+
+  if (message.includes('duplicate key value') || message.includes('checkins_daily_once_per_local_day_idx')) {
+    return 'Ya enviaste tu check-in de hoy. Puedes editarlo, pero no crear otro.'
+  }
+
+  if (message.includes('checkins_weekly_once_per_local_week_idx')) {
+    return 'Ya enviaste tu check-in semanal de esta semana. Puedes editarlo, pero no crear otro.'
+  }
+
+  return type === 'daily'
+    ? 'No se pudo guardar tu check-in diario. Intenta de nuevo.'
+    : 'No se pudo guardar tu check-in semanal. Intenta de nuevo.'
 }
 
 function ScaleSelector({
@@ -151,8 +229,11 @@ function CheckinForm() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [showPhotoModal, setShowPhotoModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [step, setStep] = useState(0)
   const [subscriptionSummary, setSubscriptionSummary] = useState<ClientSubscriptionSummary | null>(null)
+  const [existingCheckin, setExistingCheckin] = useState<ExistingCheckin | null>(null)
+  const [clientId, setClientId] = useState<string | null>(null)
 
   const typeParam = searchParams.get('type')
   const [checkinType, setCheckinType] = useState<CheckinType>(typeParam === 'weekly' ? 'weekly' : 'daily')
@@ -175,7 +256,7 @@ function CheckinForm() {
   useEffect(() => {
     let mounted = true
 
-    const loadSubscription = async () => {
+    const loadInitialData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!mounted) return
@@ -200,6 +281,8 @@ function CheckinForm() {
         return
       }
 
+      setClientId(client.id)
+
       const { data: subscription } = await supabase
         .from('client_subscriptions')
         .select('*')
@@ -209,15 +292,55 @@ function CheckinForm() {
       if (!mounted) return
 
       setSubscriptionSummary(summarizeClientSubscription(subscription))
+
+      const range = getPeriodRange(checkinType)
+      const { data: existing } = await supabase
+        .from('checkins')
+        .select('id, type, mood, energy_level, sleep_quality, completed_workouts, nutrition_adherence, water_liters, calories_consumed, notes, pain_zones, stress_level, weight, photo_url, created_at')
+        .eq('client_id', client.id)
+        .eq('type', checkinType)
+        .gte('created_at', range.startIso)
+        .lt('created_at', range.endIso)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (!mounted) return
+
+      setExistingCheckin((existing as ExistingCheckin | null) ?? null)
+
+      if (existing) {
+        setForm(buildFormFromCheckin(existing as ExistingCheckin))
+        setPhotoUrl((existing as ExistingCheckin).photo_url)
+        setPhotoPreview((existing as ExistingCheckin).photo_url)
+      } else {
+        setPhotoUrl(null)
+        setPhotoPreview(null)
+        setForm({
+          mood: 3,
+          energy_level: 3,
+          sleep_quality: 3,
+          completed_workouts: 0,
+          adherence: 3,
+          water_liters: '',
+          calories_consumed: '',
+          notes: '',
+          pain_zones: [],
+          stress_level: 3,
+          nutrition_adherence: 3,
+          weight: '',
+        })
+      }
+
       setInitialLoading(false)
     }
 
-    void loadSubscription()
+    void loadInitialData()
 
     return () => {
       mounted = false
     }
-  }, [supabase])
+  }, [checkinType, supabase])
 
   const steps = useMemo(() => (
     checkinType === 'daily'
@@ -290,7 +413,7 @@ function CheckinForm() {
     setStep(current => Math.max(current - 1, 0))
   }
 
-  const handleSubmit = async () => {
+  const persistCheckin = async () => {
     if (!validateCurrentStep()) {
       setError('Completa la información requerida antes de enviar.')
       return
@@ -318,7 +441,9 @@ function CheckinForm() {
       return
     }
 
-    const { error: insertError } = await supabase.from('checkins').insert({
+    const parsedWeight = checkinType === 'weekly' && form.weight ? parseFloat(form.weight) : null
+
+    const payload = {
       client_id: client.id,
       type: checkinType,
       mood: form.mood,
@@ -331,23 +456,49 @@ function CheckinForm() {
       pain_zones: form.pain_zones,
       stress_level: checkinType === 'weekly' ? form.stress_level : null,
       nutrition_adherence: checkinType === 'weekly' ? form.nutrition_adherence : form.adherence,
-      weight: checkinType === 'weekly' && form.weight ? parseFloat(form.weight) : null,
+      weight: parsedWeight,
       photo_url: checkinType === 'weekly' ? photoUrl : null,
-    })
+    }
 
-    if (insertError) {
-      setError(insertError.message)
+    const result = existingCheckin
+      ? await supabase.from('checkins').update(payload).eq('id', existingCheckin.id)
+      : await supabase.from('checkins').insert(payload)
+
+    if (result.error) {
+      setError(getFriendlyCheckinError(result.error.message, checkinType))
       setLoading(false)
       return
     }
 
-    await fetch('/api/notify-checkin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ clientId: client.id, checkinType }),
-    })
+    if (parsedWeight !== null) {
+      const { error: updateWeightError } = await supabase
+        .from('clients')
+        .update({ weight: parsedWeight })
+        .eq('id', client.id)
+
+      if (updateWeightError) {
+        console.error('Client weight sync error:', updateWeightError)
+      }
+    }
+
+    if (!existingCheckin) {
+      await fetch('/api/notify-checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id, checkinType }),
+      })
+    }
 
     router.push('/client')
+  }
+
+  const handleSubmit = async () => {
+    if (!validateCurrentStep()) {
+      setError('Completa la información requerida antes de enviar.')
+      return
+    }
+
+    setShowConfirmModal(true)
   }
 
   const renderDailyStep = () => {
@@ -620,6 +771,22 @@ function CheckinForm() {
         </button>
       </div>
 
+      {clientId && existingCheckin && (
+        <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <CircleAlert className="mt-0.5 h-4 w-4 text-amber-300" />
+            <div>
+              <p className="text-sm font-medium text-amber-200">
+                Ya tienes un check-in {checkinType === 'daily' ? 'de hoy' : 'de esta semana'}.
+              </p>
+              <p className="mt-1 text-xs text-amber-100/80">
+                Lo que hagas aquí actualizará ese mismo registro. No se creará un check-in nuevo.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 space-y-3">
         <div className="h-2 overflow-hidden rounded-full bg-muted">
           <div
@@ -647,7 +814,7 @@ function CheckinForm() {
         {step === steps.length - 1 ? (
           <Button onClick={handleSubmit} disabled={loading || uploadingPhoto} className="flex-1 rounded-xl">
             <CheckCircle2 className="mr-2 h-4 w-4" />
-            {loading ? 'Enviando...' : 'Enviar check-in'}
+            {loading ? 'Guardando...' : existingCheckin ? 'Guardar cambios' : 'Enviar check-in'}
           </Button>
         ) : (
           <Button onClick={goNext} className="flex-1 rounded-xl">
@@ -662,6 +829,45 @@ function CheckinForm() {
           {photoPreview && (
             <img src={photoPreview} alt="Vista completa" className="max-h-[80vh] w-full object-contain rounded-xl" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="max-w-md border-border bg-card">
+          <DialogTitle className="text-base text-foreground">
+            {existingCheckin ? '¿Seguro que quieres actualizar este check-in?' : '¿Seguro que quieres enviar este check-in?'}
+          </DialogTitle>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              {existingCheckin
+                ? 'Tu entrenador verá la versión actualizada del check-in de este período.'
+                : 'Una vez enviado, tu entrenador usará esta información para ajustar tu seguimiento.'}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Revisa especialmente peso, entrenos completados, adherencia y notas antes de confirmar.
+            </p>
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 border-border text-foreground"
+              >
+                Revisar otra vez
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false)
+                  void persistCheckin()
+                }}
+                disabled={loading || uploadingPhoto}
+                className="flex-1"
+              >
+                {loading ? 'Guardando...' : existingCheckin ? 'Sí, actualizar' : 'Sí, enviar'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

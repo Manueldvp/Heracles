@@ -5,6 +5,32 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import SaveAsTemplateButton from './components/SaveAsTemplateButton'
 import Link from 'next/link'
+import ExerciseDetails from '@/components/routines/ExerciseDetails'
+
+type RoutineExercise = {
+  name: string
+  description?: string | null
+  instructions?: string[] | string | null
+  sets: number
+  reps: string
+  rest: string
+  notes?: string | null
+  image_url?: string | null
+}
+
+type RoutineDay = {
+  day: string
+  focus?: string | null
+  is_rest?: boolean
+  rest_notes?: string | null
+  exercises?: RoutineExercise[]
+}
+
+type RoutineContent = {
+  title?: string
+  notes?: string | null
+  days?: RoutineDay[]
+}
 
 export default async function RoutinePage({
   params,
@@ -22,7 +48,7 @@ export default async function RoutinePage({
 
   if (!routine) notFound()
 
-  const content = routine.content as any
+  const content = routine.content as RoutineContent
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -57,7 +83,7 @@ export default async function RoutinePage({
 
       {/* Días de entrenamiento */}
       <div className="grid gap-4 mb-6">
-        {content.days?.map((day: any, index: number) => (
+        {content.days?.map((day, index: number) => (
           <Card key={index} className="bg-zinc-900 border-zinc-800">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
@@ -67,11 +93,24 @@ export default async function RoutinePage({
                 {day.focus && (
                   <CardTitle className="text-white text-base">{day.focus}</CardTitle>
                 )}
+                {day.is_rest ? (
+                  <Badge variant="outline" className="border-emerald-500/20 text-emerald-300">
+                    Descanso
+                  </Badge>
+                ) : null}
               </div>
             </CardHeader>
             <CardContent>
+              {day.is_rest ? (
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4">
+                  <p className="text-sm font-medium text-emerald-300">Día de descanso</p>
+                  <p className="mt-2 text-sm text-zinc-300">
+                    {day.rest_notes?.trim() || 'Jornada sin ejercicios programados.'}
+                  </p>
+                </div>
+              ) : (
               <div className="grid gap-3">
-                {day.exercises?.map((exercise: any, i: number) => (
+                {day.exercises?.map((exercise, i: number) => (
                   <div key={i} className="bg-zinc-800 rounded-lg p-4">
                     <div className="flex items-start justify-between gap-3 mb-2 flex-wrap">
                       <div className="flex items-center gap-3">
@@ -96,12 +135,16 @@ export default async function RoutinePage({
                         </Badge>
                       </div>
                     </div>
-                    {exercise.notes && (
-                      <p className="text-zinc-400 text-sm">💡 {exercise.notes}</p>
-                    )}
+                    <ExerciseDetails
+                      description={exercise.description}
+                      instructions={exercise.instructions}
+                      notes={exercise.notes}
+                      compact
+                    />
                   </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
         ))}

@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ClientExerciseProgress from './components/ClientExerciseProgress'
 import ClientNotes from './components/ClientNotes'
+import WeeklyObjectivesCard from './components/WeeklyObjectivesCard'
 import CheckinHistory from './progress/CheckinHistory'
 import CheckinPhotoGallery from './components/CheckinPhotoGallery'
 import { Button } from '@/components/ui/button'
@@ -217,6 +218,10 @@ export default async function ClientPage({ params }: { params: Promise<{ id: str
       {/* Notas privadas */}
       <div className="mb-4">
         <ClientNotes clientId={client.id} />
+      </div>
+
+      <div className="mb-4">
+        <WeeklyObjectivesCard clientId={client.id} />
       </div>
 
       {bestLift && bestLift.max_weight > 0 && (

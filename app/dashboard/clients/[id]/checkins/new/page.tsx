@@ -48,12 +48,14 @@ export default function NewCheckinPage() {
     setLoading(true)
     setError('')
 
+    const parsedWeight = form.weight ? parseFloat(form.weight) : null
+
     const { error } = await supabase.from('checkins').insert({
       client_id: clientId,
       energy_level: form.energy_level,
       sleep_quality: form.sleep_quality,
       completed_workouts: form.completed_workouts,
-      weight: form.weight ? parseFloat(form.weight) : null,
+      weight: parsedWeight,
       notes: form.notes,
     })
 
@@ -61,6 +63,17 @@ export default function NewCheckinPage() {
       setError(error.message)
       setLoading(false)
       return
+    }
+
+    if (parsedWeight !== null) {
+      const { error: updateWeightError } = await supabase
+        .from('clients')
+        .update({ weight: parsedWeight })
+        .eq('id', clientId)
+
+      if (updateWeightError) {
+        console.error('Client weight sync error:', updateWeightError)
+      }
     }
 
     router.push(`/dashboard/clients/${clientId}`)

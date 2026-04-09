@@ -36,18 +36,25 @@ interface Props {
 export default function ClientHeader({
   firstName, greeting, goal, level, trainerName, trainerAvatar
 }: Props) {
+  const goalText = goalLabel[goal] ?? goal?.trim()
+  const levelText = levelLabel[level] ?? level?.trim()
+
   return (
     <div className="mb-3 flex items-start justify-between gap-4">
       <div className="min-w-0">
         <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{greeting}</p>
         <h2 className="mt-1 font-display text-4xl leading-none tracking-[0.04em] text-foreground sm:text-5xl">{firstName}</h2>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Badge className={`rounded-full border px-3 py-1 text-xs ${goalColor[goal] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
-            {goalLabel[goal]}
-          </Badge>
-          <Badge className="rounded-full border-border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">
-            {levelLabel[level] ?? level}
-          </Badge>
+          {goalText ? (
+            <Badge className={`rounded-full border px-3 py-1 text-xs ${goalColor[goal] ?? 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+              {goalText}
+            </Badge>
+          ) : null}
+          {levelText ? (
+            <Badge className="rounded-full border-border bg-card px-3 py-1 text-xs text-muted-foreground shadow-sm">
+              {levelText}
+            </Badge>
+          ) : null}
         </div>
       </div>
 
